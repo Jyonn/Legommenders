@@ -1,0 +1,5 @@
+default-db:
+  port: 3306
+
+user-db:
+  port: ${default-db.port}
