@@ -1,13 +1,17 @@
+"""
+from transformers library, built by Huggingface
+> BertSelfAttention Module
+"""
+
 import math
 from typing import Optional
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 
 class SelfAttention(nn.Module):
-    """from transformers modeling_bert"""
-
     def __init__(self, config, position_embedding_type=None):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
@@ -87,7 +91,7 @@ class SelfAttention(nn.Module):
             attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
-        attention_probs = nn.functional.softmax(attention_scores, dim=-1)
+        attention_probs = F.softmax(attention_scores, dim=-1)
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
