@@ -1,4 +1,5 @@
 from utils.config_init import ConfigInit
+from utils.gpu import GPU
 
 
 class Worker:
@@ -12,6 +13,7 @@ class Worker:
         if cuda is None:
             return GPU.auto_choose(torch_format=True)
         return "cuda:{}".format(cuda)
+
 
 if __name__ == '__main__':
     config = ConfigInit(
