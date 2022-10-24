@@ -1,0 +1,3 @@
+class Sequencer:
+    @classmethod
+    def
