@@ -1,11 +1,10 @@
-from UniTok import UniDep
+from UniTok import UniDep, Vocab
 
 from typing import Optional
 
 from torch import nn
 
-from embedding_loader.embedding.loader import EmbeddingLoader, EmbeddingInfo
-from embedding_loader.global_setting import Setting
+from loader.embedding.embedding_loader import EmbeddingLoader, EmbeddingInfo
 from utils.printer import printer
 
 
@@ -35,10 +34,10 @@ class EmbeddingInit:
 
         self._table = None
 
-    def register_vocab(self, vocab, size):
+    def register_vocab(self, vocab: Vocab):
         table = self.get_table()
-        table[vocab] = nn.Embedding(
-            num_embeddings=size,
+        table[vocab.name] = nn.Embedding(
+            num_embeddings=vocab.get_size(),
             embedding_dim=self.hidden_size,
         )
 
