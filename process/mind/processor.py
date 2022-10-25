@@ -1,5 +1,7 @@
 import os
+import random
 
+import numpy as np
 import pandas as pd
 from UniTok import Vocab, UniTok, Column
 from UniTok.tok import IdTok, SplitTok, BertTok, EntTok, BaseTok
@@ -131,6 +133,47 @@ class Processor:
         user_df = user_df.drop_duplicates(['uid'])
         return user_df
 
+    def combine_inter_df(self):
+        inter_train_df = self.read_inter_data('train')
+        inter_dev_df = self.read_inter_data('dev')
+        inter_dev_df.imp += max(inter_train_df.imp)
+
+        inter_df = pd.concat([inter_train_df, inter_dev_df])
+        return inter_df
+
+    @staticmethod
+    def splitter(l: list, portions: list):
+        random.shuffle(l)
+
+        portions = np.array(portions)
+        portions = portions * 1.0 / portions.sum() * len(l)
+        portions = list(map(int, portions))
+        portions[-1] = len(l) - sum(portions[:-1])
+
+        pos = 0
+        parts = []
+        for i in portions:
+            parts.append(l[pos: pos+i])
+            pos += i
+        return parts
+
+    def reassign_inter_df(self):
+        inter_df = self.combine_inter_df()
+        imp_list = inter_df.imp.drop_duplicates().to_list()
+
+        train_imps, dev_imps, test_imps = self.splitter(imp_list, [8, 1, 1])
+        inter_train_df, inter_dev_df, inter_test_df = [], [], []
+
+        inter_groups = inter_df.groupby('imp')
+        for imp, imp_df in inter_groups:
+            if imp in train_imps:
+                inter_train_df.append(imp_df)
+            elif imp in dev_imps:
+                inter_dev_df.append(imp_df)
+            else:
+                inter_test_df.append(imp_df)
+        return pd.concat(inter_train_df), pd.concat(inter_dev_df), pd.concat(inter_test_df)
+
     def analyse_news(self):
         tok = self.get_news_tok(
             max_title_len=0,
@@ -144,9 +187,34 @@ class Processor:
         df = self.combine_user_df()
         tok.read_file(df).analyse()
 
+    def analyse_inter(self):
+        tok = self.get_inter_tok()
+        df = self.combine_inter_df()
+        tok.read_file(df).analyse()
+
+    def tokenize(self):
+        news_tok = self.get_news_tok(
+            max_title_len=20,
+            max_abs_len=50
+        )
+        news_df = self.combine_news_data()
+        news_tok.read_file(news_df).tokenize().store_data(os.path.join(self.store_dir, 'news'))
+
+        user_tok = self.get_user_tok(max_history=30)
+        user_df = self.combine_user_df()
+        user_tok.read_file(user_df).tokenize().store_data(os.path.join(self.store_dir, 'user'))
+
+        for inter_df, mode in zip(self.reassign_inter_df(), ['train', 'dev', 'test']):
+            inter_tok = self.get_inter_tok()
+            inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, mode))
+
 
 if __name__ == '__main__':
     p = Processor(
         data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='/data/MIND-small'
+        store_dir='../../data/MIND-small'
     )
+    # p.analyse_news()
+    # p.analyse_user()
+    # p.analyse_inter()
+    p.tokenize()

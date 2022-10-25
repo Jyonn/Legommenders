@@ -1,4 +1,5 @@
 import json
+import os
 
 from oba import Obj
 
@@ -16,9 +17,9 @@ class Worker:
         Setting.device = self.get_device()
 
         self.print = printer[('MAIN', '·', Color.CYAN)]
-        self.logging = Logger(self.config.data.store.log_path)
+        self.logging = Logger(self.config.data.store.log_file)
         Printer.logger = self.logging
-        self.print(Obj.raw(self.config))
+        self.print(json.dumps(Obj.raw(self.config), indent=4))
 
         self.global_loader = GlobalLoader(
             data=self.config.data,
@@ -43,4 +44,6 @@ if __name__ == '__main__':
         makedirs=[
             'data.store.save_dir',
         ]
-    )
+    ).parse()
+
+    worker = Worker(config=configuration)

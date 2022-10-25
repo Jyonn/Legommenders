@@ -1,5 +1,4 @@
 from abc import ABC
-from plistlib import Dict
 
 import torch
 

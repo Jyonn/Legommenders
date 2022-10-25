@@ -1,13 +1,17 @@
-from typing import List
+from typing import List, Type
 
 from UniTok import Vocab
+from oba import Obj
 from torch import nn
 
 from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from task.base_task import BaseTask
+from task.matching_task import MatchingTask
 
-TASK_LIST = []  # type: List[BaseTask]
+TASK_LIST = [
+    MatchingTask,
+]  # type: List[Type[BaseTask]]
 TASKS = {task.name: task for task in TASK_LIST}
 
 
@@ -20,11 +24,14 @@ class TaskLoader:
 
     def parse(self):
         for task_info in self.exp.tasks:
+            print(task_info)
             if task_info.name not in TASKS:
                 raise ValueError(f'No matched task: {task_info.name}')
 
             task_class = TASKS[task_info.name]
-            params = task_info.params.dict()
+            params = dict()
+            if task_info.params:
+                params = Obj.raw(task_info.params)
 
             task = task_class(dataset=self.dataset, **params)
             self.tasks.append(task)

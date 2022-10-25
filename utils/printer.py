@@ -142,7 +142,6 @@ class Printer:
 
     def __init__(self, prefixes: list):
         self.prefixes = self.format_prefixes(prefixes)  # type: List[Prefix]
-        self('START TIME:', datetime.datetime.now())
 
     def __getattr__(self, prefix):
         return self[prefix]
@@ -204,6 +203,7 @@ class Printer:
 TimePrefix.init()
 Printer.init()
 printer = Printer.create([(TimePrefix.call, Bracket.DEFAULT, Color.GREEN)])
+printer('START TIME:', datetime.datetime.now())
 
 if __name__ == '__main__':
     printer(f'Smart Printer Activated at {datetime.datetime.now()}')

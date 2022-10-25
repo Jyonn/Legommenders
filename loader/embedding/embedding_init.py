@@ -32,7 +32,7 @@ class EmbeddingInit:
         self.hidden_size = hidden_size
         self.loader = embedding_loader
 
-        self._table = None
+        self._table = None  # type: Optional[nn.ModuleDict]
 
     def register_vocab(self, vocab: Vocab):
         table = self.get_table()
@@ -81,6 +81,7 @@ class EmbeddingInit:
             )
             # table[vocab].weight.requires_grad = True  # default
 
+        self._table = nn.ModuleDict(table)
         return self._table
 
     @classmethod

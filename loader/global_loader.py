@@ -1,4 +1,3 @@
-import os
 from typing import Dict
 
 from loader.depot.depot_loader import FilterUniDep
@@ -37,7 +36,7 @@ class GlobalLoader:
 
     @property
     def a_depot(self):
-        return list(self.depots.items())[0]
+        return list(self.depots.values())[0]
 
     @property
     def a_set(self):

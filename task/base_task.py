@@ -18,7 +18,8 @@ class BaseTask:
 
     def __init__(
             self,
-            dataset: BaseDataset
+            dataset: BaseDataset,
+            **kwargs,
     ):
         self.dataset = dataset
         self.depot = dataset.depot

@@ -3,5 +3,5 @@ class Logger:
         self.log_file = log_file
 
     def __call__(self, s):
-        with open(self.log_file, 'a') as f:
+        with open(self.log_file, 'a+') as f:
             f.write(str(s) + '\n')
