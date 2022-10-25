@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 
 from UniTok import UniDep
@@ -11,11 +12,14 @@ class BaseDataset(Dataset):
             self,
             depot: UniDep,
             order: list,
+            append: list,
             splitter: Splitter = None,
             mode=None,
     ):
         self.depot = depot
         self.order = order
+        self.append = self.get_append(append)
+
         self.mode = mode
         self.sample_size = self.depot.sample_size
 
@@ -26,6 +30,13 @@ class BaseDataset(Dataset):
         else:
             self.split_range = splitter.divide(self.sample_size)[self.mode]
             assert splitter.contains(self.mode)
+
+    def get_append(self, append: list):
+        append = append or []
+        for col in append:
+            if self.depot.is_list_col(col):
+                raise ValueError(f'list column {col} cannot be appended')
+        return append
 
     def __getitem__(self, index):
         index += self.split_range[0]
@@ -40,13 +51,15 @@ class BaseDataset(Dataset):
 
     def pack_sample(self, index):
         sample = self.depot[index]
-        d = OrderedDict()
+        inputs = OrderedDict()
         for col in self.order:
-            d[col] = sample[col]
-
-        if self.task.sample_static_rebuilder:
-            d = self.task.sample_static_rebuilder(d)
-        return d
+            inputs[col] = copy.copy(sample[col])
+        append = OrderedDict()
+        for col in self.append:
+            append[col] = sample[col]
+        sample = dict(append=append, inputs=inputs)
+        sample = self.task.rebuild_sample(sample)
+        return sample
 
     @classmethod
     def parse(cls, data, depots, splitter):
@@ -54,6 +67,7 @@ class BaseDataset(Dataset):
         for mode in data.split:
             sets[mode] = cls(
                 order=data.order,
+                append=data.append,
                 depot=depots[mode],
                 splitter=splitter,
                 mode=mode,

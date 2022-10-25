@@ -7,3 +7,6 @@ class Setting:
 
     # device
     device = None
+
+    # pad
+    PAD = -1

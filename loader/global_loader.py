@@ -2,6 +2,7 @@ import os
 from typing import Dict
 
 from loader.depot.depot_loader import FilterUniDep
+from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from loader.global_setting import Setting
 from set.base_dataset import BaseDataset
@@ -19,6 +20,8 @@ class GlobalLoader:
         self.print = printer.DATA_Cblue_
 
         self.depots, self.splitter = FilterUniDep.parse(self.data)  # type: Dict[FilterUniDep], Splitter
+        self.vocab_loader = VocabLoader()
+        self.vocab_loader.load_from_depot(self.a_depot, self.data.order)
 
         self.embedding_init = EmbeddingInit.parse(self.data, self.model, self.a_depot)
         self.datasets = BaseDataset.parse(self.data, self.depots, self.splitter)
@@ -29,7 +32,7 @@ class GlobalLoader:
 
         self.task_loader = TaskLoader(self.exp, self.a_set)
         self.tasks = self.task_loader.parse()
-        self.task_loader.register_task_tokens(self.embedding_init)
+        self.task_loader.register_task_vocabs(self.embedding_init, self.vocab_loader)
         self.primary_task = self.task_loader.get_primary_task()
 
     @property

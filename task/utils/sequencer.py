@@ -3,6 +3,8 @@ from collections import OrderedDict
 import torch
 from UniTok import UniDep, Vocab
 
+from loader.global_setting import Setting
+
 
 class Sequencer:
     vocab = Vocab(name='__sequencer')
@@ -36,11 +38,11 @@ class Sequencer:
     def get_max_content_len(self):
         length = 0
         for col in self.order:
-            length += self.depot.col_info[col].max_length or 1
+            length += self.depot.get_max_length(col) or 1
         return length
 
     def get_empty_input(self):
-        return torch.ones(self.max_sequence_len, dtype=torch.long) * -1
+        return torch.ones(self.max_sequence_len, dtype=torch.long) * Setting.PAD
 
     def create(self, sample: OrderedDict):
         pointer = self.Pointer()
@@ -64,3 +66,5 @@ class Sequencer:
                 pointer.update_special_token(special_id, self.SEP)
 
         input_ids[self.vocab.name] = special_id
+
+        return input_ids

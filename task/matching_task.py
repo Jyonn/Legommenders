@@ -1,21 +1,8 @@
-from typing import OrderedDict
+from task.base_batch import BaseBatch
+from task.base_loss import BaseLoss
+from task.base_seq_task import BaseSeqTask
 
-from set.base_dataset import BaseDataset
-from task.base_task import BaseTask
 
-
-class MatchingTask(BaseTask):
-    def __init__(self, dataset: BaseDataset):
-        super(MatchingTask, self).__init__(dataset=dataset)
-
-    def static_rebuild_sample(self, sample: OrderedDict):
-        pass
-
-    def dynamic_rebuild_sample(self, sample: OrderedDict):
-        pass
-
-    def rebuild_batch(self, dataloader, batch):
-        pass
-
-    def _get_module(self):
+class MatchingTask(BaseSeqTask):
+    def calculate_loss(self, output, batch: BaseBatch, **kwargs) -> BaseLoss:
         pass

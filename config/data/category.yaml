@@ -1,18 +1,17 @@
 store:
   data_dir: data/${dataset}
   save_dir: saving/${dataset}/${model.dir}/${exp.dir}
-data:
-  split:
-    train:
-      weight: 8
-    dev:
-      weight: 1
-    test:
-      weight: 1
-  shuffle: true
-  filter:
-    p_local:
-      - len(x) >= 5
+split:
+  train:
+    weight: 8
+  dev:
+    weight: 1
+  test:
+    weight: 1
+shuffle: true
+filter:
+  p_local:
+    - len(x) >= 5
 set:
   order:
     - [k_cluster, k_global, k_local]

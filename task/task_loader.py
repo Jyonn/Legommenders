@@ -1,7 +1,9 @@
 from typing import List
 
+from UniTok import Vocab
 from torch import nn
 
+from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from task.base_task import BaseTask
 
@@ -29,9 +31,15 @@ class TaskLoader:
 
         return self.tasks
 
-    def register_task_tokens(self, embedding_init: EmbeddingInit):
+    def register_task_vocabs(self, embedding_init: EmbeddingInit, vocab_loader: VocabLoader):
         for task in self.tasks:  # type: BaseTask
-            embedding_init.register_vocab(task.vocab_name, task.task_tokens.get_size())
+            vocabs = task.vocabs
+            if vocabs:
+                if isinstance(vocabs, Vocab):
+                    vocabs = [vocabs]
+                for vocab in vocabs:
+                    embedding_init.register_vocab(vocab)
+                    vocab_loader.register(vocab)
 
     def get_primary_task(self):
         if len(self.tasks) == 1:
