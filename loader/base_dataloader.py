@@ -1,6 +1,5 @@
 from torch.utils.data import DataLoader
 
-from loader.global_loader import GlobalLoader
 from set.base_dataset import BaseDataset
 from task.base_batch import BaseBatch
 from task.base_task import BaseTask
@@ -42,17 +41,17 @@ class BaseDataLoader(DataLoader):
                 yield batch
             except StopIteration:
                 return
-
-    @classmethod
-    def get_loader(cls, loader: GlobalLoader, mode):
-        shuffle = loader.data.split[mode].shuffle  # NONE, FALSE, TRUE
-        if shuffle not in [True, False]:  # CAN NOT USE "IF SHUFFLE"
-            shuffle = loader.data.shuffle or False
-
-        return cls(
-            dataset=loader.datasets[mode],
-            task=loader.primary_task,
-            shuffle=shuffle,
-            batch_size=loader.exp.policy.batch_size,
-            pin_memory=loader.exp.policy.pin_memory,
-        )
+    #
+    # @classmethod
+    # def get_loader(cls, global_loader, mode):
+    #     shuffle = global_loader.data.split[mode].shuffle  # NONE, FALSE, TRUE
+    #     if shuffle not in [True, False]:  # CAN NOT USE "IF SHUFFLE"
+    #         shuffle = global_loader.data.shuffle or False
+    #
+    #     return cls(
+    #         dataset=global_loader.datasets[mode],
+    #         task=global_loader.primary_task,
+    #         shuffle=shuffle,
+    #         batch_size=global_loader.exp.policy.batch_size,
+    #         pin_memory=global_loader.exp.policy.pin_memory,
+    #     )

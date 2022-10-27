@@ -5,7 +5,12 @@ tasks:
   -
     name: matching
     params:
-      news_depot: data/${dataset}/news
+      doc_depot: data/${dataset}/news
+      doc_order: ['title']
+      label_col: label
+      clicks_col: history
+      candidate_col: nid
+      neg_count: 4
 load:
   load_ckpt: null
   load_model_only: true

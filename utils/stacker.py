@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import List, Callable
 
 import torch
@@ -43,25 +44,17 @@ class Stacker:
 
 
 if __name__ == '__main__':
-    def agg(l):
-        if isinstance(l[0], torch.Tensor):
-            return torch.stack(l)
-        return torch.tensor(l)
-
     a = dict(
-        z=dict(
-            b=torch.tensor([0.1, -0.2]),
-            c=2
+        append=OrderedDict(),
+        inputs=dict(
+            title=[1, 2, 3]
         )
     )
-
     b = dict(
-
-        z=dict(
-            b=torch.tensor([-0.4, 0]),
-            c=1
+        append=OrderedDict(),
+        inputs=dict(
+            title=[3, 2, 1]
         )
     )
-
-    stacker = Stacker(agg)
+    stacker = Stacker(torch.tensor)
     print(stacker.stack([a, b]))

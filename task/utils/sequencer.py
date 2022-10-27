@@ -60,12 +60,13 @@ class Sequencer:
 
             input_id = self.get_empty_input()
             pointer.update_input(input_id, value)
-            input_ids[col] = input_ids
+            input_ids[col] = input_id
 
             if self.use_sep_token:
                 pointer.update_special_token(special_id, self.SEP)
 
-        input_ids[self.vocab.name] = special_id
+        if self.use_sep_token or self.use_cls_token:
+            input_ids[self.vocab.name] = special_id
 
         return input_ids
 

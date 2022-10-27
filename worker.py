@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from loader.global_loader import GlobalLoader
 from loader.global_setting import Setting
-from task.base_batch import BaseBatch
+from task.base_batch import BaseBatch, HSeqBatch
 from task.base_loss import BaseLoss, LossDepot
 from task.base_task import BaseTask
 from utils.config_init import ConfigInit
@@ -76,7 +76,7 @@ class Worker:
 
         self.m_optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
-            loader = self.global_loader.get_loader(self.data.TRAIN).train()
+            loader = self.global_loader.get_dataloader(Setting.TRAIN).train()
             loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.model_container.train()
 

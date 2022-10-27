@@ -40,6 +40,7 @@ class EmbeddingInit:
             num_embeddings=vocab.get_size(),
             embedding_dim=self.hidden_size,
         )
+        self.print(f'register vocab {vocab.name} ({vocab.get_size()}, {self.hidden_size})')
 
     def get_table(self) -> nn.ModuleDict:
         if self._table:
@@ -74,7 +75,7 @@ class EmbeddingInit:
                     )
                 continue
 
-            self.print(f'create vocab {vocab}, ({expected_vocab_size}, {self.hidden_size})')
+            self.print(f'create vocab {vocab} ({expected_vocab_size}, {self.hidden_size})')
             table[vocab] = nn.Embedding(
                 num_embeddings=expected_vocab_size,
                 embedding_dim=self.hidden_size
@@ -93,6 +94,6 @@ class EmbeddingInit:
         return cls(
             order=data.order,
             depot=depot,
-            hidden_size=model.config.hidden_size,
+            hidden_size=model.config.embedding_dim,
             embedding_loader=embedding_loader,
         )

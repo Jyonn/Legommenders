@@ -88,6 +88,7 @@ class BaseHSeqTask(BaseSeqTask, ABC):
 
         sample['doc_clicks'] = self.stacker(doc_clicks)
         sample['doc_candidates'] = self.stacker(doc_candidates)
+        # print(sample)
         return sample
 
     def get_embeddings(

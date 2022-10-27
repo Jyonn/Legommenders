@@ -37,6 +37,9 @@ class GlobalLoader:
         self.task_loader.register_task_vocabs(self.embedding_init, self.vocab_loader)
         self.primary_task = self.task_loader.get_primary_task()
 
+        for dataset in self.datasets.values():
+            dataset.register_task(self.primary_task)
+
         self.core_model = model_loader.parse(self.model)
         self.model_container = ModelContainer(
             task_loader=self.task_loader,
@@ -53,7 +56,7 @@ class GlobalLoader:
     def a_set(self):
         return self.train_set or self.dev_set or self.test_set
 
-    def get_loader(self, mode):
+    def get_dataloader(self, mode):
         shuffle = self.data.split[mode].shuffle  # NONE, FALSE, TRUE
         if shuffle not in [True, False]:  # CAN NOT USE "IF SHUFFLE"
             shuffle = self.data.shuffle or False
