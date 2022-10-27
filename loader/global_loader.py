@@ -1,9 +1,12 @@
 from typing import Dict
 
+from loader.base_dataloader import BaseDataLoader
 from loader.depot.depot_loader import FilterUniDep
 from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from loader.global_setting import Setting
+from model import model_loader
+from model.model_container import ModelContainer
 from set.base_dataset import BaseDataset
 from task.task_loader import TaskLoader
 from utils.printer import printer
@@ -34,6 +37,14 @@ class GlobalLoader:
         self.task_loader.register_task_vocabs(self.embedding_init, self.vocab_loader)
         self.primary_task = self.task_loader.get_primary_task()
 
+        self.core_model = model_loader.parse(self.model)
+        self.model_container = ModelContainer(
+            task_loader=self.task_loader,
+            embedding_init=self.embedding_init,
+            vocab_loader=self.vocab_loader,
+            model=self.core_model,
+        )
+
     @property
     def a_depot(self):
         return list(self.depots.values())[0]
@@ -41,3 +52,16 @@ class GlobalLoader:
     @property
     def a_set(self):
         return self.train_set or self.dev_set or self.test_set
+
+    def get_loader(self, mode):
+        shuffle = self.data.split[mode].shuffle  # NONE, FALSE, TRUE
+        if shuffle not in [True, False]:  # CAN NOT USE "IF SHUFFLE"
+            shuffle = self.data.shuffle or False
+
+        return BaseDataLoader(
+            dataset=self.datasets[mode],
+            task=self.primary_task,
+            shuffle=shuffle,
+            batch_size=self.exp.policy.batch_size,
+            pin_memory=self.exp.policy.pin_memory,
+        )

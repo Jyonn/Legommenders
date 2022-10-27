@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Dict
 
 import torch
 
@@ -27,26 +28,29 @@ class BaseSeqTask(BaseTask, ABC):
             use_cls_token=use_cls_token,
             use_sep_token=use_sep_token,
         )
-        self.vocabs.append(self.sequencer.vocab)
+        self.add_vocab(self.sequencer.vocab)
 
-    def rebuild_sample(self, sample: dict):
-        sample['inputs'] = self.sequencer.create(sample['inputs'])
+    def rebuild_sample(self, sample: dict, dataset: BaseDataset):
+        sample['inputs'] = self.sequencer(sample['inputs'])
         return sample
 
-    def get_embeddings(
-            self,
-            batch: SeqBatch,
+    @staticmethod
+    def _get_embedding(
+            inputs: Dict[str, torch.Tensor],
             embedding_init: EmbeddingInit,
             vocab_loader: VocabLoader,
     ):
-        inputs = batch.inputs
+        shape = list(inputs.values())[0].shape
         input_embeddings = torch.zeros(
-            self.sequencer.max_sequence_len, embedding_init.hidden_size, dtype=torch.float).to(Setting.device)
+            *shape,
+            embedding_init.hidden_size,
+            dtype=torch.float
+        ).to(Setting.device)
         table = embedding_init.get_table()
 
         for col in inputs:
-            seq = inputs[col]
-            mask = (seq > Setting.PAD).long()  # type: torch.Tensor
+            seq = inputs[col]  # [B, L]
+            mask = (seq > Setting.PAD).long()  # type: torch.Tensor  # [B, L]
             seq *= mask
 
             vocab = vocab_loader[col].name
@@ -55,3 +59,16 @@ class BaseSeqTask(BaseTask, ABC):
 
             input_embeddings += embedding
         return input_embeddings
+
+    def get_embeddings(
+            self,
+            batch: SeqBatch,
+            embedding_init: EmbeddingInit,
+            vocab_loader: VocabLoader,
+    ):
+        inputs = batch.inputs
+        return self._get_embedding(
+            inputs=inputs,
+            embedding_init=embedding_init,
+            vocab_loader=vocab_loader,
+        )

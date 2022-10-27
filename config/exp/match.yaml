@@ -1,10 +1,11 @@
 name: match
 dir: ${exp.name}
-model: nrms
 mode: train
 tasks:
   -
     name: matching
+    params:
+      news_depot: data/${dataset}/news
 load:
   load_ckpt: null
   load_model_only: true

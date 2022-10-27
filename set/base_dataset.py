@@ -1,5 +1,6 @@
 import copy
 from collections import OrderedDict
+from typing import Optional
 
 from UniTok import UniDep
 from torch.utils.data import Dataset
@@ -12,10 +13,14 @@ class BaseDataset(Dataset):
             self,
             depot: UniDep,
             order: list,
-            append: list,
+            append: Optional[list] = None,
             splitter: Splitter = None,
             mode=None,
     ):
+        """
+
+        @rtype: object
+        """
         self.depot = depot
         self.order = order
         self.append = self.get_append(append)
@@ -58,7 +63,8 @@ class BaseDataset(Dataset):
         for col in self.append:
             append[col] = sample[col]
         sample = dict(append=append, inputs=inputs)
-        sample = self.task.rebuild_sample(sample)
+        if self.task:
+            sample = self.task.rebuild_sample(sample, self)
         return sample
 
     @classmethod

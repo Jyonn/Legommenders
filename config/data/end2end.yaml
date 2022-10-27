@@ -2,7 +2,6 @@ store:
   data_dir: data/${dataset}
   save_dir: saving/${dataset}/${model.dir}/${exp.dir}
   union:
-    - data/${dataset}/news
     - data/${dataset}/user
 has_split: true
 split:

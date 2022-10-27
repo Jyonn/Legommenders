@@ -68,3 +68,6 @@ class Sequencer:
         input_ids[self.vocab.name] = special_id
 
         return input_ids
+
+    def __call__(self, sample: OrderedDict):
+        return self.create(sample)

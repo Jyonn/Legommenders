@@ -20,17 +20,17 @@ class BaseDataLoader(DataLoader):
     #     self.task.start_epoch(current_epoch, total_epoch)
     #     return self
 
-    # def test(self):
-    #     self.task.test()
-    #     return self
-    #
-    # def eval(self):
-    #     self.task.eval()
-    #     return self
-    #
-    # def train(self):
-    #     self.task.train()
-    #     return self
+    def test(self):
+        self.task.test()
+        return self
+
+    def eval(self):
+        self.task.eval()
+        return self
+
+    def train(self):
+        self.task.train()
+        return self
 
     def __iter__(self):
         iterator = super().__iter__()

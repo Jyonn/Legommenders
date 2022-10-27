@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Type, OrderedDict, List
 
 from UniTok import Vocab
@@ -11,7 +12,7 @@ from task.base_loss import BaseLoss
 from utils.printer import printer, Color
 
 
-class BaseTask:
+class BaseTask(ABC):
     name: str
     batcher: Type[BaseBatch]
     dynamic_loader: bool = False
@@ -28,11 +29,16 @@ class BaseTask:
         self.module = None
         self.vocabs: List[Vocab] = []
 
+        self.is_training = self.is_evaluating = self.is_testing = False
+
+    def add_vocab(self, vocab: Vocab):
+        self.vocabs.append(vocab)
+
     @classmethod
     def pad(cls, l: list, max_len: int):
         return l + [Setting.PAD] * (max_len - len(l))
 
-    def rebuild_sample(self, sample: dict):
+    def rebuild_sample(self, sample: dict, dataset: BaseDataset):
         inputs = sample['inputs']
         for col in inputs:
             max_len = self.depot.get_max_length(col)
@@ -71,3 +77,17 @@ class BaseTask:
 
     def calculate_loss(self, output, batch: BaseBatch, **kwargs) -> BaseLoss:
         raise NotImplementedError
+
+    # status
+
+    def test(self):
+        self.is_testing = True
+        self.is_training = self.is_evaluating = False
+
+    def eval(self):
+        self.is_evaluating = True
+        self.is_training = self.is_testing = False
+
+    def train(self):
+        self.is_training = True
+        self.is_evaluating = self.is_testing = False

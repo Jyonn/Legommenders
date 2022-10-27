@@ -1,6 +1,0 @@
-name: bert
-dir: ${model.name}
-config:
-  hidden_size: 64
-  num_hidden_layers: 3
-  num_attention_heads: 8

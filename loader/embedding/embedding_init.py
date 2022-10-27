@@ -87,7 +87,7 @@ class EmbeddingInit:
     @classmethod
     def parse(cls, data, model, depot):
         embedding_loader = EmbeddingLoader()
-        for embedding_info in data.embedding:
+        for embedding_info in data.token_embedding:
             embedding_loader.append(**embedding_info.dict())
 
         return cls(

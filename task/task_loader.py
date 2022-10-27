@@ -24,7 +24,6 @@ class TaskLoader:
 
     def parse(self):
         for task_info in self.exp.tasks:
-            print(task_info)
             if task_info.name not in TASKS:
                 raise ValueError(f'No matched task: {task_info.name}')
 
