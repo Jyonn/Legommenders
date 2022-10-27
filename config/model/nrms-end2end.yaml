@@ -1,7 +1,7 @@
 name: NRMSModel
 dir: ${model.name}
 config:
-  embedding_dim: 300
+  embed_dim: 300
   doc_encoder_size: 250
   additive_attention_hidden_size: 200
   num_attention_heads: 10

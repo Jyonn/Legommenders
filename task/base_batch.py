@@ -22,17 +22,7 @@ class SeqBatch(BaseBatch):
     def __init__(self, batch):
         super().__init__(batch)
 
-        self.attention_mask = self.get_attention_mask()
-
-    def get_attention_mask(self) -> torch.Tensor:
-        mask = None
-        for col in self.inputs:
-            seq = self.inputs[col]
-            if not mask:
-                mask = torch.zeros(*seq.shape)
-            col_mask = (seq > Setting.PAD).long()
-            mask |= col_mask
-        return mask
+        self.attention_mask = batch['attention_mask']
 
 
 class HSeqBatch(BaseBatch):

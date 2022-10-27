@@ -8,6 +8,7 @@ from loader.global_setting import Setting
 
 class Sequencer:
     vocab = Vocab(name='__sequencer')
+    PAD = vocab.append('[PAD]')
     CLS = vocab.append('[CLS]')
     SEP = vocab.append('[SEP]')
 
@@ -42,7 +43,7 @@ class Sequencer:
         return length
 
     def get_empty_input(self):
-        return torch.ones(self.max_sequence_len, dtype=torch.long) * Setting.PAD
+        return torch.ones(self.max_sequence_len, dtype=torch.long) * Setting.UNSET
 
     def create(self, sample: OrderedDict):
         pointer = self.Pointer()
@@ -65,10 +66,21 @@ class Sequencer:
             if self.use_sep_token:
                 pointer.update_special_token(special_id, self.SEP)
 
-        if self.use_sep_token or self.use_cls_token:
-            input_ids[self.vocab.name] = special_id
+        input_ids[self.vocab.name] = special_id
+        attention_mask = self._get_attention_mask(input_ids)
+        special_id *= attention_mask
+        return input_ids, attention_mask
 
-        return input_ids
+    @staticmethod
+    def _get_attention_mask(inputs) -> torch.Tensor:
+        mask = None
+        for col in inputs:
+            seq = inputs[col]  # type: torch.Tensor
+            if mask is None:
+                mask = torch.zeros(*seq.shape, dtype=torch.long)
+            col_mask = (seq > Setting.UNSET).long()
+            mask |= col_mask
+        return mask
 
     def __call__(self, sample: OrderedDict):
         return self.create(sample)

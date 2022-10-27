@@ -16,8 +16,7 @@ load:
   load_model_only: true
   relax_load: false
 store:
-  interval: 10
-  super_store: true
+#  interval: 10
   monitor: a.loss < b.loss and a.cluster_loss < b.cluster_loss and a.local_loss < b.local_loss
   top: 5
   epoch_skip: 10

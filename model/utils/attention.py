@@ -10,14 +10,14 @@ from typing import Tuple, Optional
 
 
 class AdditiveAttention(nn.Module):
-    def __init__(self, embedding_dim, hidden_size):
+    def __init__(self, embed_dim, hidden_size):
         super().__init__()
 
-        self.embedding_dim = embedding_dim
+        self.embed_dim = embed_dim
         self.hidden_size = hidden_size
 
         self.encoder = nn.Sequential(
-            nn.Linear(self.embedding_dim, self.hidden_size),
+            nn.Linear(self.embed_dim, self.hidden_size),
             nn.Tanh(),
             nn.Linear(self.hidden_size, 1),
         )

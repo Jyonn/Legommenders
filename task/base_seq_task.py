@@ -31,7 +31,7 @@ class BaseSeqTask(BaseTask, ABC):
         self.add_vocab(self.sequencer.vocab)
 
     def rebuild_sample(self, sample: dict, dataset: BaseDataset):
-        sample['inputs'] = self.sequencer(sample['inputs'])
+        sample['inputs'], sample['attention_mask'] = self.sequencer(sample['inputs'])
         return sample
 
     @staticmethod
@@ -50,7 +50,7 @@ class BaseSeqTask(BaseTask, ABC):
 
         for col in inputs:
             seq = inputs[col]  # [B, L]
-            mask = (seq > Setting.PAD).long()  # type: torch.Tensor  # [B, L]
+            mask = (seq > Setting.UNSET).long()  # type: torch.Tensor  # [B, L]
             seq *= mask
 
             vocab = vocab_loader[col].name

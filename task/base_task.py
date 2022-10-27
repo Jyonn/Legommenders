@@ -36,7 +36,7 @@ class BaseTask(ABC):
 
     @classmethod
     def pad(cls, l: list, max_len: int):
-        return l + [Setting.PAD] * (max_len - len(l))
+        return l + [Setting.UNSET] * (max_len - len(l))
 
     def rebuild_sample(self, sample: dict, dataset: BaseDataset):
         inputs = sample['inputs']

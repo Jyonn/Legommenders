@@ -70,7 +70,7 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         samples = []
         for doc_id in l:
             sample = self.doc_dataset[doc_id]
-            sample['inputs'] = self.doc_sequencer(sample['inputs'])
+            sample['inputs'], sample['attention_mask'] = self.doc_sequencer(sample['inputs'])
             samples.append(sample)
         return samples
 
@@ -82,13 +82,15 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         if not self.is_testing:
             candidates.extend(self.negative_sampling())
 
+        if not clicks:
+            print(sample)
         doc_clicks = self.doc_parser(clicks)
         doc_candidates = self.doc_parser(candidates)
         doc_clicks.extend([doc_clicks[-1]] * (self.max_click_num - len(doc_clicks)))
 
         sample['doc_clicks'] = self.stacker(doc_clicks)
         sample['doc_candidates'] = self.stacker(doc_candidates)
-        # print(sample)
+        sample = super(BaseHSeqTask, self).rebuild_sample(sample, dataset)
         return sample
 
     def get_embeddings(

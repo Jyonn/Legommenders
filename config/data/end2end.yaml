@@ -13,6 +13,13 @@ split:
   test:
     path: test
 shuffle: true
+filters:
+  train:
+    history:
+      - remove_empty
+  dev:
+    history:
+      - remove_empty
 order:
   - history
 append:

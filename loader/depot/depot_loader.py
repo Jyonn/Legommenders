@@ -17,6 +17,7 @@ class FilterUniDep(UniDep):
             if lambda_detector(sample[col]):
                 valid_sample_indexes.append(sample[self.id_col])
         self.index_order = valid_sample_indexes
+
         self.sample_size = len(self.index_order)
 
     @classmethod
@@ -34,8 +35,10 @@ class FilterUniDep(UniDep):
                 for filtering in filters[col]:
                     if filtering == 'remove_empty':
                         filtering = 'x'
-                    filtering = eval(f'lambda x: {filtering}')
-                    depot.customize(col, filtering)
+                    filterer = eval(f'lambda x: {filtering}')
+                    print(f'filter ({filtering}): {depot.sample_size} -> ', end='')
+                    depot.customize(col, filterer)
+                    print(depot.sample_size)
         return depot
 
     @classmethod
@@ -45,14 +48,14 @@ class FilterUniDep(UniDep):
 
         if data.has_split:
             for mode in data.split:
-                filters = data.filter[mode]
+                filters = data.filters[mode]
                 depots[mode] = cls.from_config(
                     store=data.store,
                     sub_folder=data.split[mode].path,
                     filters=filters,
                 )
         else:
-            filters = data.filter
+            filters = data.filters
             depot = cls.from_config(
                 store=data.store,
                 filters=filters

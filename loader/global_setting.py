@@ -9,4 +9,4 @@ class Setting:
     device = None
 
     # pad
-    PAD = -1
+    UNSET = -1
