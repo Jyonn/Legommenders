@@ -11,7 +11,7 @@ class BaseBatch:
 
         self.append = batch['append']  # type: Dict[str, any]
         self.inputs = batch['inputs']  # type: Dict[str, torch.Tensor]
-        self.batch_size = len(list(self.append.values())[0])
+        self.batch_size = len(list(self.inputs.values())[0])
         self.task = None  # type: Optional[BaseTask]
 
     def dict(self):
@@ -28,5 +28,5 @@ class SeqBatch(BaseBatch):
 class HSeqBatch(BaseBatch):
     def __init__(self, batch):
         super().__init__(batch)
-        self.doc_clicks = batch['doc_clicks']  # type: Dict[str, torch.Tensor]
-        self.doc_candidates = batch['doc_candidates']  # type: Dict[str, torch.Tensor]
+        self.doc_clicks = SeqBatch(batch['doc_clicks'])
+        self.doc_candidates = SeqBatch(batch['doc_candidates'])

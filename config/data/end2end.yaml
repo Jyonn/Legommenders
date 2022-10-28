@@ -12,7 +12,7 @@ split:
     path: dev
   test:
     path: test
-shuffle: true
+shuffle: false
 filters:
   train:
     history:

@@ -47,6 +47,7 @@ class GlobalLoader:
             vocab_loader=self.vocab_loader,
             model=self.core_model,
         )
+        self.model_container.to(Setting.device)
 
     @property
     def a_depot(self):

@@ -41,11 +41,10 @@ class TaskLoader:
         for task in self.tasks:  # type: BaseTask
             vocabs = task.vocabs
             if vocabs:
-                if isinstance(vocabs, Vocab):
-                    vocabs = [vocabs]
                 for vocab in vocabs:
+                    col, vocab = vocab
                     embedding_init.register_vocab(vocab)
-                    vocab_loader.register(vocab)
+                    vocab_loader.register(vocab, col=col)
 
     def get_primary_task(self):
         if len(self.tasks) == 1:

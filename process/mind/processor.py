@@ -104,9 +104,11 @@ class Processor:
         return user_ut
 
     def get_inter_tok(self):
-        return UniTok().add_col(Column(
+        return UniTok().add_index_col(
+            name='index'
+        ).add_col(Column(
             name='imp',
-            tokenizer=IdTok(name='imp').as_sing(),
+            tokenizer=EntTok(name='imp').as_sing(),
         )).add_col(Column(
             name='uid',
             tokenizer=EntTok(name='uid', vocab=self.uid).as_sing(),

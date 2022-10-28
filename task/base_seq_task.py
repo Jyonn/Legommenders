@@ -49,7 +49,7 @@ class BaseSeqTask(BaseTask, ABC):
         table = embedding_init.get_table()
 
         for col in inputs:
-            seq = inputs[col]  # [B, L]
+            seq = inputs[col].to(Setting.device)  # type: torch.Tensor # [B, L]
             mask = (seq > Setting.UNSET).long()  # type: torch.Tensor  # [B, L]
             seq *= mask
 

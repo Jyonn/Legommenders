@@ -30,6 +30,8 @@ class ModelContainer(nn.Module):
             embedding_init=self.embedding_init,
             vocab_loader=self.vocab_loader,
         )
-        outputs = self.model(input_embeddings)
+        if not isinstance(input_embeddings, tuple):
+            input_embeddings = (input_embeddings, )
+        outputs = self.model(*input_embeddings)
         outputs = task.rebuild_output(outputs, batch)
         return outputs

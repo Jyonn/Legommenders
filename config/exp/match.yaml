@@ -22,7 +22,7 @@ store:
   epoch_skip: 10
 policy:
   freeze_emb: false
-  pin_memory: false
+  pin_memory: true
   epoch: 200
   epoch_start: 0
   lr: 0.01

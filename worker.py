@@ -39,13 +39,18 @@ class Worker:
         self.task = self.global_loader.primary_task
 
         self.print(Structure.analyse_and_stringify(self.global_loader.train_set[0]))
-        self.print(Structure.analyse_and_stringify(self.global_loader.train_set[1]))
-        self.print(Structure.analyse_and_stringify(self.global_loader.train_set[2]))
+        # self.abnormal_detector()
 
         self.m_optimizer = torch.optim.Adam(
             params=filter(lambda p: p.requires_grad, self.model_container.parameters()),
             lr=self.exp.policy.lr
         )
+
+    # def abnormal_detector(self):
+    #     for sample in tqdm(self.global_loader.train_set):
+    #         if sample['inputs']['history'].sum() == -30:
+    #             print(sample)
+    #             exit(0)
 
     def get_device(self):
         cuda = self.config.cuda
@@ -78,9 +83,9 @@ class Worker:
         accumulate_step = 0
         accumulate_batch = self.exp.policy.accumulate_batch or 1
 
+        loader = self.global_loader.get_dataloader(Setting.TRAIN).train()
         self.m_optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
-            loader = self.global_loader.get_dataloader(Setting.TRAIN).train()
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.model_container.train()
 
@@ -90,7 +95,7 @@ class Worker:
                     task=self.task,
                 )
 
-                loss = self.task.calculate_loss(batch, task_output, model=self.model_container)
+                loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
                 loss.backward()
 
                 accumulate_step += 1

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Type, OrderedDict, List
+from typing import Type, OrderedDict, List, Union, Tuple
 
 from UniTok import Vocab
 
@@ -27,12 +27,12 @@ class BaseTask(ABC):
 
         self.print = printer[(self.__class__.__name__, '-', Color.YELLOW)]
         self.module = None
-        self.vocabs: List[Vocab] = []
+        self.vocabs: List[Tuple[str, Vocab]] = []
 
         self.is_training = self.is_evaluating = self.is_testing = False
 
-    def add_vocab(self, vocab: Vocab):
-        self.vocabs.append(vocab)
+    def add_vocab(self, vocab: Vocab, col=None):
+        self.vocabs.append((col, vocab))
 
     @classmethod
     def pad(cls, l: list, max_len: int):
@@ -91,3 +91,6 @@ class BaseTask(ABC):
     def train(self):
         self.is_training = True
         self.is_evaluating = self.is_testing = False
+
+    def __str__(self):
+        return f'Task {self.name}'

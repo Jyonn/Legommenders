@@ -62,7 +62,8 @@ class DocEncoder(nn.Module):
         output, _ = self.mha(embedding, embedding, embedding)  # [T, B, D]
         output = F.dropout(output.permute(1, 0, 2))  # [B, T, D]
         output = self.linear(output)  # [B, T, encoder_size]
-        return self.ada(output)
+        output, _ = self.ada(output)
+        return output
 
 
 class NRMSModel(BaseModel):

@@ -8,6 +8,7 @@ from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from set.base_dataset import BaseDataset
 from task.base_batch import HSeqBatch
+from task.base_loss import BaseLoss
 from task.base_seq_task import BaseSeqTask
 from task.utils.sequencer import Sequencer
 from utils.stacker import Stacker
@@ -58,7 +59,7 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         )
 
         for col in self.doc_order:
-            self.add_vocab(self.doc_depot.vocab_depot[self.doc_depot.get_vocab(col)])
+            self.add_vocab(self.doc_depot.vocab_depot[self.doc_depot.get_vocab(col)], col=col)
 
         self.stacker = Stacker(aggregator=torch.stack)
 
@@ -100,12 +101,12 @@ class BaseHSeqTask(BaseSeqTask, ABC):
             vocab_loader: VocabLoader,
     ):
         clicks_embedding = self._get_embedding(
-            inputs=batch.doc_clicks,
+            inputs=batch.doc_clicks.inputs,
             embedding_init=embedding_init,
             vocab_loader=vocab_loader,
         )
         candidates_embedding = self._get_embedding(
-            inputs=batch.doc_candidates,
+            inputs=batch.doc_candidates.inputs,
             embedding_init=embedding_init,
             vocab_loader=vocab_loader,
         )
