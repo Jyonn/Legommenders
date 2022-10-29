@@ -18,4 +18,4 @@ class MatchingTask(BaseHSeqTask):
 
     def calculate_loss(self, output, batch: HSeqBatch, **kwargs) -> BaseLoss:
         label = torch.zeros(batch.batch_size, dtype=torch.long).to(Setting.device)
-        return self.criterion(output, label)
+        return BaseLoss(self.criterion(output, label))

@@ -1,8 +1,11 @@
 import json
+import os
+import time
 
 import torch
 from oba import Obj
 from tqdm import tqdm
+from transformers import get_linear_schedule_with_warmup
 
 from loader.global_loader import GlobalLoader
 from loader.global_setting import Setting
@@ -41,16 +44,54 @@ class Worker:
         self.print(Structure.analyse_and_stringify(self.global_loader.train_set[0]))
         # self.abnormal_detector()
 
-        self.m_optimizer = torch.optim.Adam(
-            params=filter(lambda p: p.requires_grad, self.model_container.parameters()),
-            lr=self.exp.policy.lr
-        )
+        self.static_modes = ['export', 'dev', 'test']
+        self.in_static_modes = self.exp.mode in self.static_modes or self.exp.mode.startswith('test')
 
-    # def abnormal_detector(self):
-    #     for sample in tqdm(self.global_loader.train_set):
-    #         if sample['inputs']['history'].sum() == -30:
-    #             print(sample)
-    #             exit(0)
+        if self.in_static_modes:
+            self.m_optimizer = self.m_scheduler = None
+        else:
+            self.m_optimizer = torch.optim.Adam(
+                params=filter(lambda p: p.requires_grad, self.model_container.parameters()),
+                lr=self.exp.policy.lr
+            )
+            self.m_scheduler = get_linear_schedule_with_warmup(
+                self.m_optimizer,
+                num_warmup_steps=self.exp.policy.n_warmup,
+                num_training_steps=len(self.global_loader.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
+            )
+
+            self.print('training params')
+            total_memory = 0
+            for name, p in self.model_container.named_parameters():  # type: str, torch.Tensor
+                total_memory += p.element_size() * p.nelement()
+                if p.requires_grad:
+                    self.print(name, p.data.shape)
+
+    def _attempt_loading(self, path):
+        load_path = os.path.join(self.data.store.save_dir, path)
+        while True:
+            self.print(f"load model from exp {load_path}")
+            try:
+                state_dict = torch.load(load_path, map_location=Setting.device)
+                break
+            except Exception as e:
+                if not self.exp.load.wait_load:
+                    raise e
+                time.sleep(60)
+
+        model_ckpt = state_dict['model']
+
+        self.model_container.load_state_dict(model_ckpt, strict=not self.exp.load.relax_load)
+        load_status = False
+        if not self.in_static_modes and not self.exp.load.load_model_only:
+            load_status = True
+            self.m_optimizer.load_state_dict(state_dict['optimizer'])
+            self.m_scheduler.load_state_dict(state_dict['scheduler'])
+        self.print(f'load optimizer and scheduler: {load_status}')
+
+    def attempt_loading(self):
+        if self.exp.load.load_ckpt:
+            self._attempt_loading(self.exp.load.load_ckpt)
 
     def get_device(self):
         cuda = self.config.cuda
@@ -75,7 +116,7 @@ class Worker:
 
     def train(self):
         monitor = Monitor(
-            ckpt_path=self.data.store.ckpt_path,
+            save_dir=self.data.store.save_dir,
             **Obj.raw(self.exp.store)
         )
 
@@ -101,6 +142,7 @@ class Worker:
                 accumulate_step += 1
                 if accumulate_step == accumulate_batch:
                     self.m_optimizer.step()
+                    self.m_scheduler.step()
                     self.m_optimizer.zero_grad()
                     accumulate_step = 0
 
@@ -112,19 +154,17 @@ class Worker:
                         if (step + 1) % self.exp.policy.check_interval == 0:
                             self.log_interval(epoch, step, self.task, loss)
 
-            loss_depots = dict()
             loss_depot = self.dev()
             self.log_epoch(epoch, self.task, loss_depot)
-            loss_depots[self.task.name] = loss_depot.depot
 
             state_dict = dict(
                 model=self.model_container.state_dict(),
                 optimizer=self.m_optimizer.state_dict(),
-                # scheduler=self.m_scheduler.state_dict(),
+                scheduler=self.m_scheduler.state_dict(),
             )
             monitor.push(
                 epoch=epoch,
-                loss_depots=loss_depots,
+                loss=loss_depot.table,
                 state_dict=state_dict,
             )
 
@@ -143,7 +183,7 @@ class Worker:
                     task=self.global_loader.primary_task,
                 )
 
-                loss = self.task.calculate_loss(batch, task_output, model=self.model_container)
+                loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
                 loss_depot.add(loss)
 
             if steps and step >= steps:
@@ -151,9 +191,24 @@ class Worker:
 
         return loss_depot.summarize()
 
+    def speed_test(self):
+        samples = []
+        for sample in tqdm(self.global_loader.train_set):
+            samples.append(sample)
+        del samples
+        batches = []
+        for batch in tqdm(self.global_loader.get_dataloader(Setting.TRAIN)):
+            batches.append(batch)
+        del batches
+
     def run(self):
         if self.exp.mode == 'train':
             self.train()
+        elif self.exp.mode == 'dev':
+            loss_depot = self.dev(10)
+            self.log_epoch(0, self.task, loss_depot)
+        elif self.exp.mode == 'speed_test':
+            self.speed_test()
 
 
 if __name__ == '__main__':

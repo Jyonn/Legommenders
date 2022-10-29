@@ -43,7 +43,6 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         self.max_click_num = self.depot.get_max_length(self.clicks_col)
 
         self.neg_count = neg_count
-        self.neg_index = list(range(self.doc_depot.sample_size))
 
         self.doc_dataset = BaseDataset(
             depot=self.doc_depot,
@@ -64,8 +63,7 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         self.stacker = Stacker(aggregator=torch.stack)
 
     def negative_sampling(self):
-        random.shuffle(self.neg_index)
-        return self.neg_index[:self.neg_count]
+        return [random.randint(0, self.doc_depot.sample_size - 1) for _ in range(self.neg_count)]
 
     def doc_parser(self, l: list):
         samples = []
@@ -83,8 +81,6 @@ class BaseHSeqTask(BaseSeqTask, ABC):
         if not self.is_testing:
             candidates.extend(self.negative_sampling())
 
-        if not clicks:
-            print(sample)
         doc_clicks = self.doc_parser(clicks)
         doc_candidates = self.doc_parser(candidates)
         doc_clicks.extend([doc_clicks[-1]] * (self.max_click_num - len(doc_clicks)))

@@ -10,8 +10,7 @@ class Monitor:
             self,
             interval=None,
             monitor=None,
-            ckpt_path=None,
-            task=None,
+            save_dir=None,
             top=None,
             epoch_skip=None,
             early_stop=None,
@@ -19,23 +18,24 @@ class Monitor:
         self.interval = interval
         self.candidates = []
         self.monitor = monitor
-        self.ckpt_path = ckpt_path
-        self.task = task
+        self.save_dir = save_dir
         self.top = top
         self.epoch_skip = epoch_skip
         self.early_stop = early_stop
 
     def remove_checkpoint(self, epoch):
-        epoch_path = os.path.join(self.ckpt_path, 'epoch_{}.bin'.format(epoch))
+        # print(f'epoch {epoch}, removed')
+        epoch_path = os.path.join(self.save_dir, 'epoch_{}.bin'.format(epoch))
         os.system(f'rm {epoch_path}')
 
     def store_checkpoint(self, epoch, state_dict):
-        epoch_path = os.path.join(self.ckpt_path, 'epoch_{}.bin'.format(epoch))
+        # print(f'epoch {epoch}, store checkpoint')
+        epoch_path = os.path.join(self.save_dir, 'epoch_{}.bin'.format(epoch))
         torch.save(state_dict, epoch_path)
-
         self.step_export()
 
-    def push(self, epoch, loss_depots: dict, state_dict):
+    def push(self, epoch, loss: dict, state_dict):
+        # print(epoch)
         if self.epoch_skip and epoch < self.epoch_skip:
             return
 
@@ -44,12 +44,7 @@ class Monitor:
                 self.store_checkpoint(epoch, state_dict)
             return
 
-        if len(loss_depots) == 1:
-            loss = list(loss_depots.values())[0]
-        else:
-            loss = loss_depots[self.task]
-        loss = Obj(loss)
-        self.candidates.append((epoch, loss))
+        self.candidates.append((epoch, Obj(loss)))
 
         stay = [True] * len(self.candidates)
 
@@ -61,17 +56,18 @@ class Monitor:
                 if eval(self.monitor):
                     stay[ib] = False
 
-        removing_checkpoints = []
-        for i in range(len(self.candidates) - 1):
+        remove = []
+        for i in range(len(self.candidates)):
             if not stay[i]:
-                removing_checkpoints.append(self.candidates[i][0])
+                remove.append((i, self.candidates[i][0]))
 
-        if self.top:
-            for i in removing_checkpoints[-self.top:]:
-                stay[i] = True
-            removing_checkpoints = removing_checkpoints[:-self.top]
-        for checkpoint in removing_checkpoints:
-            self.remove_checkpoint(checkpoint)
+        top_remove = self.top - sum(stay)
+        if top_remove > 0:
+            for checkpoint in remove[-top_remove:]:
+                stay[checkpoint[0]] = True
+            remove = remove[:-top_remove]
+        for checkpoint in remove:
+            self.remove_checkpoint(checkpoint[1])
 
         self.candidates = [self.candidates[i] for i in range(len(self.candidates)) if stay[i]]
 
@@ -88,7 +84,7 @@ class Monitor:
 
     def step_export(self):
         candidates = list(map(lambda x: x[0], self.candidates))
-        export_path = os.path.join(self.ckpt_path, 'candidates.json')
+        export_path = os.path.join(self.save_dir, 'candidates.json')
         json.dump(candidates, open(export_path, 'w'))
 
     def export(self):
@@ -97,3 +93,17 @@ class Monitor:
                 self.remove_checkpoint(candidate[0])
             self.candidates = self.candidates[-self.top:]
         self.step_export()
+
+
+if __name__ == '__main__':
+    m = Monitor(
+        interval=None,
+        monitor='a.loss < b.loss',
+        save_dir=None,
+        top=5,
+        epoch_skip=0,
+        early_stop=None,
+    )
+    losses = [1.3518, 1.2661, 1.2446, 1.2297, 1.2367, 1.2472, 1.1911, 1.1674]
+    for index, loss in enumerate(losses):
+        m.push(index, dict(loss=loss), None)

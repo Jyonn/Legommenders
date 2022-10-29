@@ -9,24 +9,25 @@ from model.utils.attention import AdditiveAttention
 class NRMSConfig(BaseConfig):
     def __init__(
             self,
-            embed_dim,
-            doc_encoder_size,
-            additive_attention_hidden_size,
+            tok_embed_dim,
+            doc_embed_dim,
+            ada_hidden_size,
             num_attention_heads,
-            embedding_dropout,
-            doc_attention_dropout,
-            seq_attention_dropout,
-            user_dropout=0.2,
+            doc_embedding_dropout=0.2,
+            doc_attention_dropout=0.1,
+            seq_embedding_dropout=0.2,
+            seq_attention_dropout=0.1,
+            **kwargs,
     ):
-        super().__init__()
-        self.embed_dim = embed_dim
-        self.doc_encoder_size = doc_encoder_size
-        self.additive_attention_hidden_size = additive_attention_hidden_size
+        super(NRMSConfig, self).__init__(**kwargs)
+        self.tok_embed_dim = tok_embed_dim
+        self.doc_embed_dim = doc_embed_dim
+        self.ada_hidden_size = ada_hidden_size
         self.num_attention_heads = num_attention_heads
-        self.embedding_dropout = embedding_dropout
+        self.doc_embedding_dropout = doc_embedding_dropout
         self.doc_attention_dropout = doc_attention_dropout
+        self.seq_embedding_dropout = seq_embedding_dropout
         self.seq_attention_dropout = seq_attention_dropout
-        self.user_dropout = user_dropout
 
 
 class DocEncoder(nn.Module):
@@ -40,14 +41,14 @@ class DocEncoder(nn.Module):
         self.config = config
 
         self.mha = nn.MultiheadAttention(
-            embed_dim=self.config.embed_dim,
+            embed_dim=self.config.tok_embed_dim,
             num_heads=self.config.num_attention_heads,
             dropout=self.config.doc_attention_dropout,
         )
-        self.linear = nn.Linear(self.config.embed_dim, self.config.doc_encoder_size)
+        self.linear = nn.Linear(self.config.tok_embed_dim, self.config.doc_embed_dim)
         self.ada = AdditiveAttention(
-            embed_dim=self.config.doc_encoder_size,
-            hidden_size=self.config.additive_attention_hidden_size
+            embed_dim=self.config.doc_embed_dim,
+            hidden_size=self.config.ada_hidden_size
         )
 
     def forward(self, input_embeds):
@@ -56,7 +57,7 @@ class DocEncoder(nn.Module):
         @param input_embeds: [B, T, D]
         @return: [B, T, encoder_size]
         """
-        embedding = F.dropout(input_embeds, self.config.embedding_dropout)
+        embedding = F.dropout(input_embeds, self.config.doc_embedding_dropout)
         embedding = embedding.permute(1, 0, 2)  # [T, B, D]
 
         output, _ = self.mha(embedding, embedding, embedding)  # [T, B, D]
@@ -74,16 +75,16 @@ class NRMSModel(BaseModel):
         self.config = config
         self.doc_encoder = DocEncoder(config)
         self.mha = nn.MultiheadAttention(
-            embed_dim=config.doc_encoder_size,
+            embed_dim=config.doc_embed_dim,
             num_heads=config.num_attention_heads,
             dropout=config.seq_attention_dropout,
         )
 
         self.ada = AdditiveAttention(
-            embed_dim=self.config.doc_encoder_size,
-            hidden_size=self.config.additive_attention_hidden_size
+            embed_dim=self.config.doc_embed_dim,
+            hidden_size=self.config.ada_hidden_size
         )
-        self.dropout = nn.Dropout(config.user_dropout)
+        self.dropout = nn.Dropout(config.seq_embedding_dropout)
 
     def forward(
             self,

@@ -3,7 +3,7 @@ from typing import List, Type, Dict
 from oba import Obj
 
 from model.base_model import BaseModel
-from model.nrms_model import NRMSModel
+from model.matching.nrms_model import NRMSModel
 
 MODEL_LIST = [
     NRMSModel,

@@ -1,6 +1,6 @@
 name: match
 dir: ${exp.name}
-mode: train
+mode: ${mode}
 tasks:
   -
     name: matching
@@ -17,17 +17,16 @@ load:
   relax_load: false
 store:
 #  interval: 10
-  monitor: a.loss < b.loss and a.cluster_loss < b.cluster_loss and a.local_loss < b.local_loss
+  monitor: a.loss < b.loss
   top: 5
-  epoch_skip: 10
 policy:
   freeze_emb: false
   pin_memory: true
   epoch: 200
   epoch_start: 0
-  lr: 0.01
+  lr: 0.0001
   batch_size: 64
   accumulate_batch: 4
   device: gpu
   n_warmup: 600
-  check_interval: -2
+  check_interval: -10

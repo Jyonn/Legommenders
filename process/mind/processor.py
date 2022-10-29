@@ -174,7 +174,9 @@ class Processor:
                 inter_dev_df.append(imp_df)
             else:
                 inter_test_df.append(imp_df)
-        return pd.concat(inter_train_df), pd.concat(inter_dev_df), pd.concat(inter_test_df)
+        return pd.concat(inter_train_df, ignore_index=True),\
+               pd.concat(inter_dev_df, ignore_index=True), \
+               pd.concat(inter_test_df, ignore_index=True)
 
     def analyse_news(self):
         tok = self.get_news_tok(
