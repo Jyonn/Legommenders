@@ -78,6 +78,12 @@ class BaseTask(ABC):
     def calculate_loss(self, output, batch: BaseBatch, **kwargs) -> BaseLoss:
         raise NotImplementedError
 
+    def on_test(self, output, batch: BaseBatch, **kwargs):
+        raise NotImplementedError
+
+    def summarize_test(self, **kwargs):
+        raise NotImplementedError
+
     # status
 
     def test(self):

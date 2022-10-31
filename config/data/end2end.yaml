@@ -26,5 +26,6 @@ append:
   - imp
   - nid
   - uid
+  - click
 use_sep_token: true
 use_cls_token: true

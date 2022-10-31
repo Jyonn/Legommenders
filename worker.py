@@ -9,7 +9,7 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.global_loader import GlobalLoader
 from loader.global_setting import Setting
-from task.base_batch import BaseBatch, HSeqBatch
+from task.base_batch import BaseBatch
 from task.base_loss import BaseLoss, LossDepot
 from task.base_task import BaseTask
 from utils.config_init import ConfigInit
@@ -180,8 +180,8 @@ class Worker:
             with torch.no_grad():
                 task_output = self.model_container(
                     batch=batch,
-                    task=self.global_loader.primary_task,
-                )
+                    task=self.task,
+                )  # [B, neg+1]
 
                 loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
                 loss_depot.add(loss)
@@ -191,15 +191,60 @@ class Worker:
 
         return loss_depot.summarize()
 
-    def speed_test(self):
-        samples = []
-        for sample in tqdm(self.global_loader.train_set):
-            samples.append(sample)
-        del samples
-        batches = []
-        for batch in tqdm(self.global_loader.get_dataloader(Setting.TRAIN)):
-            batches.append(batch)
-        del batches
+    def test(self):
+        self.model_container.eval()
+        loader = self.data.get_loader(self.data.TEST).eval()
+
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            with torch.no_grad():
+                task_output = self.model_container(
+                    batch=batch,
+                    task=self.task,
+                )
+                labels = batch['append_info']['label'].tolist()
+                user_ids = batch['append_info']['user_id'].tolist()
+
+                score_series.extend(scores.tolist())
+                label_series.extend(labels)
+                user_series.extend(user_ids)
+
+        # group metrics
+        pooler = Pooler(
+            groups=user_series,
+            scores=score_series,
+            labels=label_series,
+            meta_groups=meta_groups,
+            meta_order=meta_order,
+        )
+        pooler.pool('auc', roc_auc_score)
+        pooler.pool('mrr', label_ranking_average_precision_score, lister=True)
+        # pooler.pool('f1', f1_score, score_lambda=lambda x: int(x >= 0.5))
+        # pooler.pool('acc', accuracy_score, score_lambda=lambda x: int(x >= 0.5))
+        pooler.pool('ndcg1', ndcg_score, lister=True, k=1)
+        pooler.pool('ndcg5', ndcg_score, lister=True, k=5)
+        pooler.aggregate()
+
+        results = []
+        for k in pooler:
+            results.append(f'{k}: {pooler[k] * 100:.2f}')
+        num_metrics = len(pooler.metrics)
+        indexes = np.arange(len(results)).reshape(num_metrics, -1).transpose().flatten().tolist()
+        for index in indexes:
+            self.print(results[index])
+        # df = pd.DataFrame(data=dict(
+        #     groups=list(map(lambda x: meta_groups[x], user_series)),
+        #     scores=score_series,
+        #     labels=label_series,
+        # ))
+        # groups = df.groupby('groups')
+        # for g in groups:
+        #     self.print(g[0])
+        #     labels = g[1].labels.tolist()
+        #     scores = g[1].scores.tolist()
+        #     self.print('auc: %.2f' % (roc_auc_score(labels, scores) * 100))
+        #     scores = list(map(lambda x: int(x >= 0.5), scores))
+        #     self.print('acc: %.2f' % (accuracy_score(labels, scores) * 100))
+        #     self.print('f1: %.2f' % (f1_score(labels, scores) * 100))
 
     def run(self):
         if self.exp.mode == 'train':
@@ -207,8 +252,6 @@ class Worker:
         elif self.exp.mode == 'dev':
             loss_depot = self.dev(10)
             self.log_epoch(0, self.task, loss_depot)
-        elif self.exp.mode == 'speed_test':
-            self.speed_test()
 
 
 if __name__ == '__main__':
