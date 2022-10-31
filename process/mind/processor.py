@@ -210,8 +210,8 @@ class Processor:
 
         for inter_df, mode in zip(self.reassign_inter_df(), ['train', 'dev', 'test']):
             inter_tok = self.get_inter_tok()
-            if mode in ['train', 'dev']:
-                inter_df = inter_df[inter_df.click == 1]
+            # if mode in ['train', 'dev']:
+            #     inter_df = inter_df[inter_df.click == 1]
             inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, mode))
 
 

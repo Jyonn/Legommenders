@@ -139,16 +139,6 @@ class DCN(BaseModel):
             fc = self.dropout(fc)
             logit = fc
 
-        sparse_embedding = [self.embedding_dic[feat[0]](X[:, self.feature_index[feat[0]]].long()).reshape(X.shape[0], 1, -1)
-                            for feat in self.sparse_feature_columns]
-        dense_values = [X[:, self.feature_index[feat[0]]].reshape(-1, 1) for feat in self.dense_feature_columns]
-
-        dense_input = torch.cat(dense_values, dim=1)
-        sparse_input = torch.cat(sparse_embedding, dim=1)
-
-        # 拉直 本来是 [batch_size, sparase特征数, 嵌入维度] =》 [batch_size, sparase特征数 * 嵌入维度]
-        sparse_input = torch.flatten(sparse_input, start_dim=1)
-
         dnn_input = torch.cat((dense_input, sparse_input), dim=1)
 
         # print('sparse input size', sparse_input.shape)

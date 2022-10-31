@@ -100,7 +100,7 @@ class BaseHSeqTask(BaseSeqTask, ABC):
             inputs=batch.doc_clicks.inputs,
             embedding_init=embedding_init,
             vocab_loader=vocab_loader,
-        )
+        )  # [B, N, L, D]
         candidates_embedding = self._get_embedding(
             inputs=batch.doc_candidates.inputs,
             embedding_init=embedding_init,

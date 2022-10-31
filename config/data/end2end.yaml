@@ -17,9 +17,13 @@ filters:
   train:
     history:
       - remove_empty
+    click:
+      - x == 1
   dev:
     history:
       - remove_empty
+    click:
+      - x == 1
   test:
     history:
       - remove_empty
