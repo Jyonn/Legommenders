@@ -1,9 +1,11 @@
 import os
-from typing import Optional
+from typing import Optional, Dict
 
 import numpy as np
 import torch
 from transformers import AutoModelForMaskedLM, BertForMaskedLM, BertConfig, BertModel, load_tf_weights_in_bert
+
+from utils.printer import printer
 
 
 class EmbeddingInfo:
@@ -42,7 +44,8 @@ class EmbeddingInfo:
 
 class EmbeddingLoader:
     def __init__(self):
-        self.table = dict()
+        self.table = dict()  # type: Dict[str, EmbeddingInfo]
+        self.print = printer.EMBEDDING_LAYER
 
     def append(self, vocab_name, vocab_type, path, frozen):
         self.table[vocab_name] = EmbeddingInfo(
@@ -51,7 +54,7 @@ class EmbeddingLoader:
             path=path,
             frozen=frozen,
         ).load()
-
+        self.print(f'load {vocab_name} embedding {self.table[vocab_name].embedding.shape}')
         return self
 
     def get_embedding(self, vocab_name):

@@ -14,22 +14,28 @@ class Monitor:
             top=None,
             epoch_skip=None,
             early_stop=None,
+            debug=False,
     ):
         self.interval = interval
         self.candidates = []
         self.monitor = monitor
         self.save_dir = save_dir
-        self.top = top
+        self.top = top or 1
         self.epoch_skip = epoch_skip
         self.early_stop = early_stop
+        self.debug = debug
 
     def remove_checkpoint(self, epoch):
-        # print(f'epoch {epoch}, removed')
+        if self.debug:
+            print(f'remove {epoch}')
+            return
         epoch_path = os.path.join(self.save_dir, 'epoch_{}.bin'.format(epoch))
         os.system(f'rm {epoch_path}')
 
     def store_checkpoint(self, epoch, state_dict):
-        # print(f'epoch {epoch}, store checkpoint')
+        if self.debug:
+            print(f'store {epoch}')
+            return
         epoch_path = os.path.join(self.save_dir, 'epoch_{}.bin'.format(epoch))
         torch.save(state_dict, epoch_path)
         self.step_export()
@@ -75,7 +81,7 @@ class Monitor:
             if self.early_stop:
                 for i in range(len(self.candidates))[::-1]:
                     if stay[i]:
-                        if epoch - self.candidates[i][0] > self.early_stop:
+                        if epoch - self.candidates[i][0] >= self.early_stop:
                             raise ValueError('Early Stop')
                         return
             return

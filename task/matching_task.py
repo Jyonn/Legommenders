@@ -16,28 +16,10 @@ class MatchingTask(BaseHSeqTask):
         super().__init__(**kwargs)
 
         self.criterion = nn.CrossEntropyLoss()
-        self.test_results = {}
 
     def calculate_loss(self, output, batch: HSeqBatch, **kwargs) -> BaseLoss:
         label = torch.zeros(batch.batch_size, dtype=torch.long).to(Setting.device)
         return BaseLoss(self.criterion(output, label))
 
-    def test(self):
-        super(MatchingTask, self).test()
-        self.test_results = dict(
-            score=[],
-            click=[],
-            imp=[],
-        )
-
-    def on_test(self, output: torch.Tensor, batch: HSeqBatch, **kwargs):
-        score = output.squeeze(-1).detach().cpu().tolist()
-        imp = batch.append['imp'].tolist()
-        click = batch.append['click'].tolist()
-        self.test_results['score'].extend(score)
-        self.test_results['imp'].extend(imp)
-        self.test_results['click'].extend(click)
-
-    def summarize_test(self, **kwargs):
-        test_results = pd.DataFrame(self.test_results)
-        test_results.groupby('imp')
+    def calculate_scores(self, output, batch: HSeqBatch, **kwargs):
+        return output.squeeze(dim=-1).detach().cpu().tolist()

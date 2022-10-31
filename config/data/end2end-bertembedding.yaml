@@ -1,6 +1,6 @@
 store:
   data_dir: data/${dataset}
-  save_dir: saving/${dataset}/${model.dir}/${exp.dir}
+  save_dir: saving/${dataset}/${model.dir}-wordembedding/${exp.dir}
   log_file: ${data.store.save_dir}/exp.log
   union:
     - data/${dataset}/user
@@ -35,3 +35,9 @@ test:
   label_col: click
 use_sep_token: true
 use_cls_token: true
+token_embedding:
+  -
+    vocab_name: english
+    vocab_type: bert_tf
+    path: /data1/qijiong/Data/PLM/bert-base-uncased
+    frozen: true

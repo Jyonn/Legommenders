@@ -15,6 +15,7 @@ from task.base_task import BaseTask
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
+from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.printer import printer, Color, Printer
 from utils.structure import Structure
@@ -39,40 +40,21 @@ class Worker:
             exp=self.exp
         )
         self.model_container = self.global_loader.model_container
-        self.task = self.global_loader.primary_task
+        self.task = self.global_loader.primary_task  # type: BaseTask
 
         self.print(Structure.analyse_and_stringify(self.global_loader.train_set[0]))
-        # self.abnormal_detector()
 
         self.static_modes = ['export', 'dev', 'test']
         self.in_static_modes = self.exp.mode in self.static_modes or self.exp.mode.startswith('test')
 
-        if self.in_static_modes:
-            self.m_optimizer = self.m_scheduler = None
-        else:
-            self.m_optimizer = torch.optim.Adam(
-                params=filter(lambda p: p.requires_grad, self.model_container.parameters()),
-                lr=self.exp.policy.lr
-            )
-            self.m_scheduler = get_linear_schedule_with_warmup(
-                self.m_optimizer,
-                num_warmup_steps=self.exp.policy.n_warmup,
-                num_training_steps=len(self.global_loader.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
-            )
+        self.m_optimizer = self.m_scheduler = None
+        self.load_path = self.parse_load_path()
 
-            self.print('training params')
-            total_memory = 0
-            for name, p in self.model_container.named_parameters():  # type: str, torch.Tensor
-                total_memory += p.element_size() * p.nelement()
-                if p.requires_grad:
-                    self.print(name, p.data.shape)
-
-    def _attempt_loading(self, path):
-        load_path = os.path.join(self.data.store.save_dir, path)
+    def load(self, path):
         while True:
-            self.print(f"load model from exp {load_path}")
+            self.print(f"load model from exp {path}")
             try:
-                state_dict = torch.load(load_path, map_location=Setting.device)
+                state_dict = torch.load(path, map_location=Setting.device)
                 break
             except Exception as e:
                 if not self.exp.load.wait_load:
@@ -81,17 +63,24 @@ class Worker:
 
         model_ckpt = state_dict['model']
 
-        self.model_container.load_state_dict(model_ckpt, strict=not self.exp.load.relax_load)
-        load_status = False
-        if not self.in_static_modes and not self.exp.load.load_model_only:
-            load_status = True
+        self.model_container.load_state_dict(model_ckpt, strict=self.exp.load.strict)
+        if not self.exp.load.model_only:
             self.m_optimizer.load_state_dict(state_dict['optimizer'])
             self.m_scheduler.load_state_dict(state_dict['scheduler'])
-        self.print(f'load optimizer and scheduler: {load_status}')
 
-    def attempt_loading(self):
-        if self.exp.load.load_ckpt:
-            self._attempt_loading(self.exp.load.load_ckpt)
+    def parse_load_path(self):
+        if not self.exp.load.save_dir:
+            return
+
+        save_dir = os.path.join(self.data.store.save_dir, self.exp.load.save_dir)
+        epochs = Obj.raw(self.exp.load.epochs)
+        if not epochs:
+            epochs = json.load(open(os.path.join(save_dir, 'candidates.json')))
+        elif isinstance(epochs, str):
+            epochs = eval(epochs)
+        assert isinstance(epochs, list), ValueError(f'fail loading epochs: f{epochs}')
+
+        return [os.path.join(save_dir, f'epoch_{epoch}.bin') for epoch in epochs]
 
     def get_device(self):
         cuda = self.config.cuda
@@ -183,75 +172,86 @@ class Worker:
                     task=self.task,
                 )  # [B, neg+1]
 
-                loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
-                loss_depot.add(loss)
+            loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
+            loss_depot.add(loss)
 
             if steps and step >= steps:
                 break
 
         return loss_depot.summarize()
 
-    def test(self):
-        self.model_container.eval()
-        loader = self.data.get_loader(self.data.TEST).eval()
+    def test(self, steps=None):
+        label_col = self.data.test.label_col
+        group_col = self.data.test.group_col
+        pool = MetricPool.parse(self.exp)
 
+        self.model_container.eval()
+        loader = self.global_loader.get_dataloader(Setting.TEST).test()
+
+        score_series, label_series, group_series = [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 task_output = self.model_container(
                     batch=batch,
                     task=self.task,
                 )
-                labels = batch['append_info']['label'].tolist()
-                user_ids = batch['append_info']['user_id'].tolist()
+            labels = batch.append[label_col].tolist()
+            groups = batch.append[group_col].tolist()
+            scores = self.task.calculate_scores(task_output, batch, model=self.model_container)
 
-                score_series.extend(scores.tolist())
-                label_series.extend(labels)
-                user_series.extend(user_ids)
+            score_series.extend(scores)
+            label_series.extend(labels)
+            group_series.extend(groups)
 
-        # group metrics
-        pooler = Pooler(
-            groups=user_series,
-            scores=score_series,
-            labels=label_series,
-            meta_groups=meta_groups,
-            meta_order=meta_order,
+            if steps and step >= steps:
+                break
+
+        results = pool.calculate(score_series, label_series, group_series)
+        for metric in results:
+            self.print(f'{metric}: {results[metric]}')
+
+    def train_runner(self):
+        self.m_optimizer = torch.optim.Adam(
+            params=filter(lambda p: p.requires_grad, self.model_container.parameters()),
+            lr=self.exp.policy.lr
         )
-        pooler.pool('auc', roc_auc_score)
-        pooler.pool('mrr', label_ranking_average_precision_score, lister=True)
-        # pooler.pool('f1', f1_score, score_lambda=lambda x: int(x >= 0.5))
-        # pooler.pool('acc', accuracy_score, score_lambda=lambda x: int(x >= 0.5))
-        pooler.pool('ndcg1', ndcg_score, lister=True, k=1)
-        pooler.pool('ndcg5', ndcg_score, lister=True, k=5)
-        pooler.aggregate()
+        self.m_scheduler = get_linear_schedule_with_warmup(
+            self.m_optimizer,
+            num_warmup_steps=self.exp.policy.n_warmup,
+            num_training_steps=len(self.global_loader.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
+        )
 
-        results = []
-        for k in pooler:
-            results.append(f'{k}: {pooler[k] * 100:.2f}')
-        num_metrics = len(pooler.metrics)
-        indexes = np.arange(len(results)).reshape(num_metrics, -1).transpose().flatten().tolist()
-        for index in indexes:
-            self.print(results[index])
-        # df = pd.DataFrame(data=dict(
-        #     groups=list(map(lambda x: meta_groups[x], user_series)),
-        #     scores=score_series,
-        #     labels=label_series,
-        # ))
-        # groups = df.groupby('groups')
-        # for g in groups:
-        #     self.print(g[0])
-        #     labels = g[1].labels.tolist()
-        #     scores = g[1].scores.tolist()
-        #     self.print('auc: %.2f' % (roc_auc_score(labels, scores) * 100))
-        #     scores = list(map(lambda x: int(x >= 0.5), scores))
-        #     self.print('acc: %.2f' % (accuracy_score(labels, scores) * 100))
-        #     self.print('f1: %.2f' % (f1_score(labels, scores) * 100))
+        self.print('training params')
+        total_memory = 0
+        for name, p in self.model_container.named_parameters():  # type: str, torch.Tensor
+            total_memory += p.element_size() * p.nelement()
+            if p.requires_grad:
+                self.print(name, p.data.shape)
+
+        if self.load_path:
+            self.load(self.load_path[0])
+        self.train()
+
+    def dev_runner(self):
+        loss_depot = self.dev(10)
+        self.log_epoch(0, self.task, loss_depot)
+
+    def test_runner(self):
+        self.test()
+
+    def iter_runner(self, handler):
+        for path in self.load_path:
+            self.load(path)
+            handler()
 
     def run(self):
-        if self.exp.mode == 'train':
-            self.train()
-        elif self.exp.mode == 'dev':
-            loss_depot = self.dev(10)
-            self.log_epoch(0, self.task, loss_depot)
+        mode = self.exp.mode.lower()
+        if mode == 'train':
+            self.train_runner()
+        elif mode == 'dev':
+            self.iter_runner(self.dev_runner)
+        elif self.exp.mode == 'test':
+            self.iter_runner(self.test_runner)
 
 
 if __name__ == '__main__':
