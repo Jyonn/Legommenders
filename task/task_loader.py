@@ -8,9 +8,11 @@ from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from task.base_task import BaseTask
 from task.matching_task import MatchingTask
+from task.ranking_task import RankingTask
 
 TASK_LIST = [
     MatchingTask,
+    RankingTask,
 ]  # type: List[Type[BaseTask]]
 TASKS = {task.name: task for task in TASK_LIST}
 

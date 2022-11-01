@@ -78,7 +78,7 @@ class Worker:
             epochs = json.load(open(os.path.join(save_dir, 'candidates.json')))
         elif isinstance(epochs, str):
             epochs = eval(epochs)
-        assert isinstance(epochs, list), ValueError(f'fail loading epochs: f{epochs}')
+        assert isinstance(epochs, list), ValueError(f'fail loading epochs: {epochs}')
 
         return [os.path.join(save_dir, f'epoch_{epoch}.bin') for epoch in epochs]
 
@@ -102,6 +102,13 @@ class Worker:
         for loss_name, loss_value in loss_depot.table.items():
             components.append(f'{loss_name} {loss_value:.4f}')
         self.print[f'epoch {epoch}'](', '.join(components))
+
+    def train_latency(self):
+        loader = self.global_loader.get_dataloader(Setting.TRAIN).train()
+        self.model_container.train()
+
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):  # type: int, BaseBatch
+            pass
 
     def train(self):
         monitor = Monitor(
@@ -252,6 +259,8 @@ class Worker:
             self.iter_runner(self.dev_runner)
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
+        elif self.exp.mode == 'latency':
+            self.train_latency()
 
 
 if __name__ == '__main__':

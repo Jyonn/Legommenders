@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Optional
 
 from UniTok import UniDep
+from oba import Obj
 from torch.utils.data import Dataset
 
 from utils.splitter import Splitter
@@ -36,8 +37,10 @@ class BaseDataset(Dataset):
             self.split_range = splitter.divide(self.sample_size)[self.mode]
             assert splitter.contains(self.mode)
 
-    def get_append(self, append: list):
-        append = append or []
+    def get_append(self, append):
+        append = Obj.raw(append) or []
+        if self.depot.id_col not in append:
+            append.append(self.depot.id_col)
         for col in append:
             if self.depot.is_list_col(col):
                 raise ValueError(f'list column {col} cannot be appended')

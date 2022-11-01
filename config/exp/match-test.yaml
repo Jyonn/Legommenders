@@ -1,5 +1,5 @@
-name: match-test
-dir: ${exp.name}
+name: ${exp.tasks.0.name}-${exp.mode}
+dir: ${exp.name}/${time.hex}_${rand.4}
 mode: test
 tasks:
   -

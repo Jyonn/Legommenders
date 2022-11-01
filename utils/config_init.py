@@ -6,6 +6,8 @@ from refconfig import RefConfig
 from smartdict import DictCompiler
 
 from utils.dynamic_parser import DynamicParser
+from utils.rand import Rand
+from utils.timing import Timing
 
 
 # makedirs = [
@@ -36,7 +38,8 @@ class ConfigInit:
             if arg not in kwargs:
                 raise ValueError(f'miss argument {arg}')
 
-        config = RefConfig().add(refconfig.CType.SMART, **kwargs).parse()
+        config = RefConfig().add(refconfig.CType.SMART, **kwargs)
+        config = config.add(refconfig.CType.RAW, rand=Rand(), time=Timing()).parse()
 
         for makedir in self.makedirs:
             dir_name = PathSearcher.search(config, makedir)

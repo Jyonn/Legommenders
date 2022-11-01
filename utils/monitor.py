@@ -30,7 +30,8 @@ class Monitor:
             print(f'remove {epoch}')
             return
         epoch_path = os.path.join(self.save_dir, 'epoch_{}.bin'.format(epoch))
-        os.system(f'rm {epoch_path}')
+        if os.path.exists(epoch_path):
+            os.system(f'rm {epoch_path}')
 
     def store_checkpoint(self, epoch, state_dict):
         if self.debug:

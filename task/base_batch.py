@@ -2,8 +2,6 @@ import torch
 
 from typing import Optional, Dict
 
-from loader.global_setting import Setting
-
 
 class BaseBatch:
     def __init__(self, batch):
@@ -11,8 +9,21 @@ class BaseBatch:
 
         self.append = batch['append']  # type: Dict[str, any]
         self.inputs = batch['inputs']  # type: Dict[str, torch.Tensor]
-        self.batch_size = len(list(self.inputs.values())[0])
+
+        self.batch_size = len(list(self.append.values())[0])
+        # if not self.batch_size:
+        #     raise ValueError('unable to parse batch size')
+
         self.task = None  # type: Optional[BaseTask]
+
+    # def parse_batch_size(self, d: dict):
+    #     for k in d:
+    #         if isinstance(d[k], dict):
+    #             batch_size = self.parse_batch_size(d[k])
+    #             if batch_size:
+    #                 return batch_size
+    #         elif isinstance(d[k], torch.Tensor):
+    #             return d[k].shape[0]
 
     def dict(self):
         return self.__dict__

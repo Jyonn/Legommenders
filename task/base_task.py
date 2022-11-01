@@ -9,6 +9,7 @@ from loader.global_setting import Setting
 from set.base_dataset import BaseDataset
 from task.base_batch import BaseBatch
 from task.base_loss import BaseLoss
+from task.utils.padding import Padding
 from utils.printer import printer, Color
 
 
@@ -34,17 +35,8 @@ class BaseTask(ABC):
     def add_vocab(self, vocab: Vocab, col=None):
         self.vocabs.append((col, vocab))
 
-    @classmethod
-    def pad(cls, l: list, max_len: int):
-        return l + [Setting.UNSET] * (max_len - len(l))
-
     def rebuild_sample(self, sample: dict, dataset: BaseDataset):
-        inputs = sample['inputs']
-        for col in inputs:
-            max_len = self.depot.get_max_length(col)
-            if max_len:
-                inputs[col] = self.pad(inputs[col], max_len)
-        return sample
+        raise NotImplementedError
 
     def rebuild_batch(self, dataloader, batch):
         batch = self.batcher(batch)

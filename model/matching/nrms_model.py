@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from model.base_model import BaseModel, BaseConfig
-from model.utils.attention import AdditiveAttention
+from model.layer.attention import AdditiveAttention
 
 
 class NRMSConfig(BaseConfig):
@@ -31,8 +31,6 @@ class NRMSConfig(BaseConfig):
 
 
 class DocEncoder(nn.Module):
-    config = NRMSConfig
-
     def __init__(
             self,
             config: NRMSConfig,

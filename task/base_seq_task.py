@@ -20,8 +20,9 @@ class BaseSeqTask(BaseTask, ABC):
             dataset: BaseDataset,
             use_cls_token=False,
             use_sep_token=False,
+            **kwargs,
     ):
-        super().__init__(dataset)
+        super().__init__(dataset, **kwargs)
         self.sequencer = Sequencer(
             depot=self.dataset.depot,
             order=self.dataset.order,
@@ -41,6 +42,7 @@ class BaseSeqTask(BaseTask, ABC):
             vocab_loader: VocabLoader,
     ):
         shape = list(inputs.values())[0].shape
+
         input_embeddings = torch.zeros(
             *shape,
             embedding_init.hidden_size,

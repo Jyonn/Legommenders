@@ -1,41 +1,27 @@
+from torch import nn
+
 from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
+from loader.global_setting import Setting
 from set.base_dataset import BaseDataset
-from task.base_batch import HSeqBatch
-from task.base_hseq_task import BaseHSeqTask
+from task.base_batch import BaseBatch
+from task.base_hconcat_task import BaseHConcatTask
+from task.base_loss import BaseLoss
 
 
-class RankingTask(BaseHSeqTask):
+class RankingTask(BaseHConcatTask):
     name = 'ranking'
     dynamic_loader = False
 
-    def __init__(
-            self,
-            dataset: BaseDataset,
-            doc_depot,
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    ):
-        super().__init__(dataset, doc_depot)
+        self.criterion = nn.BCELoss()
 
-    def negative_sampling(self):
-        return []
+    def calculate_loss(self, output, batch: BaseBatch, **kwargs) -> BaseLoss:
+        labels = batch.append[self.label_col].to(Setting.device).float()
+        scores = output.squeeze(dim=-1)
+        return BaseLoss(self.criterion(scores, labels))
 
-    def get_embeddings(
-            self,
-            batch: HSeqBatch,
-            embedding_init: EmbeddingInit,
-            vocab_loader: VocabLoader,
-    ):
-        clicks_embedding, candidates_embedding = super(RankingTask, self).get_embeddings(
-            batch=batch,
-            embedding_init=embedding_init,
-            vocab_loader=vocab_loader,
-        )  # [B, N, L, D], [B, 1, L, D]
-        input_embedding = self._get_embedding(
-            inputs=batch.inputs,
-            embedding_init=embedding_init,
-            vocab_loader=vocab_loader,
-        )  # [B, ]
-        return input_embedding, clicks_embedding, candidates_embedding
-
-
+    def calculate_scores(self, output, batch: BaseBatch, **kwargs):
+        return output.squeeze(dim=-1).detach().cpu().tolist()

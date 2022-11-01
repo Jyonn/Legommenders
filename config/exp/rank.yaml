@@ -1,16 +1,15 @@
 name: ${exp.tasks.0.name}-${exp.mode}
 dir: ${exp.name}/${time.hex}_${rand.4}
-mode: train
+mode: ${mode}
 tasks:
   -
-    name: matching
+    name: ranking
     params:
       doc_depot: data/${dataset}/news
       doc_order: ['title']
-      label_col: label
+      label_col: click
       clicks_col: history
       candidate_col: nid
-      neg_count: 4
 load:
   save_dir: null
   epochs: null
@@ -18,18 +17,17 @@ load:
   strict: true
   wait: false
 store:
-#  interval: 10
   monitor: a.loss < b.loss
-  top: 5
+  top: 1
   early_stop: 3
 policy:
   freeze_emb: false
   pin_memory: true
-  epoch: 200
+  epoch: 10
   epoch_start: 0
-  lr: 0.0001
-  batch_size: 64
-  accumulate_batch: 4
+  lr: 0.001
+  batch_size: 5000
+  accumulate_batch: 1
   device: gpu
-  n_warmup: 600
-  check_interval: -10
+  n_warmup: 0
+  check_interval: -2

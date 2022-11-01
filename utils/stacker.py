@@ -9,7 +9,7 @@ class Stacker:
         self.aggregator = aggregator or torch.stack
 
     def _build_prototype(self, item: dict):
-        prototype = dict()
+        prototype = OrderedDict()
         for k in item.keys():
             if isinstance(item[k], dict):
                 prototype[k] = self._build_prototype(item[k])

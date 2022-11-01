@@ -4,9 +4,11 @@ from oba import Obj
 
 from model.base_model import BaseModel
 from model.matching.nrms_model import NRMSModel
+from model.ranking.dcn_model import DCNModel
 
 MODEL_LIST = [
     NRMSModel,
+    DCNModel,
 ]  # type: List[Type[BaseModel]]
 MODELS = {model.__name__: model for model in MODEL_LIST}  # type: Dict[str, Type[BaseModel]]
 

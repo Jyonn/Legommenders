@@ -1,0 +1,36 @@
+store:
+  data_dir: data/${dataset}
+  save_dir: saving/${dataset}/${model.dir}/${exp.dir}
+  log_file: ${data.store.save_dir}/exp.log
+  union:
+    - data/${dataset}/user
+has_split: true
+split:
+  train:
+    path: train
+  dev:
+    path: dev
+  test:
+    path: test
+shuffle: false
+filters:
+  train:
+    history:
+      - remove_empty
+  dev:
+    history:
+      - remove_empty
+  test:
+    history:
+      - remove_empty
+order:
+  - history
+  - nid
+  - uid
+append:
+  - imp
+  - uid
+  - click
+test:
+  group_col: imp
+  label_col: click

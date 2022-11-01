@@ -7,7 +7,7 @@ class BaseConfig:
 
 
 class BaseModel(nn.Module):
-    configer = BaseConfig
+    config_class = BaseConfig
 
     def __init__(self, **kwargs):
         super().__init__()

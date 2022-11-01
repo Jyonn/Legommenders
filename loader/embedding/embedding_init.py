@@ -107,6 +107,6 @@ class EmbeddingInit:
         return cls(
             order=data.order,
             depot=depot,
-            hidden_size=model.config.tok_embed_dim,
+            hidden_size=model.config.embed_dim,
             embedding_loader=embedding_loader,
         )
