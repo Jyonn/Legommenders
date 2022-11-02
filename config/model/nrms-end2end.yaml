@@ -1,12 +1,12 @@
 name: NRMSModel
 dir: ${model.name}
 config:
-  embed_dim: ${model.config.tok_embed_dim}
-  tok_embed_dim: 300
-  doc_embed_dim: 250
-  ada_hidden_size: 200
-  num_attention_heads: 10
-  doc_embedding_dropout: 0.2
+  embed_dim: ${model.config.tok_embed_dim}$
+  tok_embed_dim: 64
+  doc_embed_dim: 64
+  ada_hidden_size: 64
+  num_attention_heads: 8
+  doc_embedding_dropout: 0.1
   doc_attention_dropout: 0.1
-  seq_embedding_dropout: 0.2
+  seq_embedding_dropout: 0.1
   seq_attention_dropout: 0.1

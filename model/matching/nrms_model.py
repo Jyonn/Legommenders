@@ -49,16 +49,18 @@ class DocEncoder(nn.Module):
             hidden_size=self.config.ada_hidden_size
         )
 
-    def forward(self, input_embeds):
+    def forward(self, input_embeds, attention_mask):
         """
 
         @param input_embeds: [B, T, D]
+        @param attention_mask: [B, T]
         @return: [B, T, encoder_size]
         """
         embedding = F.dropout(input_embeds, self.config.doc_embedding_dropout)
         embedding = embedding.permute(1, 0, 2)  # [T, B, D]
 
-        output, _ = self.mha(embedding, embedding, embedding)  # [T, B, D]
+        attention_mask = (1 - attention_mask).bool()
+        output, _ = self.mha(embedding, embedding, embedding, key_padding_mask=attention_mask)  # [T, B, D]
         output = F.dropout(output.permute(1, 0, 2))  # [B, T, D]
         output = self.linear(output)  # [B, T, encoder_size]
         output, _ = self.ada(output)
@@ -88,24 +90,43 @@ class NRMSModel(BaseModel):
             self,
             doc_clicks: torch.Tensor,
             doc_candidates: torch.Tensor,
+            doc_clicks_attention_mask: torch.Tensor,
+            click_mask: torch.Tensor,
+            doc_candidates_attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         """forward
         Args:
             doc_clicks (tensor): [num_user (B), num_click_docs (N), seq_len (T), D]
             doc_candidates (tensor): [num_user (B), num_candidate_docs (C), seq_len (T), D]
+            doc_clicks_attention_mask (tensor): [num_user (B), num_click_docs (C), seq_len (T)]
+            click_mask (tensor): [num_user (B), num_click_docs (c)]
+            doc_candidates_attention_mask (tensor): [num_user (B), num_candidate_docs (C), seq_len (T)]
         """
+        # print('doc clicks', doc_clicks.shape)
+        # print('doc candidates', doc_candidates.shape)
+        # print('doc clicks attn', doc_clicks_attention_mask.shape)
+        # print('doc candidates attn', doc_candidates_attention_mask.shape)
+        # print('click mask', click_mask.shape)
         num_user, num_click, doc_len, embed_dim = doc_clicks.shape
         num_candidate = doc_candidates.shape[1]
+
         doc_clicks = doc_clicks.reshape(-1, doc_len, embed_dim)  # [-1, T, D]
         doc_candidates = doc_candidates.reshape(-1, doc_len, embed_dim)  # [-1, T, D]
+        doc_clicks_attention_mask = doc_clicks_attention_mask.reshape(-1, doc_len)
+        doc_candidates_attention_mask = doc_candidates_attention_mask.reshape(-1, doc_len)
+        # print('doc clicks', doc_clicks.shape)
+        # print('doc candidates', doc_candidates.shape)
+        # print('doc clicks attn', doc_clicks_attention_mask.shape)
+        # print('doc candidates attn', doc_candidates_attention_mask.shape)
 
-        doc_clicks = self.doc_encoder(doc_clicks)  # [-1, D]
-        doc_candidates = self.doc_encoder(doc_candidates)  # [-1, D]
+        doc_clicks = self.doc_encoder(doc_clicks, doc_clicks_attention_mask)  # [-1, D]
+        doc_candidates = self.doc_encoder(doc_candidates, doc_candidates_attention_mask)  # [-1, D]
         doc_clicks = doc_clicks.reshape(num_user, num_click, -1)  # [B, N, D]
         doc_candidates = doc_candidates.reshape(num_user, num_candidate, -1)  # [B, C, D]
 
+        click_mask = (1 - click_mask).bool()
         doc_clicks = doc_clicks.permute(1, 0, 2)  # [N, B, D]
-        mha_doc_clicks, _ = self.mha(doc_clicks, doc_clicks, doc_clicks)
+        mha_doc_clicks, _ = self.mha(doc_clicks, doc_clicks, doc_clicks, key_padding_mask=click_mask)
         mha_doc_clicks = self.dropout(mha_doc_clicks.permute(1, 0, 2))  # [B, N, D]
 
         # click_repr = self.linear(click_output)

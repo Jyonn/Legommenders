@@ -6,6 +6,7 @@ from UniTok import UniDep
 from oba import Obj
 from torch.utils.data import Dataset
 
+from utils.printer import printer, Color
 from utils.splitter import Splitter
 
 
@@ -22,6 +23,8 @@ class BaseDataset(Dataset):
 
         @rtype: object
         """
+        self.print = printer[(self.__class__.__name__, '·', Color.GREEN)]
+
         self.depot = depot
         self.order = order
         self.append = self.get_append(append)
@@ -39,11 +42,10 @@ class BaseDataset(Dataset):
 
     def get_append(self, append):
         append = Obj.raw(append) or []
-        if self.depot.id_col not in append:
-            append.append(self.depot.id_col)
         for col in append:
             if self.depot.is_list_col(col):
-                raise ValueError(f'list column {col} cannot be appended')
+                self.print(f'{col} is a list col, please do list align in task carefully')
+                # raise ValueError(f'list column {col} cannot be appended')
         return append
 
     def __getitem__(self, index):

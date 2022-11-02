@@ -1,7 +1,9 @@
+import torch
 from torch import nn
 
 from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
+from loader.global_setting import Setting
 from task.base_batch import BaseBatch
 from task.base_task import BaseTask
 from task.task_loader import TaskLoader
@@ -32,6 +34,9 @@ class ModelContainer(nn.Module):
         )
         if not isinstance(input_embeddings, tuple):
             input_embeddings = (input_embeddings, )
+        input_embeddings = [embed.to(Setting.device)
+                            if isinstance(embed, torch.Tensor) else embed
+                            for embed in input_embeddings]
         outputs = self.model(*input_embeddings)
         outputs = task.rebuild_output(outputs, batch)
         return outputs

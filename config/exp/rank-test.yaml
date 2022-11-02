@@ -11,8 +11,8 @@ tasks:
       clicks_col: history
       candidate_col: nid
 load:
-  save_dir: ../match
-  epochs: "[1]"
+  save_dir: ../../${exp.tasks.0.name}-train/${x}
+  epochs: null
   model_only: true
   strict: true
   wait: true

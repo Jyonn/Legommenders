@@ -23,7 +23,7 @@ store:
 policy:
   freeze_emb: false
   pin_memory: true
-  epoch: 10
+  epoch: 100
   epoch_start: 0
   lr: 0.001
   batch_size: 5000

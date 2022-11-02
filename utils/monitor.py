@@ -4,6 +4,8 @@ import os
 import torch
 from oba import Obj
 
+from utils.printer import printer
+
 
 class Monitor:
     def __init__(
@@ -24,6 +26,7 @@ class Monitor:
         self.epoch_skip = epoch_skip
         self.early_stop = early_stop
         self.debug = debug
+        self.print = printer.MONITOR
 
     def remove_checkpoint(self, epoch):
         if self.debug:
@@ -83,7 +86,8 @@ class Monitor:
                 for i in range(len(self.candidates))[::-1]:
                     if stay[i]:
                         if epoch - self.candidates[i][0] >= self.early_stop:
-                            raise ValueError('Early Stop')
+                            self.print('Early Stop')
+                            exit(0)
                         return
             return
 

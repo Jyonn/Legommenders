@@ -12,7 +12,7 @@ tasks:
       candidate_col: nid
       neg_count: 4
 load:
-  save_dir: ../match
+  save_dir: ../../${exp.tasks.0.name}-train/${x}
   epochs: null
   model_only: true
   strict: true
@@ -20,7 +20,7 @@ load:
 policy:
   freeze_emb: false
   pin_memory: true
-  batch_size: 64
+  batch_size: 5000
   device: gpu
 metrics:
   - LogLoss

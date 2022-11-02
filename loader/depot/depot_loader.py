@@ -36,7 +36,7 @@ class FilterUniDep(UniDep):
                     if filtering == 'remove_empty':
                         filtering = 'x'
                     filterer = eval(f'lambda x: {filtering}')
-                    print(f'filter ({filtering}): {depot.sample_size} -> ', end='')
+                    print(f'filter for {col} ({filtering}): {depot.sample_size} -> ', end='')
                     depot.customize(col, filterer)
                     print(depot.sample_size)
         return depot

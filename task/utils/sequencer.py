@@ -47,7 +47,7 @@ class Sequencer:
 
     def create(self, sample: OrderedDict):
         pointer = self.Pointer()
-        input_ids = dict()
+        input_ids = OrderedDict()
 
         special_id = self.get_empty_input()
         if self.use_cls_token:

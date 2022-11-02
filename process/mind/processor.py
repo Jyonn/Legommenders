@@ -43,7 +43,7 @@ class Processor:
         return pd.read_csv(
             filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors.tsv'),
             sep='\t',
-            names=['session', 'uid', 'time', 'history', 'predict'],
+            names=['imp', 'uid', 'time', 'history', 'predict'],
             usecols=['uid', 'history']
         )
 
@@ -54,6 +54,24 @@ class Processor:
             names=['imp', 'uid', 'time', 'history', 'predict'],
             usecols=['imp', 'uid', 'predict']
         )
+
+    def read_neg_data(self, mode):
+        df = self._read_inter_data(mode)
+        data = dict(uid=[], neg=[])
+        for line in df.itertuples():
+            if line.uid in data['uid']:
+                continue
+
+            predicts = line.predict.split(' ')
+            negs = []
+            for predict in predicts:
+                nid, click = predict.split('-')
+                if not int(click):
+                    negs.append(nid)
+
+            data['uid'].append(line.uid)
+            data['neg'].append(' '.join(negs))
+        return pd.DataFrame(data)
 
     def read_inter_data(self, mode):
         df = self._read_inter_data(mode)
@@ -103,6 +121,21 @@ class Processor:
         ))
         return user_ut
 
+    def get_neg_tok(self, max_neg: int = 0):
+        neg_ut = UniTok()
+        neg_ut.add_col(Column(
+            name='uid',
+            tokenizer=IdTok(name='uid', vocab=self.uid).as_sing(),
+        )).add_col(Column(
+            name='neg',
+            tokenizer=SplitTok(
+                name='neg',
+                sep=' ',
+                vocab=self.nid
+            ).as_list(max_length=max_neg, slice_post=True),
+        ))
+        return neg_ut
+
     def get_inter_tok(self):
         return UniTok().add_index_col(
             name='index'
@@ -134,6 +167,14 @@ class Processor:
         user_df = pd.concat([user_train_df, user_dev_df])
         user_df = user_df.drop_duplicates(['uid'])
         return user_df
+
+    def combine_neg_df(self):
+        neg_train_df = self.read_neg_data('train')
+        neg_dev_df = self.read_neg_data('dev')
+
+        neg_df = pd.concat([neg_train_df, neg_dev_df])
+        neg_df = neg_df.drop_duplicates(['uid'])
+        return neg_df
 
     def combine_inter_df(self):
         inter_train_df = self.read_inter_data('train')
@@ -214,6 +255,14 @@ class Processor:
             #     inter_df = inter_df[inter_df.click == 1]
             inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, mode))
 
+    def tokenize_neg(self):
+        self.uid.load(os.path.join(self.store_dir, 'user'))
+        self.nid.load(os.path.join(self.store_dir, 'news'))
+
+        neg_df = self.combine_neg_df()
+        neg_tok = self.get_neg_tok()
+        neg_tok.read_file(neg_df).tokenize().store_data(os.path.join(self.store_dir, 'neg'))
+
 
 if __name__ == '__main__':
     p = Processor(
@@ -223,4 +272,5 @@ if __name__ == '__main__':
     # p.analyse_news()
     # p.analyse_user()
     # p.analyse_inter()
-    p.tokenize()
+    # p.tokenize()
+    p.tokenize_neg()
