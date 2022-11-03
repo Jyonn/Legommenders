@@ -10,7 +10,7 @@ tasks:
       label_col: label
       clicks_col: history
       candidate_col: nid
-      neg_count: 4
+      neg_count: 3
       use_cls_token: false
       use_sep_token: false
       neg_col: neg
@@ -31,7 +31,7 @@ policy:
   epoch: 200
   epoch_start: 0
   lr: 0.001
-  batch_size: 2500
+  batch_size: 5000
   accumulate_batch: 1
   device: gpu
   n_warmup: 0

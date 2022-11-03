@@ -1,9 +1,10 @@
 store:
   data_dir: data/${dataset}
-  save_dir: saving/${dataset}/${model.dir}-wordembedding/${exp.dir}
+  save_dir: saving/${dataset}/${model.dir}/${exp.dir}
   log_file: ${data.store.save_dir}/exp.log
   union:
     - data/${dataset}/user
+    - data/${dataset}/neg
 has_split: true
 split:
   train:
@@ -17,9 +18,13 @@ filters:
   train:
     history:
       - remove_empty
+    click:
+      - x == 1
   dev:
     history:
       - remove_empty
+    click:
+      - x == 1
   test:
     history:
       - remove_empty
@@ -30,6 +35,7 @@ append:
   - nid
   - uid
   - click
+  - neg
 test:
   group_col: imp
   label_col: click
@@ -38,4 +44,4 @@ token_embedding:
     vocab_name: english
     vocab_type: bert_tf
     path: /data1/qijiong/Data/PLM/bert-base-uncased
-    frozen: true
+    frozen: false

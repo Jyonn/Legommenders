@@ -1,9 +1,15 @@
-import argparse
+def hello(x, *args, **kwargs):
+    print(x)
+    print(args)
+    print(kwargs)
+    return x
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--config', type=str)
-parser.add_argument('--exp', type=str)
-parser.add_argument('--dataset', type=str)
 
-args = parser.parse_known_args()
-print(args)
+class A:
+    @hello
+    def __init__(self, wow):
+        pass
+
+
+print("??")
+# A(222)
