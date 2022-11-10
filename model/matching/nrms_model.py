@@ -102,11 +102,6 @@ class NRMSModel(BaseModel):
             click_mask (tensor): [num_user (B), num_click_docs (c)]
             doc_candidates_attention_mask (tensor): [num_user (B), num_candidate_docs (C), seq_len (T)]
         """
-        # print('doc clicks', doc_clicks.shape)
-        # print('doc candidates', doc_candidates.shape)
-        # print('doc clicks attn', doc_clicks_attention_mask.shape)
-        # print('doc candidates attn', doc_candidates_attention_mask.shape)
-        # print('click mask', click_mask.shape)
         num_user, num_click, doc_len, embed_dim = doc_clicks.shape
         num_candidate = doc_candidates.shape[1]
 
@@ -114,10 +109,6 @@ class NRMSModel(BaseModel):
         doc_candidates = doc_candidates.reshape(-1, doc_len, embed_dim)  # [-1, T, D]
         doc_clicks_attention_mask = doc_clicks_attention_mask.reshape(-1, doc_len)
         doc_candidates_attention_mask = doc_candidates_attention_mask.reshape(-1, doc_len)
-        # print('doc clicks', doc_clicks.shape)
-        # print('doc candidates', doc_candidates.shape)
-        # print('doc clicks attn', doc_clicks_attention_mask.shape)
-        # print('doc candidates attn', doc_candidates_attention_mask.shape)
 
         doc_clicks = self.doc_encoder(doc_clicks, doc_clicks_attention_mask)  # [-1, D]
         doc_candidates = self.doc_encoder(doc_candidates, doc_candidates_attention_mask)  # [-1, D]
@@ -129,7 +120,6 @@ class NRMSModel(BaseModel):
         mha_doc_clicks, _ = self.mha(doc_clicks, doc_clicks, doc_clicks, key_padding_mask=click_mask)
         mha_doc_clicks = self.dropout(mha_doc_clicks.permute(1, 0, 2))  # [B, N, D]
 
-        # click_repr = self.linear(click_output)
         user_clicks, _ = self.ada(mha_doc_clicks)  # [B, D]
         matching_scores = torch.bmm(
             user_clicks.unsqueeze(1),  # [B, 1, D]
