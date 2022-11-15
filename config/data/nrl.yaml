@@ -4,6 +4,7 @@ store:
   log_file: ${data.store.save_dir}/exp.log
   union:
     - data/${dataset}/user
+    - data/${dataset}/neg
 has_split: true
 split:
   train:
@@ -12,12 +13,35 @@ split:
     path: dev
   test:
     path: test
-shuffle: true
+shuffle: false
+filters:
+  train:
+    history:
+      - remove_empty
+    click:
+      - x == 1
+  dev:
+    history:
+      - remove_empty
+    click:
+      - x == 1
+  test:
+    history:
+      - remove_empty
 order:
   - history
 append:
   - imp
   - nid
   - uid
-use_sep_token: true
-use_cls_token: true
+  - click
+  - neg
+test:
+  group_col: imp
+  label_col: click
+token_embedding:
+  -
+    vocab_name: nid
+    vocab_type: numpy
+    path: data/${dataset}/newsencoder-last.npy
+    frozen: true

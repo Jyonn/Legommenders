@@ -67,13 +67,12 @@ class DocEncoder(nn.Module):
         return output
 
 
-class NRMSModel(BaseModel):
+class NRMSNRLModel(BaseModel):
     config_class = NRMSConfig
 
     def __init__(self, config: NRMSConfig):
         super().__init__()
         self.config = config
-        self.doc_encoder = DocEncoder(config)
         self.mha = nn.MultiheadAttention(
             embed_dim=config.doc_embed_dim,
             num_heads=config.num_attention_heads,
@@ -85,6 +84,41 @@ class NRMSModel(BaseModel):
             hidden_size=self.config.ada_hidden_size
         )
         self.dropout = nn.Dropout(config.seq_embedding_dropout)
+
+    def forward(
+            self,
+            clicks: torch.Tensor,
+            candidates: torch.Tensor,
+            click_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """forward
+        Args:
+            clicks (tensor): [num_user (B), num_click_docs (N), D]
+            candidates (tensor): [num_user (B), num_candidate_docs (C), D]
+            click_mask (tensor): [num_user (B), num_click_docs (c)]
+        """
+        click_mask = (1 - click_mask).bool()
+        clicks = clicks.permute(1, 0, 2)  # [N, B, D]
+        mha_doc_clicks, _ = self.mha(clicks, clicks, clicks, key_padding_mask=click_mask)
+        mha_doc_clicks = self.dropout(mha_doc_clicks.permute(1, 0, 2))  # [B, N, D]
+
+        user_clicks, _ = self.ada(mha_doc_clicks)  # [B, D]
+        matching_scores = torch.bmm(
+            user_clicks.unsqueeze(1),  # [B, 1, D]
+            candidates.permute(0, 2, 1)  # [B, D, C]
+        ).squeeze(1)  # [B, C]
+
+        return torch.sigmoid(matching_scores)
+
+
+class NRMSModel(BaseModel):
+    config_class = NRMSConfig
+
+    def __init__(self, config: NRMSConfig):
+        super().__init__()
+        self.config = config
+        self.doc_encoder = DocEncoder(config)
+        self.click_encoder = NRMSNRLModel(config)
 
     def forward(
             self,
@@ -115,15 +149,4 @@ class NRMSModel(BaseModel):
         doc_clicks = doc_clicks.reshape(num_user, num_click, -1)  # [B, N, D]
         doc_candidates = doc_candidates.reshape(num_user, num_candidate, -1)  # [B, C, D]
 
-        click_mask = (1 - click_mask).bool()
-        doc_clicks = doc_clicks.permute(1, 0, 2)  # [N, B, D]
-        mha_doc_clicks, _ = self.mha(doc_clicks, doc_clicks, doc_clicks, key_padding_mask=click_mask)
-        mha_doc_clicks = self.dropout(mha_doc_clicks.permute(1, 0, 2))  # [B, N, D]
-
-        user_clicks, _ = self.ada(mha_doc_clicks)  # [B, D]
-        matching_scores = torch.bmm(
-            user_clicks.unsqueeze(1),  # [B, 1, D]
-            doc_candidates.permute(0, 2, 1)  # [B, D, C]
-        ).squeeze(1)  # [B, C]
-
-        return torch.sigmoid(matching_scores)
+        return self.click_encoder(doc_clicks, doc_candidates, click_mask)

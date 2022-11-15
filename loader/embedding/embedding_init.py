@@ -37,11 +37,6 @@ class EmbeddingInit:
         self._table = None  # type: Optional[nn.ModuleDict]
 
     def register_vocab(self, vocab: Vocab):
-        table = self.get_table()
-        # table[vocab.name] = nn.Embedding(
-        #     num_embeddings=vocab.get_size(),
-        #     embedding_dim=self.hidden_size,
-        # )
         self._register_vocab(
             table=self.get_table(),
             vocab_name=vocab.name,

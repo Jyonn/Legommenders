@@ -37,6 +37,12 @@ class SeqBatch(BaseBatch):
         self.attention_mask = batch['attention_mask']
 
 
+class NRLBatch(BaseBatch):
+    def __init__(self, batch):
+        super().__init__(batch)
+        self.click_mask = batch['click_mask']  # type: torch.Tensor
+
+
 class HSeqBatch(BaseBatch):
     def __init__(self, batch):
         super().__init__(batch)

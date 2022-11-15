@@ -3,13 +3,15 @@ dir: ${exp.name}/${time.hex}_${rand.4}
 mode: train
 tasks:
   -
-    name: ranking
+    name: matching-nrl
     params:
-      doc_depot: data/${dataset}/news
-      doc_order: ['title']
-      label_col: click
+      label_col: label
       clicks_col: history
       candidate_col: nid
+      neg_count: 4
+      use_cls_token: false
+      use_sep_token: false
+      neg_col: neg
 load:
   save_dir: null
   epochs: null
@@ -23,10 +25,10 @@ store:
 policy:
   freeze_emb: false
   pin_memory: true
-  epoch: 100
+  epoch: 200
   epoch_start: 0
   lr: 0.001
-  batch_size: 5000
+  batch_size: 2500
   accumulate_batch: 1
   device: gpu
   n_warmup: 0

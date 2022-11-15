@@ -19,9 +19,15 @@ class ClickTok(BaseTok):
 
 
 class Processor:
-    def __init__(self, data_dir, store_dir):
+    def __init__(self, data_dir, store_dir, v2=False):
         self.data_dir = data_dir
         self.store_dir = store_dir
+        self.v2 = v2
+
+        if os.path.exists(self.store_dir):
+            c = input(f'{self.store_dir} exists, press Y to continue, or press any other to exit.')
+            if c.upper() != 'Y':
+                exit(0)
 
         os.makedirs(self.store_dir, exist_ok=True)
 
@@ -73,7 +79,7 @@ class Processor:
             data['neg'].append(' '.join(negs))
         return pd.DataFrame(data)
 
-    def read_inter_data(self, mode):
+    def read_inter_data(self, mode) ->pd.DataFrame:
         df = self._read_inter_data(mode)
         data = dict(imp=[], uid=[], nid=[], click=[])
         for line in df.itertuples():
@@ -219,6 +225,25 @@ class Processor:
                pd.concat(inter_dev_df, ignore_index=True), \
                pd.concat(inter_test_df, ignore_index=True)
 
+    def reassign_inter_df_v2(self):
+        inter_train_df = self.read_inter_data('train')
+        inter_df = self.read_inter_data('dev')
+
+        imp_list = inter_df.imp.drop_duplicates().to_list()
+
+        dev_imps, test_imps = self.splitter(imp_list, [5, 5])
+        inter_dev_df, inter_test_df = [], []
+
+        inter_groups = inter_df.groupby('imp')
+        for imp, imp_df in inter_groups:
+            if imp in dev_imps:
+                inter_dev_df.append(imp_df)
+            else:
+                inter_test_df.append(imp_df)
+        return inter_train_df, \
+               pd.concat(inter_dev_df, ignore_index=True), \
+               pd.concat(inter_test_df, ignore_index=True)
+
     def analyse_news(self):
         tok = self.get_news_tok(
             max_title_len=0,
@@ -249,7 +274,8 @@ class Processor:
         user_df = self.combine_user_df()
         user_tok.read_file(user_df).tokenize().store_data(os.path.join(self.store_dir, 'user'))
 
-        for inter_df, mode in zip(self.reassign_inter_df(), ['train', 'dev', 'test']):
+        inter_dfs = self.reassign_inter_df_v2() if self.v2 else self.reassign_inter_df()
+        for inter_df, mode in zip(inter_dfs, ['train', 'dev', 'test']):
             inter_tok = self.get_inter_tok()
             # if mode in ['train', 'dev']:
             #     inter_df = inter_df[inter_df.click == 1]
@@ -265,12 +291,23 @@ class Processor:
 
 
 if __name__ == '__main__':
-    p = Processor(
-        data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small'
-    )
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND/',
+    #     store_dir='../../data/MIND-small'
+    # )
     # p.analyse_news()
     # p.analyse_user()
     # p.analyse_inter()
     # p.tokenize()
+    # p.tokenize_neg()
+
+    p = Processor(
+        data_dir='/data1/qijiong/Data/MIND/',
+        store_dir='../../data/MIND-small-v2',
+        v2=True,
+    )
+    # p.analyse_news()
+    # p.analyse_user()
+    # p.analyse_inter()
+    p.tokenize()
     p.tokenize_neg()

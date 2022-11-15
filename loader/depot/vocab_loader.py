@@ -2,6 +2,8 @@ from typing import Dict
 
 from UniTok import Vocab, UniDep
 
+from utils.printer import printer
+
 
 class VocabLoader:
     def __init__(self):
