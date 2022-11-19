@@ -84,7 +84,7 @@ class Worker:
 
     def get_device(self):
         cuda = self.config.cuda
-        if cuda in [-1, False]:
+        if cuda in ['-1', -1, False]:
             return 'cpu'
         if not cuda:
             return GPU.auto_choose(torch_format=True)
@@ -131,7 +131,6 @@ class Worker:
                     batch=batch,
                     task=self.task,
                 )
-
                 loss = self.task.calculate_loss(task_output, batch, model=self.model_container)
                 loss.backward()
 

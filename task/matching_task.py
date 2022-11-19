@@ -18,7 +18,15 @@ class MatchingTask(BaseHSeqTask):
 
     def calculate_loss(self, output, batch: HSeqBatch, **kwargs) -> BaseLoss:
         label = torch.zeros(batch.batch_size, dtype=torch.long).to(Setting.device)
-        return BaseLoss(self.criterion(output, label))
+        loss = self.criterion(output, label)
+        # if torch.isnan(loss):
+        #     print('loss is nan')
+        #     print(output)
+        #     print(label)
+        #     print(batch.append['_candidates'])
+        #     exit(0)
+        # loss = torch.nan_to_num(loss, nan=0.0)
+        return BaseLoss(loss)
 
     def calculate_scores(self, output, batch: HSeqBatch, **kwargs):
         return output.squeeze(dim=-1).detach().cpu().tolist()

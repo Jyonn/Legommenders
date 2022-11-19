@@ -16,7 +16,7 @@ class RankingTask(BaseHConcatTask):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
 
     def calculate_loss(self, output, batch: BaseBatch, **kwargs) -> BaseLoss:
         labels = batch.append[self.label_col].to(Setting.device).float()

@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -5,6 +6,21 @@ import numpy as np
 import pandas as pd
 from UniTok import Vocab, UniTok, Column
 from UniTok.tok import IdTok, SplitTok, BertTok, EntTok, BaseTok
+from nltk import word_tokenize
+
+
+class GloveTok(BaseTok):
+    def __init__(self, name: str, path: str):
+        super().__init__(name)
+        self.vocab = Vocab('english').load(path, as_path=True)
+
+    def t(self, obj: str):
+        ids = []
+        objs = word_tokenize(str(obj).lower())
+        for o in objs:
+            if o in self.vocab.obj2index:
+                ids.append(self.vocab.obj2index[o])
+        return ids or [self.vocab.obj2index[',']]
 
 
 class ClickTok(BaseTok):
@@ -19,10 +35,12 @@ class ClickTok(BaseTok):
 
 
 class Processor:
-    def __init__(self, data_dir, store_dir, v2=False):
+    def __init__(self, data_dir, store_dir, v2=False, glove=None, imp_list_path: str = None):
         self.data_dir = data_dir
         self.store_dir = store_dir
         self.v2 = v2
+        self.glove = glove
+        self.imp_list = json.load(open(imp_list_path, 'r')) if imp_list_path else None
 
         if os.path.exists(self.store_dir):
             c = input(f'{self.store_dir} exists, press Y to continue, or press any other to exit.')
@@ -93,7 +111,10 @@ class Processor:
         return pd.DataFrame(data)
 
     def get_news_tok(self, max_title_len=0, max_abs_len=0):
-        txt_tok = BertTok(name='english', vocab_dir='bert-base-uncased')
+        if self.glove:
+            txt_tok = GloveTok(name='english', path=self.glove)
+        else:
+            txt_tok = BertTok(name='english', vocab_dir='bert-base-uncased')
 
         return UniTok().add_col(Column(
             name='nid',
@@ -190,9 +211,12 @@ class Processor:
         inter_df = pd.concat([inter_train_df, inter_dev_df])
         return inter_df
 
-    @staticmethod
-    def splitter(l: list, portions: list):
-        random.shuffle(l)
+    def splitter(self, l: list, portions: list):
+        if self.imp_list:
+            l = self.imp_list
+        else:
+            random.shuffle(l)
+        json.dump(l, open(os.path.join(self.store_dir, 'imp_list.json'), 'w'))
 
         portions = np.array(portions)
         portions = portions * 1.0 / portions.sum() * len(l)
@@ -306,8 +330,16 @@ if __name__ == '__main__':
         store_dir='../../data/MIND-small-v2',
         v2=True,
     )
+    p.tokenize()
+    p.tokenize_neg()
+
+    p = Processor(
+        data_dir='/data1/qijiong/Data/MIND/',
+        store_dir='../../data/MIND-small-v2-glove',
+        v2=True,
+        glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
+        imp_list_path='../../data/MIND-small-v2/imp_list.json',
+    )
     # p.analyse_news()
-    # p.analyse_user()
-    # p.analyse_inter()
     p.tokenize()
     p.tokenize_neg()

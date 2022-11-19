@@ -6,7 +6,7 @@ config:
   doc_embed_dim: ${model.config.tok_embed_dim}$
   ada_hidden_size: 64
   num_attention_heads: 8
-  doc_embedding_dropout: 0.2
-  doc_attention_dropout: 0.2
-  seq_embedding_dropout: 0.2
-  seq_attention_dropout: 0.2
+  doc_embedding_dropout: 0.05
+  doc_attention_dropout: 0.05
+  seq_embedding_dropout: 0.05
+  seq_attention_dropout: 0.05

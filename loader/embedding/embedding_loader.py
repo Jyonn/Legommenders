@@ -20,7 +20,7 @@ class EmbeddingInfo:
     def get_numpy_embedding(path):
         embedding = np.load(path)
         assert isinstance(embedding, np.ndarray)
-        return torch.tensor(embedding)
+        return torch.tensor(embedding, dtype=torch.float32)
 
     @staticmethod
     def get_bert_torch_embedding(path):

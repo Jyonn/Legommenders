@@ -79,10 +79,10 @@ class DCNModel(BaseModel):
 
         output_dim = input_dim + config.dnn_hidden_units[-1]
         self.prediction = nn.Linear(output_dim, 1)
-        self.activation = nn.Sigmoid()
+        # self.activation = nn.Sigmoid()
 
     def forward(self, input_embeddings):
         cross_output = self.cross_net(input_embeddings)
         dnn_output = self.dnn(input_embeddings)
         final_out = torch.cat([cross_output, dnn_output], dim=-1)
-        return self.activation(self.prediction(final_out))
+        return self.prediction(final_out)

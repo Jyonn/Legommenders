@@ -66,6 +66,7 @@ class BaseHSeqTask(BaseSeqTask, BaseDocSeqTask, BaseNegTask, ABC):
         sample['doc_clicks'] = self.stacker(doc_clicks)
         sample['doc_candidates'] = self.stacker(doc_candidates)
         sample['click_mask'] = click_mask
+        sample['append']['_candidates'] = candidates
         sample = super(BaseHSeqTask, self).rebuild_sample(sample, dataset)
         return sample
 

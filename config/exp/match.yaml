@@ -24,14 +24,17 @@ store:
 #  interval: 10
   monitor: a.loss < b.loss
   top: 1
-  early_stop: 3
+  early_stop: 2
 policy:
   freeze_emb: false
   pin_memory: true
   epoch: 200
   epoch_start: 0
-  lr: 0.001
-  batch_size: 2500
+#  lr: 0.001
+#  batch_size: 2500
+#  accumulate_batch: 1
+  lr: 0.0005
+  batch_size: 256
   accumulate_batch: 1
   device: gpu
   n_warmup: 0

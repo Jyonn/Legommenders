@@ -61,6 +61,7 @@ class DocEncoder(nn.Module):
 
         attention_mask = (1 - attention_mask).bool()
         output, _ = self.mha(embedding, embedding, embedding, key_padding_mask=attention_mask)  # [T, B, D]
+        # output, _ = self.mha(embedding, embedding, embedding)  # [T, B, D]
         output = F.dropout(output.permute(1, 0, 2))  # [B, T, D]
         output = self.linear(output)  # [B, T, encoder_size]
         output, _ = self.ada(output)
@@ -100,6 +101,7 @@ class NRMSNRLModel(BaseModel):
         click_mask = (1 - click_mask).bool()
         clicks = clicks.permute(1, 0, 2)  # [N, B, D]
         mha_doc_clicks, _ = self.mha(clicks, clicks, clicks, key_padding_mask=click_mask)
+        # mha_doc_clicks, _ = self.mha(clicks, clicks, clicks)
         mha_doc_clicks = self.dropout(mha_doc_clicks.permute(1, 0, 2))  # [B, N, D]
 
         user_clicks, _ = self.ada(mha_doc_clicks)  # [B, D]
@@ -108,7 +110,7 @@ class NRMSNRLModel(BaseModel):
             candidates.permute(0, 2, 1)  # [B, D, C]
         ).squeeze(1)  # [B, C]
 
-        return torch.sigmoid(matching_scores)
+        return matching_scores
 
 
 class NRMSModel(BaseModel):
