@@ -22,4 +22,17 @@ class Rand(dict):
 
 
 if __name__ == '__main__':
-    print(Rand()[4])
+
+    d = dict(
+        utils=dict(
+            rand=Rand()
+        ),
+        store=dict(
+            path='${utils.rand.4}',
+            filename='${store.path}/exp.log',
+        )
+    )
+
+    import smartdict
+    print(smartdict.parse(d))
+
