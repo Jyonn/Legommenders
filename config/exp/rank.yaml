@@ -6,7 +6,7 @@ tasks:
     name: ranking
     params:
       doc_depot: data/${dataset}/news
-      doc_order: ['title']
+      doc_order: ['title', 'cat']
       label_col: click
       clicks_col: history
       candidate_col: nid
@@ -27,6 +27,7 @@ policy:
   epoch_start: 0
   lr: 0.001
   batch_size: 5000
+#  batch_size: 1
   accumulate_batch: 1
   device: gpu
   n_warmup: 0

@@ -11,6 +11,7 @@ from task.base_batch import BaseBatch
 from task.base_concat_task import BaseConcatTask
 from task.base_doc_seq_task import BaseDocSeqTask
 from task.utils.padding import Padding
+from utils.structure import Structure
 
 
 class BaseHConcatTask(BaseConcatTask, BaseDocSeqTask, ABC):
@@ -26,8 +27,6 @@ class BaseHConcatTask(BaseConcatTask, BaseDocSeqTask, ABC):
             **kwargs
     ):
         super().__init__(dataset, **kwargs)
-
-        assert len(self.doc_order) == 1
 
         self.label_col = label_col
         self.user_col = user_col

@@ -2,6 +2,7 @@ import os
 
 from UniTok import UniDep
 
+from loader.depot.depot_cache import DepotCache
 from loader.global_setting import Setting
 from utils.splitter import Splitter
 
@@ -28,7 +29,7 @@ class FilterUniDep(UniDep):
 
         depot = cls(store_dir=data_dir)
         if store.union:
-            depot.union(*[UniDep(d) for d in store.union])
+            depot.union(*[DepotCache.get(d) for d in store.union])
 
         if filters:
             for col in filters:

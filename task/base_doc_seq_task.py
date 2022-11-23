@@ -3,6 +3,7 @@ from abc import ABC
 import torch
 from UniTok import UniDep
 
+from loader.depot.depot_cache import DepotCache
 from set.base_dataset import BaseDataset
 from task.base_task import BaseTask
 from utils.stacker import Stacker
@@ -17,7 +18,7 @@ class BaseDocSeqTask(BaseTask, ABC):
             **kwargs
     ):
         super().__init__(dataset, **kwargs)
-        self.doc_depot = UniDep(doc_depot)
+        self.doc_depot = DepotCache.get(doc_depot)
         self.doc_order = doc_order or ['title']
 
         self.doc_dataset = BaseDataset(

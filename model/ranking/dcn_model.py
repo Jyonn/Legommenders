@@ -15,6 +15,7 @@ class DCNConfig(BaseConfig):
             dnn_batch_norm,
             cross_num,
             columns,
+            columns_doc,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -27,6 +28,7 @@ class DCNConfig(BaseConfig):
 
         self.cross_num = cross_num
         self.columns = columns
+        self.columns_doc = columns_doc
 
 
 class CrossInteractionLayer(nn.Module):
@@ -62,7 +64,7 @@ class DCNModel(BaseModel):
             config: DCNConfig,
     ):
         super(DCNModel, self).__init__()
-        input_dim = config.embed_dim * len(config.columns)
+        input_dim = config.embed_dim * (len(config.columns) - 2 + len(config.columns_doc) * 2)
 
         self.dnn = MLPLayer(
             input_dim=input_dim,

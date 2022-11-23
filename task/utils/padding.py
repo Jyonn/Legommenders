@@ -26,7 +26,10 @@ class Padding:
     def sample_wise_pad(self):
         sample = OrderedDict()
         for col in self.order:
-            sample[col] = torch.tensor(self.pad([], self.depot.get_max_length(col)))
+            if self.depot.is_list_col(col):
+                sample[col] = torch.tensor(self.pad([], self.depot.get_max_length(col)))
+            else:
+                sample[col] = torch.tensor(Setting.UNSET)
         return sample
 
     def __call__(self, sample: OrderedDict):

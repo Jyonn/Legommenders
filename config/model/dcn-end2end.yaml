@@ -8,3 +8,4 @@ config:
   dnn_batch_norm: false
   cross_num: 3
   columns: ${data.order}$
+  columns_doc: ${exp.tasks.0.params.doc_order}$

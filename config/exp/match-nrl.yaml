@@ -24,7 +24,7 @@ store:
   early_stop: 3
 policy:
   freeze_emb: false
-  pin_memory: true
+  pin_memory: false
   epoch: 200
   epoch_start: 0
   lr: 0.0001
