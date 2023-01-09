@@ -49,9 +49,9 @@ class Sequencer:
         pointer = self.Pointer()
         input_ids = OrderedDict()
 
-        special_id = self.get_empty_input()
+        special_ids = self.get_empty_input()
         if self.use_cls_token:
-            pointer.update_special_token(special_id, self.CLS)
+            pointer.update_special_token(special_ids, self.CLS)
 
         for col in sample:
             value = sample[col]
@@ -64,23 +64,27 @@ class Sequencer:
             input_ids[col] = input_id
 
             if self.use_sep_token:
-                pointer.update_special_token(special_id, self.SEP)
+                pointer.update_special_token(special_ids, self.SEP)
 
-        input_ids[self.vocab.name] = special_id
-        attention_mask = self._get_attention_mask(input_ids)
-        special_id *= attention_mask
+        # input_ids[self.vocab.name] = special_id
+        # attention_mask = self._get_attention_mask(input_ids)
+        # special_id *= attention_mask
+        # return input_ids, attention_mask
+        input_ids[self.vocab.name] = special_ids
+        attention_mask = torch.tensor([1] * pointer.pos + [0] * (self.max_sequence_len - pointer.pos), dtype=torch.long)
+        input_ids[self.vocab.name][pointer.pos:] = self.PAD
         return input_ids, attention_mask
 
-    @staticmethod
-    def _get_attention_mask(inputs) -> torch.Tensor:
-        mask = None
-        for col in inputs:
-            seq = inputs[col]  # type: torch.Tensor
-            if mask is None:
-                mask = torch.zeros(*seq.shape, dtype=torch.long)
-            col_mask = (seq > Setting.UNSET).long()
-            mask |= col_mask
-        return mask
+    # @staticmethod
+    # def _get_attention_mask(inputs) -> torch.Tensor:
+    #     mask = None
+    #     for col in inputs:
+    #         seq = inputs[col]  # type: torch.Tensor
+    #         if mask is None:
+    #             mask = torch.zeros(*seq.shape, dtype=torch.long)
+    #         col_mask = (seq > Setting.UNSET).long()
+    #         mask |= col_mask
+    #     return mask
 
     def __call__(self, sample: OrderedDict):
         return self.create(sample)

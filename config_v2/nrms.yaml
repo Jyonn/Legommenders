@@ -1,0 +1,35 @@
+data:
+  base_dir: data/${dataset}
+  news:
+    depot: ${data.base_dir}/news
+    order:
+      - title
+      - category
+    append:
+      - nid
+  user:
+    depots:
+      train:
+        path: ${data.base_dir}/train
+      dev:
+        path: ${data.base_dir}/dev
+      test:
+        path: ${data.base_dir}/test
+    filters:
+      history:
+        - remove_empty
+    union:
+      - data/${dataset}/user
+      - data/${dataset}/neg
+    candidate_col: nid
+    clicks_col: history
+    label_col: label
+model:
+  name: NRMS
+  config:
+    use_news_content: true
+    news_encoder:
+      ..
+    user_encoder:
+      neg_count: 4
+      neg_depot: ..

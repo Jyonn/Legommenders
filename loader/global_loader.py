@@ -1,7 +1,7 @@
 from typing import Dict
 
 from loader.base_dataloader import BaseDataLoader
-from loader.depot.depot_loader import FilterUniDep
+from loader.depot.depot_loader import UniDep
 from loader.depot.vocab_loader import VocabLoader
 from loader.embedding.embedding_init import EmbeddingInit
 from loader.global_setting import Setting
@@ -21,7 +21,7 @@ class GlobalLoader:
         self.exp = exp
         self.print = printer.DATA_Cblue_
 
-        self.depots, self.splitter = FilterUniDep.parse(self.data)  # type: Dict[FilterUniDep], Splitter
+        self.depots, self.splitter = UniDep.parse(self.data)  # type: Dict[FilterUniDep], Splitter
         self.vocab_loader = VocabLoader()
         self.vocab_loader.load_from_depot(self.a_depot, self.data.order)
 

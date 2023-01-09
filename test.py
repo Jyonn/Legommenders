@@ -22,3 +22,12 @@ class A(object):
 a = A(222)
 print(a)
 
+
+class B:
+    pass
+
+
+b = B()
+
+print(B)
+print(b)

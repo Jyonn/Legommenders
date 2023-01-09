@@ -22,7 +22,7 @@ class BaseDocSeqTask(BaseTask, ABC):
         self.doc_order = doc_order or ['title']
 
         self.doc_dataset = BaseDataset(
-            depot=self.doc_depot,
+            nrd=self.doc_depot,
             order=self.doc_order,
             append=[],
         )

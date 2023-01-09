@@ -11,7 +11,6 @@ from task.base_batch import BaseBatch
 from task.base_concat_task import BaseConcatTask
 from task.base_doc_seq_task import BaseDocSeqTask
 from task.utils.padding import Padding
-from utils.structure import Structure
 
 
 class BaseHConcatTask(BaseConcatTask, BaseDocSeqTask, ABC):

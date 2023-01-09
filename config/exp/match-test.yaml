@@ -20,8 +20,8 @@ load:
 policy:
   freeze_emb: false
   pin_memory: true
-#  batch_size: 5000
-  batch_size: 64
+  batch_size: 500
+#  batch_size: 64
   device: gpu
 metrics:
   - LogLoss

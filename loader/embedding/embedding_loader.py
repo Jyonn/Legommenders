@@ -9,8 +9,7 @@ from utils.printer import printer
 
 
 class EmbeddingInfo:
-    def __init__(self, vocab_name, vocab_type, path, frozen):
-        self.name = vocab_name
+    def __init__(self, vocab_type, path, frozen):
         self.type = vocab_type
         self.path = path
         self.embedding = None  # type: Optional[torch.Tensor]
@@ -49,7 +48,6 @@ class EmbeddingLoader:
 
     def append(self, vocab_name, vocab_type, path, frozen):
         self.table[vocab_name] = EmbeddingInfo(
-            vocab_name=vocab_name,
             vocab_type=vocab_type,
             path=path,
             frozen=frozen,

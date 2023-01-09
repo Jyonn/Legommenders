@@ -1,25 +1,15 @@
 import os
 
-from UniTok import UniDep
+from UniTok import UniDep as OriUniDep
 
 from loader.depot.depot_cache import DepotCache
 from loader.global_setting import Setting
 from utils.splitter import Splitter
 
 
-class FilterUniDep(UniDep):
+class UniDep(OriUniDep):
     def __init__(self, store_dir):
         super().__init__(store_dir=store_dir)
-
-    def customize(self, col, lambda_detector):
-        valid_sample_indexes = []
-
-        for sample in self:
-            if lambda_detector(sample[col]):
-                valid_sample_indexes.append(sample[self.id_col])
-        self.index_order = valid_sample_indexes
-
-        self.sample_size = len(self.index_order)
 
     @classmethod
     def from_config(cls, store, sub_folder=None, filters=None):
@@ -38,7 +28,7 @@ class FilterUniDep(UniDep):
                         filtering = 'x'
                     filterer = eval(f'lambda x: {filtering}')
                     print(f'filter for {col} ({filtering}): {depot.sample_size} -> ', end='')
-                    depot.customize(col, filterer)
+                    depot.filter(filterer, col=col)
                     print(depot.sample_size)
         return depot
 

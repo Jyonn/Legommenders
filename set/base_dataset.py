@@ -1,23 +1,18 @@
 import copy
 from collections import OrderedDict
-from typing import Optional
 
-from UniTok import UniDep
-from oba import Obj
 from torch.utils.data import Dataset
 
+from model_v2.utils.manager import Manager
+from model_v2.utils.nr_depot import NRDepot
 from utils.printer import printer, Color
-from utils.splitter import Splitter
 
 
 class BaseDataset(Dataset):
     def __init__(
             self,
-            depot: UniDep,
-            order: list,
-            append: Optional[list] = None,
-            splitter: Splitter = None,
-            mode=None,
+            nrd: NRDepot,
+            manager: Manager = None,
     ):
         """
 
@@ -25,28 +20,22 @@ class BaseDataset(Dataset):
         """
         self.print = printer[(self.__class__.__name__, '·', Color.GREEN)]
 
-        self.depot = depot
-        self.order = order
-        self.append = self.get_append(append)
+        self.nrd = nrd
+        self.depot = nrd.depot
+        self.order = nrd.order
+        self.append = nrd.append
+        self.append_checker()
 
-        self.mode = mode
         self.sample_size = self.depot.sample_size
 
-        self.task = None
+        self.manager = manager
 
-        if splitter is None:
-            self.split_range = (0, self.sample_size)
-        else:
-            self.split_range = splitter.divide(self.sample_size)[self.mode]
-            assert splitter.contains(self.mode)
+        self.split_range = (0, self.sample_size)
 
-    def get_append(self, append):
-        append = Obj.raw(append) or []
-        for col in append:
+    def append_checker(self):
+        for col in self.append:
             if self.depot.is_list_col(col):
                 self.print(f'{col} is a list col, please do list align in task carefully')
-                # raise ValueError(f'list column {col} cannot be appended')
-        return append
 
     def __getitem__(self, index):
         index += self.split_range[0]
@@ -56,31 +45,9 @@ class BaseDataset(Dataset):
         mode_range = self.split_range
         return mode_range[1] - mode_range[0]
 
-    def register_task(self, task):
-        self.task = task
-
     def pack_sample(self, index):
         sample = self.depot[index]
-        inputs = OrderedDict()
-        for col in self.order:
-            inputs[col] = copy.copy(sample[col])
-        append = OrderedDict()
-        for col in self.append:
-            append[col] = sample[col]
-        sample = dict(append=append, inputs=inputs)
-        if self.task:
-            sample = self.task.rebuild_sample(sample, self)
+        sample = {col: copy.copy(sample[col]) for col in [*self.order, *self.append]}
+        if self.manager:
+            sample = self.manager.rebuild_sample(sample)
         return sample
-
-    @classmethod
-    def parse(cls, data, depots, splitter):
-        sets = dict()
-        for mode in data.split:
-            sets[mode] = cls(
-                order=data.order,
-                append=data.append,
-                depot=depots[mode],
-                splitter=splitter,
-                mode=mode,
-            )
-        return sets

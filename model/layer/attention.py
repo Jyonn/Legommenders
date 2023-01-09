@@ -9,6 +9,24 @@ from torch.nn import functional as F
 from typing import Tuple, Optional
 
 
+class Projector(nn.Module):
+    def __init__(self, hidden_size):
+        super(Projector, self).__init__()
+
+        self.hidden_size = hidden_size
+        self.en_q = nn.Linear(hidden_size, hidden_size)
+        self.en_k = nn.Linear(hidden_size, hidden_size)
+        self.en_v = nn.Linear(hidden_size, hidden_size)
+
+    def forward(
+            self,
+            q: torch.Tensor,
+            k: torch.Tensor,
+            v: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        return self.en_q(q), self.en_k(k), self.en_v(v)
+
+
 class AdditiveAttention(nn.Module):
     def __init__(self, embed_dim, hidden_size):
         super().__init__()
@@ -19,20 +37,25 @@ class AdditiveAttention(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(self.embed_dim, self.hidden_size),
             nn.Tanh(),
-            nn.Linear(self.hidden_size, 1),
+            nn.Linear(self.hidden_size, 1, bias=False),
         )
 
-    def forward(self, inputs: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
+    def forward(self, inputs: torch.Tensor, attention_mask: torch.Tensor = None) -> [torch.Tensor, torch.Tensor]:
         """
 
         @param inputs: [B, L, D]
+        @param attention_mask: [B, L]
         @return: [B, D]
         """
 
-        weights = self.encoder(inputs).squeeze(-1)
-        weights = torch.softmax(weights, dim=-1)  # [B, L]
+        attention = self.encoder(inputs).squeeze(-1)  # [B, L]
+        if attention_mask is None:
+            attention = torch.exp(attention)  # [B, L]
+        else:
+            attention = torch.exp(attention) * attention_mask  # [B, L]
+        attention_weight = attention / (torch.sum(attention, dim=-1, keepdim=True) + torch.finfo(torch.float32).eps)  # [B, L]
 
-        return torch.bmm(weights.unsqueeze(1), inputs).squeeze(1), weights
+        return torch.sum(inputs * attention_weight.unsqueeze(-1), dim=1)  # [B, D]
 
 
 class ScaledDotProduct(nn.Module):
@@ -115,24 +138,6 @@ class ScaledDotProduct(nn.Module):
         weights = self.dropout(weights)
         attention_output = torch.matmul(weights, v)
         return attention_output.transpose(-2, -3), weights
-
-
-class Projector(nn.Module):
-    def __init__(self, hidden_size):
-        super(Projector, self).__init__()
-
-        self.hidden_size = hidden_size
-        self.en_q = nn.Linear(hidden_size, hidden_size)
-        self.en_k = nn.Linear(hidden_size, hidden_size)
-        self.en_v = nn.Linear(hidden_size, hidden_size)
-
-    def forward(
-            self,
-            q: torch.Tensor,
-            k: torch.Tensor,
-            v: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        return self.en_q(q), self.en_k(k), self.en_v(v)
 
 
 class MultiHeadAttention(nn.Module):
