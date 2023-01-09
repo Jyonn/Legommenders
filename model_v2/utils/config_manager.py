@@ -1,8 +1,8 @@
 from typing import Dict, Type
 
 from UniTok import UniDep
+from oba import Obj
 
-from loader.base_dataloader import BaseDataLoader
 from loader.depot.depot_cache import DepotCache
 from model_v2.inputer.concat_inputer import ConcatInputer
 from model_v2.recommenders.base_model import BaseRecommender, BaseRecommenderConfig
@@ -121,7 +121,15 @@ class ConfigManager:
 
         # build recommender model and manager
         self.recommender_class = Recommenders()(self.model.name)  # type: Type[BaseRecommender]
-        self.recommender_config = self.recommender_class.config_class(self.model.config)  # type: BaseRecommenderConfig
+        self.recommender_config = self.recommender_class.config_class(
+            news_config=self.recommender_class.news_encoder_class.config_class(
+                **Obj.raw(self.model.config.news_encoder)
+            ),
+            user_config=self.recommender_class.user_encoder_class.config_class(
+                **Obj.raw(self.model.config.user_encoder)
+            ),
+            use_news_content=self.model.config.use_news_content,
+        )  # type: BaseRecommenderConfig
         self.recommender = self.recommender_class(
             config=self.recommender_config,
             column_map=self.column_map,

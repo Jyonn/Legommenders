@@ -1,29 +1,12 @@
 import random
-from typing import Union
 
 import torch
-from UniTok import UniDep
 from tqdm import tqdm
 
-from loader.depot.depot_cache import DepotCache
 from model_v2.recommenders.base_model import BaseRecommender, BaseRecommenderConfig
 from model_v2.utils.nr_depot import NRDepot
 from set.base_dataset import BaseDataset
 from utils.stacker import Stacker
-
-
-class DepotToDatasetManager:
-    def __init__(
-            self,
-            depot: NRDepot,
-    ):
-        self.depot = depot
-
-        self.dataset = BaseDataset(
-            nrd=self.depot,
-            order=self.order,
-            append=self.append,
-        )
 
 
 class Status:

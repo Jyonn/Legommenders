@@ -2,12 +2,11 @@ from typing import Type
 
 from torch import nn
 
-from model_v2.common.base_config import BaseConfig, BaseUserConfig
+from model_v2.common.base_config import BaseConfig
 from model_v2.news.base_model import BaseNewsModel
-from model_v2.user.base_model import BaseUserModel
+from model_v2.user.base_model import BaseUserModel, BaseUserConfig
 from model_v2.utils.column_map import ColumnMap
 from model_v2.utils.embedding_manager import EmbeddingManager
-# from model_v2.utils.manager import Manager
 
 
 class BaseRecommenderConfig:

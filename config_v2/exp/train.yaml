@@ -1,0 +1,20 @@
+name: ${exp.mode}
+dir: saving/${data.name}/${model.name}/${exp.name}
+log: ${exp.dir}/exp.log
+mode: train
+load:
+  save_dir: null
+  epochs: null
+  model_only: true
+  strict: true
+  wait: false
+policy:
+  freeze_emb: false
+  pin_memory: true
+  batch_size: 500
+  device: gpu
+metrics:
+  - GAUC
+  - MRR
+  - NDCG@5
+  - NDCG@10

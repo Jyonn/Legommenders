@@ -1,0 +1,26 @@
+name: mind-${version}
+base_dir: data/${data.name}
+news:
+  depot: ${data.base_dir}/news
+  order:
+    - title
+    - category
+  append:
+    - nid
+user:
+  depots:
+    train:
+      path: ${data.base_dir}/train
+    dev:
+      path: ${data.base_dir}/dev
+    test:
+      path: ${data.base_dir}/test
+  filters:
+    history:
+      - remove_empty
+  union:
+    - data/${data.name}/user
+    - data/${data.name}/neg
+  candidate_col: nid
+  clicks_col: history
+  label_col: label

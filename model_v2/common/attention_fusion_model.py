@@ -2,7 +2,7 @@ from torch import nn
 
 from model.layer.attention import AdditiveAttention
 from model_v2.common.attention_fusion_config import AttentionFusionConfig
-from model_v2.common.base_model import BaseBatch, BaseModel
+from model_v2.common.base_model import BaseBatch, BaseOperator
 from model_v2.inputer.concat_inputer import ConcatInputer
 
 
@@ -14,7 +14,8 @@ class AttentionBatch(BaseBatch):
         self.attention_mask = batch['attention_mask']  # [batch_size, seq_len], 1 for valid, 0 for padding
 
 
-class AttentionFusionModel(BaseModel):
+class AttentionFusionOperator(BaseOperator):
+    config_class = AttentionFusionConfig
     batcher = AttentionBatch
     inputer = ConcatInputer
 

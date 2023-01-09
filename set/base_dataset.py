@@ -1,9 +1,7 @@
 import copy
-from collections import OrderedDict
 
 from torch.utils.data import Dataset
 
-from model_v2.utils.manager import Manager
 from model_v2.utils.nr_depot import NRDepot
 from utils.printer import printer, Color
 
@@ -12,7 +10,7 @@ class BaseDataset(Dataset):
     def __init__(
             self,
             nrd: NRDepot,
-            manager: Manager = None,
+            manager=None,
     ):
         """
 
@@ -28,7 +26,7 @@ class BaseDataset(Dataset):
 
         self.sample_size = self.depot.sample_size
 
-        self.manager = manager
+        self.manager = manager  # type: Manager
 
         self.split_range = (0, self.sample_size)
 

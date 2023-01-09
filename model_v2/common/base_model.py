@@ -11,12 +11,10 @@ class BaseBatch:
         self.inputs = inputs
 
 
-class BaseModel(nn.Module, ABC):
+class BaseOperator(nn.Module):
+    config_class = BaseConfig
     batcher = BaseBatch
 
     def __init__(self, config: BaseConfig):
         super().__init__()
         self.config = config  # type: BaseConfig
-
-    def forward(self, batch: BaseBatch):
-        raise NotImplementedError

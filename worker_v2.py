@@ -29,7 +29,7 @@ class Worker:
         Setting.device = self.get_device()
 
         self.print = printer[('MAIN', '·', Color.CYAN)]
-        self.logging = Logger(self.config.data.store.log_file)
+        self.logging = Logger(self.exp.log)
         Printer.logger = self.logging
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     configuration = ConfigInit(
         required_args=['data', 'model', 'exp'],
         makedirs=[
-            'data.store.save_dir',
+            'exp.dir',
         ]
     ).parse()
 

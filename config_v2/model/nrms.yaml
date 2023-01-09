@@ -1,0 +1,20 @@
+name: NRMS
+config:
+  use_news_content: true
+  news_encoder:
+    hidden_size: 64
+    num_attention_heads: 4
+    inputer_config:
+      depot: ${data.news.depot}
+      order: ${data.news.order}
+      use_cls_token: false
+      use_sep_token: false
+  user_encoder:
+    neg_count: 4
+    neg_col: neg
+    inputer_config:
+      depot: ${data.user.depots.train.path}
+      order:
+        - ${data.user.clicks_col}
+      use_cls_token: false
+      use_sep_token: false
