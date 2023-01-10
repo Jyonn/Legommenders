@@ -68,7 +68,7 @@ class Worker:
         if not self.exp.load.save_dir:
             return
 
-        save_dir = os.path.join(self.data.store.save_dir, self.exp.load.save_dir)
+        save_dir = os.path.join(self.exp.dir, self.exp.load.save_dir)
         epochs = Obj.raw(self.exp.load.epochs)
         if not epochs:
             epochs = json.load(open(os.path.join(save_dir, 'candidates.json')))
@@ -162,9 +162,7 @@ class Worker:
         return meaner.mean()
 
     def test(self, steps=None):
-        label_col = self.data.test.label_col
-        group_col = self.data.test.group_col
-        pool = MetricPool.parse(self.exp)
+        pool = MetricPool.parse(self.exp.metrics)
 
         self.recommender.eval()
         loader = self.config_manager.get_loader(Phases.test).test()
@@ -172,12 +170,10 @@ class Worker:
         score_series, label_series, group_series = [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
-                task_output = self.recommender(batch=batch)
-            labels = batch.append[label_col].tolist()
-            groups = batch.append[group_col].tolist()
-            scores = self.task.calculate_scores(task_output, batch, model=self.model_container)
-
-            score_series.extend(scores)
+                scores = self.recommender(batch=batch).squeeze(1)
+            labels = batch[self.config_manager.column_map.label_col].tolist()
+            groups = batch[self.config_manager.column_map.group_col].tolist()
+            score_series.extend(scores.cpu().detach().tolist())
             label_series.extend(labels)
             group_series.extend(groups)
 

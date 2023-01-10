@@ -61,18 +61,12 @@ class BaseRecommender(nn.Module):
         self.shaper = Shaper()
 
     def get_content(self, batch, col):
-        # when using CatInputer, batch[col]: {input_ids: Dict[str, torch.Tensor], attention_mask}
-
-        # shape = batch[col].size()  # batch_size, click_size, max_seq_len
-        # news_content = batch[col].view(-1, shape[-1])
         news_content = self.shaper.transform(batch[col])
         attention_mask = news_content['attention_mask'].to(Setting.device)
         # batch_size * click_size, max_seq_len, embedding_dim
         news_content = self.news_encoder.inputer.get_embeddings(news_content, embedding_manager=self.embedding_manager)
 
         news_content = self.news_encoder(news_content, mask=attention_mask)  # batch_size * click_size, embedding_dim
-        # news_content = news_content.view(*shape[:-1], -1)  # batch_size, click_size, embedding_dim
-
         news_content = self.shaper.recover(news_content)
         return news_content
 
@@ -85,13 +79,12 @@ class BaseRecommender(nn.Module):
             embeddings=clicks,
             mask=batch[self.clicks_mask_col].to(Setting.device)
         )
-        loss = self.user_encoder(
+        return self.user_encoder(
             user_embedding,
             mask=batch[self.clicks_mask_col].to(Setting.device),
             candidates=candidates,
-            labels=batch[self.label_col].to(Setting.device)
+            labels=batch[self.label_col].to(Setting.device),
         )
-        return loss
 
     def __str__(self):
         return self.__class__.__name__

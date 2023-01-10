@@ -66,7 +66,7 @@ class Depots:
 class NRDepots:
     def __init__(self, depots: Depots, column_map: ColumnMap):
         order = [column_map.clicks_col]
-        append = [column_map.candidate_col, column_map.label_col, column_map.neg_col]
+        append = [column_map.candidate_col, column_map.label_col, column_map.neg_col, column_map.group_col]
         self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
         self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
         self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
@@ -113,6 +113,7 @@ class ConfigManager:
             candidate_col=self.data.user.candidate_col,
             label_col=self.data.user.label_col,
             neg_col=self.data.user.neg_col,
+            group_col=self.data.user.group_col,
         )
 
         self.print('build news and user depots ...')

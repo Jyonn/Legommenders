@@ -12,4 +12,4 @@ class UserAttentionFusionModel(BaseUserModel):
     def forward(self, embeddings, mask=None, **kwargs):
         candidates = kwargs['candidates']
         user_embedding = self.operator(embeddings, mask=mask, **kwargs)
-        return self.interaction.predict(user_embedding, candidates, labels=None)
+        return self.interaction.predict(user_embedding, candidates, labels=None, is_training=self.training)

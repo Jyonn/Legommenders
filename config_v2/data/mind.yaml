@@ -25,3 +25,4 @@ user:
   clicks_col: history
   label_col: click
   neg_col: neg
+  group_col: imp

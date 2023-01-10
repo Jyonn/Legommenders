@@ -1,9 +1,9 @@
 name: ${exp.mode}
 dir: saving/${data.name}/${model.name}/${exp.name}
 log: ${exp.dir}/exp.log
-mode: train
+mode: test
 load:
-  save_dir: null
+  save_dir: ../train
   epochs: null
   model_only: true
   strict: true

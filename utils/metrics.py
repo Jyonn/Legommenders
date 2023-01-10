@@ -129,9 +129,9 @@ class MetricPool:
             self.group = self.group or metric.group
 
     @classmethod
-    def parse(cls, exp):
+    def parse(cls, metrics_config):
         metrics = []
-        for m in exp.metrics:
+        for m in metrics_config:
             at = m.find('@')
             argument = []
             if at > -1:
