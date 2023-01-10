@@ -9,9 +9,6 @@ from model_v2.utils.embedding_manager import EmbeddingManager
 
 
 class AvgInputer(BaseInputer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def get_vocabs(self) -> Optional[List[Vocab]]:
         return []
 

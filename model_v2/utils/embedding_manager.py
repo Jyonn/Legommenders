@@ -1,12 +1,11 @@
 from typing import Dict
 
-from UniTok import UniDep
 from torch import nn
 
 from loader.embedding.embedding_init import TransformEmbedding
 from loader.embedding.embedding_loader import EmbeddingInfo
 from model_v2.utils.nr_depot import NRDepot
-from utils.printer import printer
+from utils.printer import printer, Color
 
 
 class EmbeddingManager:
@@ -18,7 +17,7 @@ class EmbeddingManager:
         self.hidden_size = hidden_size
         self._pretrained = dict()  # type: Dict[str, EmbeddingInfo]
 
-        self.print = printer.EMBEDDING_MANAGER__Cblue_
+        self.print = printer[(self.__class__.__name__, '|', Color.YELLOW)]
 
     def get_table(self):
         return self._table
@@ -66,9 +65,14 @@ class EmbeddingManager:
             embedding_dim=self.hidden_size
         ))
 
-    def register_depot(self, nrd: NRDepot):
+    def register_depot(self, nrd: NRDepot, skip_cols=None):
         depot, order = nrd.depot, nrd.order
+        skip_cols = skip_cols or []
+
         for col in order:
+            if col in skip_cols:
+                self.print(f'skip col {col}')
+
             vocab_name = depot.get_vocab(col)
             vocab_size = depot.get_vocab_size(col)
 

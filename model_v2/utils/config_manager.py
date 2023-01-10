@@ -4,7 +4,7 @@ from UniTok import UniDep
 from oba import Obj
 
 from loader.depot.depot_cache import DepotCache
-from model_v2.inputer.concat_inputer import ConcatInputer
+from model_v2.inputer.cat_inputer import CatInputer
 from model_v2.recommenders.base_model import BaseRecommender, BaseRecommenderConfig
 from model_v2.utils.column_map import ColumnMap
 from model_v2.utils.embedding_manager import EmbeddingManager
@@ -13,6 +13,7 @@ from model_v2.utils.nr_dataloader import NRDataLoader
 from model_v2.utils.nr_depot import NRDepot
 from model_v2.utils.recommenders import Recommenders
 from set.base_dataset import BaseDataset
+from utils.printer import printer, Color
 
 
 class Phases:
@@ -33,16 +34,16 @@ class Depots:
             Phases.test: self.test_depot,
         }  # type: Dict[str, UniDep]
 
+        if user_data.union:
+            for depot in self.depots.values():
+                depot.union(*[DepotCache.get(d) for d in user_data.union])
+
         if user_data.filters:
             for col in user_data.filters:
                 for filter_str in user_data.filters[col]:
                     filter_func = eval(f'lambda x: {filter_str}')
                     for depot in self.depots.values():
                         depot.filter(filter_func, col=col)
-
-        if user_data.union:
-            for depot in self.depots.values():
-                depot.union(*[DepotCache.get(d) for d in user_data.union])
 
     def negative_filter(self, col):
         for phase in [Phases.train, Phases.dev]:
@@ -94,13 +95,16 @@ class ConfigManager:
         self.model = model
         self.exp = exp
 
+        self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
+
+        self.print('build column map ...')
         self.column_map = ColumnMap(
             clicks_col=self.data.user.clicks_col,
             candidate_col=self.data.user.candidate_col,
             label_col=self.data.user.label_col,
         )
 
-        # build news and user depots
+        self.print('build news and user depots ...')
         self.depots = Depots(user_data=self.data.user)
         self.nrds = NRDepots(depots=self.depots, column_map=self.column_map)
         self.doc_nrd = NRDepot(
@@ -109,31 +113,32 @@ class ConfigManager:
             append=self.data.news.append,
         )
 
-        # build embedding manager
-        assert self.model.config.news_encoder.hidden_size == self.model.config.user_encoder.hidden_size
-        self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.news_encoder.hidden_size)
-        self.embedding_manager.register_depot(self.doc_nrd)
-        self.embedding_manager.register_depot(self.nrds.train_nrd)
-        self.embedding_manager.build_vocab_embedding(
-            vocab_name=ConcatInputer.vocab.name,
-            vocab_size=ConcatInputer.vocab.get_size(),
-        )
-
-        # build recommender model and manager
         self.recommender_class = Recommenders()(self.model.name)  # type: Type[BaseRecommender]
+        self.print('selected recommender: ', self.recommender_class)
         self.recommender_config = self.recommender_class.config_class(
-            news_config=self.recommender_class.news_encoder_class.config_class(
-                **Obj.raw(self.model.config.news_encoder)
-            ),
-            user_config=self.recommender_class.user_encoder_class.config_class(
-                **Obj.raw(self.model.config.user_encoder)
-            ),
+            news_config=self.model.config.news_encoder,
+            user_config=self.model.config.user_encoder,
             use_news_content=self.model.config.use_news_content,
         )  # type: BaseRecommenderConfig
+
+        self.print('build embedding manager ...')
+        assert self.model.config.news_encoder.hidden_size == self.model.config.user_encoder.hidden_size
+        skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_news_content else []
+        self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.news_encoder.hidden_size)
+        self.embedding_manager.register_depot(self.doc_nrd)
+        self.embedding_manager.register_depot(self.nrds.train_nrd, skip_cols=skip_cols)
+        self.embedding_manager.build_vocab_embedding(
+            vocab_name=CatInputer.vocab.name,
+            vocab_size=CatInputer.vocab.get_size(),
+        )
+
+        self.print('build recommender model and manager ...')
         self.recommender = self.recommender_class(
             config=self.recommender_config,
             column_map=self.column_map,
             embedding_manager=self.embedding_manager,
+            user_nrd=self.nrds.train_nrd,
+            news_nrd=self.doc_nrd,
         )
         self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
 

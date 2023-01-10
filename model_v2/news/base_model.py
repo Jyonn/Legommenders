@@ -1,9 +1,5 @@
-from model_v2.common.base_encoder_model import BaseEncoderModel, BaseEncoderConfig
-
-
-class BaseNewsConfig(BaseEncoderConfig):
-    pass
+from model_v2.common.base_encoder_model import BaseEncoderModel
 
 
 class BaseNewsModel(BaseEncoderModel):
-    config_class = BaseNewsConfig
+    pass

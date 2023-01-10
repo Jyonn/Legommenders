@@ -4,8 +4,8 @@ import torch
 from UniTok import Vocab, UniDep
 
 from loader.depot.depot_cache import DepotCache
-from model_v2.common.base_config import BaseInputerConfig
 from model_v2.utils.embedding_manager import EmbeddingManager
+from model_v2.utils.nr_depot import NRDepot
 
 
 class BaseInputer:
@@ -16,9 +16,9 @@ class BaseInputer:
     3. user clicks (news ids) -> 20 x 64
     4. user clicks (title, category) -> 20 x 64 -> 64
     """
-    def __init__(self, config: BaseInputerConfig):
-        self.depot = DepotCache.get(config.depot)  # type: UniDep
-        self.order = config.order  # type: list
+    def __init__(self, nrd: NRDepot, **kwargs):
+        self.depot = nrd.depot  # type: UniDep
+        self.order = nrd.order  # type: list
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
         raise NotImplementedError

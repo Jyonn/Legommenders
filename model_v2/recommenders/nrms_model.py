@@ -13,8 +13,8 @@ class NRMSModel(BaseRecommender):
     news_encoder_class = NewsAttentionFusionModel
     user_encoder_class = UserAttentionFusionModel
 
-    def __init__(
-            self,
-            config: NRMSConfig,
-    ):
-        super().__init__(config)
+    # def __init__(
+    #         self,
+    #         **kwargs
+    # ):
+    #     super().__init__(**kwargs)

@@ -9,8 +9,8 @@ from model_v2.inputer.base_inputer import BaseInputer
 from model_v2.utils.embedding_manager import EmbeddingManager
 
 
-class ConcatInputer(BaseInputer):
-    vocab = Vocab(name='__concat_inputer_special_ids')
+class CatInputer(BaseInputer):
+    vocab = Vocab(name='__cat_inputer_special_ids')
     PAD = vocab.append('[PAD]')
     CLS = vocab.append('[CLS]')
     SEP = vocab.append('[SEP]')

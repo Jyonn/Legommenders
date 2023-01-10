@@ -10,6 +10,7 @@ config:
       use_cls_token: false
       use_sep_token: false
   user_encoder:
+    hidden_size: 64
     neg_count: 4
     neg_col: neg
     inputer_config:

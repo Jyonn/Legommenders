@@ -1,10 +1,10 @@
-name: mind-${version}
+name: MIND-${version}
 base_dir: data/${data.name}
 news:
   depot: ${data.base_dir}/news
   order:
     - title
-    - category
+    - cat
   append:
     - nid
 user:
@@ -17,7 +17,7 @@ user:
       path: ${data.base_dir}/test
   filters:
     history:
-      - remove_empty
+      - x
   union:
     - data/${data.name}/user
     - data/${data.name}/neg

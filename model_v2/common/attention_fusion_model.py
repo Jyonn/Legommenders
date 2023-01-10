@@ -3,7 +3,7 @@ from torch import nn
 from model.layer.attention import AdditiveAttention
 from model_v2.common.attention_fusion_config import AttentionFusionConfig
 from model_v2.common.base_model import BaseBatch, BaseOperator
-from model_v2.inputer.concat_inputer import ConcatInputer
+from model_v2.inputer.cat_inputer import CatInputer
 
 
 class AttentionBatch(BaseBatch):
@@ -17,7 +17,7 @@ class AttentionBatch(BaseBatch):
 class AttentionFusionOperator(BaseOperator):
     config_class = AttentionFusionConfig
     batcher = AttentionBatch
-    inputer = ConcatInputer
+    inputer = CatInputer
 
     def __init__(self, config: AttentionFusionConfig):
         super().__init__(config=config)

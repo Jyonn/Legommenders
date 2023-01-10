@@ -1,30 +1,25 @@
-from abc import ABC
 from typing import Type
 
+from oba import Obj
 from torch import nn
 
 from model_v2.common.base_model import BaseOperator
 from model_v2.inputer.base_inputer import BaseInputer
-
-
-class BaseEncoderConfig:
-    def __init__(self, inputer_config, **kwargs):
-        self.inputer_config = inputer_config
-        self.operator_config = kwargs
+from model_v2.utils.nr_depot import NRDepot
+from utils.printer import printer, Color
 
 
 class BaseEncoderModel(nn.Module):
-    config_class = None  # type: Type[BaseEncoderConfig]
     operator_class = None  # type: Type[BaseOperator]
     inputer_class = None  # type: Type[BaseInputer]
 
-    def __init__(self, config: BaseEncoderConfig):
+    def __init__(self, config, nrd: NRDepot):
         super().__init__()
-        self.config = config  # type: BaseEncoderConfig
+        self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 
-        operator_config = self.operator_class.config_class(**config.operator_config)
+        operator_config = self.operator_class.config_class(**config)
         self.operator = self.operator_class(config=operator_config)
-        self.inputer = self.inputer_class(config=config.inputer_config)
+        self.inputer = self.inputer_class(nrd=nrd, **Obj.raw(config.inputer_config))
 
     def forward(self, embeddings, **kwargs):
         return self.operator(embeddings)

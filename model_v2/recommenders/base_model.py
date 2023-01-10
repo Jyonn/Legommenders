@@ -2,11 +2,12 @@ from typing import Type
 
 from torch import nn
 
-from model_v2.common.base_config import BaseConfig
 from model_v2.news.base_model import BaseNewsModel
-from model_v2.user.base_model import BaseUserModel, BaseUserConfig
+from model_v2.user.base_model import BaseUserModel
 from model_v2.utils.column_map import ColumnMap
 from model_v2.utils.embedding_manager import EmbeddingManager
+from model_v2.utils.nr_depot import NRDepot
+from utils.printer import printer, Color
 
 
 class BaseRecommenderConfig:
@@ -16,8 +17,8 @@ class BaseRecommenderConfig:
             news_config=None,
             use_news_content: bool = True,
     ):
-        self.news_config = news_config  # type: BaseConfig
-        self.user_config = user_config  # type: BaseUserConfig
+        self.news_config = news_config
+        self.user_config = user_config
         self.use_news_content = use_news_content
 
         if self.use_news_content and not self.news_config:
@@ -34,10 +35,14 @@ class BaseRecommender(nn.Module):
             config: BaseRecommenderConfig,
             column_map: ColumnMap,
             embedding_manager: EmbeddingManager,
+            user_nrd: NRDepot,
+            news_nrd: NRDepot,
     ):
         super().__init__()
 
         self.config = config  # type: BaseRecommenderConfig
+        self.print = printer[(self.__class__.__name__, '|', Color.MAGENTA)]
+
         self.column_map = column_map  # type: ColumnMap
         self.embedding_manager = embedding_manager
 
@@ -46,9 +51,9 @@ class BaseRecommender(nn.Module):
         self.label_col = column_map.label_col
         self.clicks_mask_col = column_map.clicks_mask_col
 
-        self.user_encoder = self.user_encoder_class(config.user_config)
+        self.user_encoder = self.user_encoder_class(config.user_config, nrd=user_nrd)
         if self.config.use_news_content:
-            self.news_encoder = self.news_encoder_class(config.news_config)
+            self.news_encoder = self.news_encoder_class(config.news_config, nrd=news_nrd)
 
     def get_content(self, batch, col):
         shape = batch[col].size()  # batch_size, click_size, max_seq_len
@@ -68,3 +73,6 @@ class BaseRecommender(nn.Module):
         user_embedding = self.user_encoder.inputer.embedding_processor(clicks, mask=batch[self.clicks_mask_col])
         loss = self.user_encoder(user_embedding, candidates=candidates, labels=batch[self.label_col])
         return loss
+
+    def __str__(self):
+        return self.__class__.__name__

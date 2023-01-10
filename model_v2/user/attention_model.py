@@ -1,6 +1,6 @@
 from model_v2.common.attention_fusion_model import AttentionFusionOperator
 from model_v2.interaction.negative_sampling import NegativeSampling
-from model_v2.user.base_model import BaseUserModel, BaseUserConfig
+from model_v2.user.base_model import BaseUserModel
 
 
 class UserAttentionFusionModel(BaseUserModel):
