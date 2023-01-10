@@ -8,11 +8,10 @@ config:
       depot: ${data.news.depot}
       order: ${data.news.order}
       use_cls_token: false
-      use_sep_token: false
+      use_sep_token: true
   user_encoder:
     hidden_size: 64
     neg_count: 4
-    neg_col: neg
     inputer_config:
       depot: ${data.user.depots.train.path}
       order:

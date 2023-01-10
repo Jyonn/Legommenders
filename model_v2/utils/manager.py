@@ -12,22 +12,22 @@ from utils.stacker import Stacker
 class Status:
     def __init__(self):
         self.is_training = True
-        self.is_validating = False
+        self.is_evaluating = False
         self.is_testing = False
 
     def train(self):
         self.is_training = True
-        self.is_validating = False
+        self.is_evaluating = False
         self.is_testing = False
 
-    def validate(self):
+    def eval(self):
         self.is_training = False
-        self.is_validating = True
+        self.is_evaluating = True
         self.is_testing = False
 
     def test(self):
         self.is_training = False
-        self.is_validating = False
+        self.is_evaluating = False
         self.is_testing = True
 
 
@@ -48,28 +48,25 @@ class Manager:
         self.clicks_col = self.column_map.clicks_col
         self.candidate_col = self.column_map.candidate_col
         self.label_col = self.column_map.label_col
+        self.neg_col = self.column_map.neg_col
         self.clicks_mask_col = self.column_map.clicks_mask_col
 
         # document manager
         self.doc_dataset = None
-        self.doc_cache = None
         self.doc_inputer = None
+        self.doc_cache = None
         self.stacker = Stacker(aggregator=torch.stack)
         if self.use_content:
             self.doc_dataset = BaseDataset(nrd=doc_nrd)
-            self.doc_cache = self.get_doc_cache()
             self.doc_inputer = recommender.news_encoder.inputer
+            self.doc_cache = self.get_doc_cache()
 
         # clicks
         self.max_click_num = recommender.user_encoder.inputer.depot.get_max_length(self.clicks_col)
 
         # negative sampling
-        self.neg_col = None
-        self.neg_count = None
         self.use_neg_sampling = recommender.user_encoder.use_neg_sampling
-        if self.use_neg_sampling:
-            self.neg_col = recommender.user_encoder.config.negative_sampling.neg_col
-            self.neg_count = recommender.user_encoder.config.negative_sampling.neg_count
+        self.neg_count = recommender.user_encoder.neg_count
         self.news_size = recommender.news_encoder.inputer.depot.get_vocab_size(self.candidate_col)
 
     def get_doc_cache(self):
@@ -88,16 +85,12 @@ class Manager:
         # negative sampling
         if self.use_neg_sampling:
             if not self.status.is_testing:
-                rand_neg = self.neg_count
-                neg_samples = []
-                if self.neg_col:
-                    true_negs = sample[self.neg_col]
-                    rand_neg = max(self.neg_count - len(true_negs), 0)
-                    neg_samples = random.sample(true_negs, k=min(self.neg_count, len(true_negs)))
+                true_negs = sample[self.neg_col]
+                rand_neg = max(self.neg_count - len(true_negs), 0)
+                neg_samples = random.sample(true_negs, k=min(self.neg_count, len(true_negs)))
                 neg_samples += [random.randint(0, self.news_size - 1) for _ in range(rand_neg)]
                 sample[self.candidate_col].extend(neg_samples)
-            if self.neg_col:
-                del sample[self.neg_col]
+        del sample[self.neg_col]
 
         # content injection and tensorization
         for col in [self.candidate_col, self.clicks_col]:

@@ -23,4 +23,5 @@ user:
     - data/${data.name}/neg
   candidate_col: nid
   clicks_col: history
-  label_col: label
+  label_col: click
+  neg_col: neg

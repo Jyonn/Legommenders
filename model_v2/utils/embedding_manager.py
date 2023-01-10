@@ -1,5 +1,6 @@
-from typing import Dict
+from typing import Dict, Union
 
+from UniTok import Vocab
 from torch import nn
 
 from loader.embedding.embedding_init import TransformEmbedding
@@ -64,6 +65,16 @@ class EmbeddingManager:
             num_embeddings=vocab_size,
             embedding_dim=self.hidden_size
         ))
+
+    def register_vocab(self, vocab_name: Union[str, Vocab], vocab_size=None):
+        if isinstance(vocab_name, Vocab):
+            vocab_name, vocab_size = vocab_name.name, vocab_name.get_size()
+        else:
+            assert vocab_size is not None, f'vocab size is required for {vocab_name}'
+
+        self._col_to_vocab[vocab_name] = vocab_name
+        self._vocab_to_size[vocab_name] = vocab_size
+        self.build_vocab_embedding(vocab_name, vocab_size)
 
     def register_depot(self, nrd: NRDepot, skip_cols=None):
         depot, order = nrd.depot, nrd.order

@@ -10,10 +10,10 @@ from transformers import get_linear_schedule_with_warmup
 from loader.global_setting import Setting
 from model_v2.utils.config_manager import ConfigManager, Phases
 from task.base_batch import BaseBatch
-from task.base_loss import BaseLoss, LossDepot
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
+from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.printer import printer, Color, Printer
@@ -26,12 +26,12 @@ class Worker:
         self.data, self.model, self.exp = self.config.data, self.config.model, self.config.exp
         self.disable_tqdm = self.exp.policy.disable_tqdm
 
-        Setting.device = self.get_device()
-
         self.print = printer[('MAIN', '·', Color.CYAN)]
         self.logging = Logger(self.exp.log)
         Printer.logger = self.logging
         self.print(json.dumps(Obj.raw(self.config), indent=4))
+
+        Setting.device = self.get_device()
 
         self.config_manager = ConfigManager(
             data=self.data,
@@ -39,8 +39,12 @@ class Worker:
             exp=self.exp,
         )
 
-        self.recommender = self.config_manager.recommender
+        self.recommender = self.config_manager.recommender.to(Setting.device)
         self.manager = self.config_manager.manager
+        self.load_path = self.parse_load_path()
+
+        self.print(self.config_manager.depots.train_depot[0])
+        self.print(Structure().analyse_and_stringify(self.config_manager.sets.train_set[0]))
 
     def load(self, path):
         while True:
@@ -77,27 +81,21 @@ class Worker:
     def get_device(self):
         cuda = self.config.cuda
         if cuda in ['-1', -1, False]:
+            self.print('choose cpu')
             return 'cpu'
         if not cuda:
             return GPU.auto_choose(torch_format=True)
         return f"cuda:{cuda}"
 
-    def log_interval(self, epoch, step, loss: BaseLoss):
-        components = [f'step {step}']
-        for loss_name, loss_tensor in loss.get_loss_dict().items():
-            if loss_name.endswith('loss') and isinstance(loss_tensor, torch.Tensor):
-                components.append(f'{loss_name} {loss_tensor.item():.4f}')
-        self.print[f'epoch {epoch}'](', '.join(components))
+    def log_interval(self, epoch, step, loss):
+        self.print[f'epoch {epoch}'](f'step {step}, loss {loss:.4f}')
 
-    def log_epoch(self, epoch, loss_depot: LossDepot):
-        components = []
-        for loss_name, loss_value in loss_depot.table.items():
-            components.append(f'{loss_name} {loss_value:.4f}')
-        self.print[f'epoch {epoch}'](', '.join(components))
+    def log_epoch(self, epoch, loss):
+        self.print[f'epoch {epoch}'](f'loss {loss:.4f}')
 
     def train(self):
         monitor = Monitor(
-            save_dir=self.data.store.save_dir,
+            save_dir=self.exp.dir,
             **Obj.raw(self.exp.store)
         )
 
@@ -125,13 +123,13 @@ class Worker:
                 if self.exp.policy.check_interval:
                     if self.exp.policy.check_interval < 0:  # step part
                         if (step + 1) % max(train_steps // (-self.exp.policy.check_interval), 1) == 0:
-                            self.log_interval(epoch, step, loss)
+                            self.log_interval(epoch, step, loss.item())
                     else:
                         if (step + 1) % self.exp.policy.check_interval == 0:
-                            self.log_interval(epoch, step, loss)
+                            self.log_interval(epoch, step, loss.item())
 
-            loss_depot = self.dev()
-            self.log_epoch(epoch, loss_depot)
+            dev_loss = self.dev()
+            self.log_epoch(epoch, dev_loss)
 
             state_dict = dict(
                 model=self.recommender.state_dict(),
@@ -140,7 +138,7 @@ class Worker:
             )
             monitor.push(
                 epoch=epoch,
-                loss=loss_depot.table,
+                loss=dev_loss,
                 state_dict=state_dict,
             )
 
@@ -150,18 +148,18 @@ class Worker:
     def dev(self, steps=None):
         self.recommender.eval()
         loader = self.config_manager.get_loader(Phases.dev).eval()
-        loss_depot = LossDepot()
 
+        meaner = Meaner()
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 loss = self.recommender(batch=batch)  # [B, neg+1]
 
-            loss_depot.add(loss)
+            meaner.add(loss.item())
 
             if steps and step >= steps:
                 break
 
-        return loss_depot.summarize()
+        return meaner.mean()
 
     def test(self, steps=None):
         label_col = self.data.test.label_col

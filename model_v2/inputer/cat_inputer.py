@@ -9,26 +9,24 @@ from model_v2.inputer.base_inputer import BaseInputer
 from model_v2.utils.embedding_manager import EmbeddingManager
 
 
+class Pointer:
+    def __init__(self):
+        self.pos = 0
+
+    def update_input(self, input_ids, value):
+        input_ids[self.pos: self.pos + len(value)] = value
+        self.pos += len(value)
+
+    def update_special_token(self, input_ids, value):
+        value = torch.tensor([value], dtype=torch.long)
+        return self.update_input(input_ids, value)
+
+
 class CatInputer(BaseInputer):
     vocab = Vocab(name='__cat_inputer_special_ids')
     PAD = vocab.append('[PAD]')
     CLS = vocab.append('[CLS]')
     SEP = vocab.append('[SEP]')
-
-    class Pointer:
-        def __init__(self):
-            self.pos = 0
-
-        def update_input(self, input_ids, value):
-            input_ids[self.pos: self.pos + len(value)] = value
-            self.pos += len(value)
-
-        def update_special_token(self, input_ids, value):
-            value = [value]
-            return self.update_input(input_ids, value)
-
-        def run(self):
-            pass
 
     def __init__(self, use_cls_token, use_sep_token, **kwargs):
         super().__init__(**kwargs)
@@ -52,14 +50,14 @@ class CatInputer(BaseInputer):
         return torch.ones(self.max_sequence_len, dtype=torch.long) * Setting.UNSET
 
     def sample_rebuilder(self, sample: OrderedDict):
-        pointer = self.Pointer()
+        pointer = Pointer()
         input_ids = OrderedDict()
 
         special_ids = self.get_empty_input()
         if self.use_cls_token:
             pointer.update_special_token(special_ids, self.CLS)
 
-        for col in sample:
+        for col in self.order:
             value = sample[col]
             if not isinstance(value, list):
                 value = [value]
@@ -75,6 +73,7 @@ class CatInputer(BaseInputer):
         input_ids[self.vocab.name] = special_ids
         attention_mask = torch.tensor([1] * pointer.pos + [0] * (self.max_sequence_len - pointer.pos), dtype=torch.long)
         input_ids[self.vocab.name][pointer.pos:] = self.PAD
+
         return dict(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -96,7 +95,7 @@ class CatInputer(BaseInputer):
 
         for col in input_ids:
             seq = input_ids[col].to(Setting.device)  # type: torch.Tensor # [B, L]
-            mask = (seq > Setting.UNSET).long()  # type: torch.Tensor  # [B, L]
+            mask = (seq > Setting.UNSET).long().to(Setting.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
 
             embedding = embedding_manager(col)(seq)

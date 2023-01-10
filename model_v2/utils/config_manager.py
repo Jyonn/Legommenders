@@ -1,7 +1,9 @@
 from typing import Dict, Type
 
+import torch
 from UniTok import UniDep
 from oba import Obj
+from torch import nn
 
 from loader.depot.depot_cache import DepotCache
 from model_v2.inputer.cat_inputer import CatInputer
@@ -28,6 +30,8 @@ class Depots:
         self.dev_depot = DepotCache.get(user_data.depots.dev.path)
         self.test_depot = DepotCache.get(user_data.depots.test.path)
 
+        self.print = printer[(self.__class__.__name__, '|', Color.BLUE)]
+
         self.depots = {
             Phases.train: self.train_depot,
             Phases.dev: self.dev_depot,
@@ -42,12 +46,18 @@ class Depots:
             for col in user_data.filters:
                 for filter_str in user_data.filters[col]:
                     filter_func = eval(f'lambda x: {filter_str}')
-                    for depot in self.depots.values():
+                    for phase in self.depots:
+                        depot = self.depots[phase]
+                        sample_num = len(depot)
                         depot.filter(filter_func, col=col)
+                        self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def negative_filter(self, col):
         for phase in [Phases.train, Phases.dev]:
-            self.depots[phase].filter(lambda x: x == 1, col=col)
+            depot = self.depots[phase]
+            sample_num = len(depot)
+            depot.filter(lambda x: x == 1, col=col)
+            self.print(f'Filter {col} with x==1 in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def __getitem__(self, item):
         return self.depots[item]
@@ -56,7 +66,7 @@ class Depots:
 class NRDepots:
     def __init__(self, depots: Depots, column_map: ColumnMap):
         order = [column_map.clicks_col]
-        append = [column_map.candidate_col, column_map.label_col]
+        append = [column_map.candidate_col, column_map.label_col, column_map.neg_col]
         self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
         self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
         self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
@@ -102,6 +112,7 @@ class ConfigManager:
             clicks_col=self.data.user.clicks_col,
             candidate_col=self.data.user.candidate_col,
             label_col=self.data.user.label_col,
+            neg_col=self.data.user.neg_col,
         )
 
         self.print('build news and user depots ...')
@@ -127,10 +138,11 @@ class ConfigManager:
         self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.news_encoder.hidden_size)
         self.embedding_manager.register_depot(self.doc_nrd)
         self.embedding_manager.register_depot(self.nrds.train_nrd, skip_cols=skip_cols)
-        self.embedding_manager.build_vocab_embedding(
-            vocab_name=CatInputer.vocab.name,
-            vocab_size=CatInputer.vocab.get_size(),
-        )
+        self.embedding_manager.register_vocab(CatInputer.vocab)
+
+        self.print('set <pad> embedding to zeros ...')
+        cat_embeddings = self.embedding_manager(CatInputer.vocab.name)  # type: nn.Embedding
+        cat_embeddings.weight.data[CatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[CatInputer.PAD])
 
         self.print('build recommender model and manager ...')
         self.recommender = self.recommender_class(
@@ -142,9 +154,11 @@ class ConfigManager:
         )
         self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
 
-        if self.recommender_config.user_config.negative_sampling:
-            self.depots.negative_filter(self.column_map.clicks_col)
+        if self.recommender_class.user_encoder_class.use_neg_sampling:
+            self.print('neg sample filtering ...')
+            self.depots.negative_filter(self.column_map.label_col)
 
+        self.print('build datasets ...')
         self.sets = Datasets(nrds=self.nrds, manager=self.manager)
 
     def get_loader(self, phase):

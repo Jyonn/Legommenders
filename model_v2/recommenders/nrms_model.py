@@ -4,17 +4,10 @@ from model_v2.user.attention_model import UserAttentionFusionModel
 
 
 class NRMSConfig(BaseRecommenderConfig):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    pass
 
 
 class NRMSModel(BaseRecommender):
     config_class = NRMSConfig
     news_encoder_class = NewsAttentionFusionModel
     user_encoder_class = UserAttentionFusionModel
-
-    # def __init__(
-    #         self,
-    #         **kwargs
-    # ):
-    #     super().__init__(**kwargs)

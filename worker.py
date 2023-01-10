@@ -42,7 +42,7 @@ class Worker:
         self.model_container = self.global_loader.model_container
         self.task = self.global_loader.primary_task  # type: BaseTask
 
-        self.print(Structure.analyse_and_stringify(self.global_loader.train_set[0]))
+        self.print(Structure().analyse_and_stringify(self.global_loader.train_set[0]))
 
         self.static_modes = ['export', 'dev', 'test']
         self.in_static_modes = self.exp.mode in self.static_modes or self.exp.mode.startswith('test')

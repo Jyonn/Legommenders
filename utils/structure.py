@@ -3,34 +3,49 @@ from typing import Union
 
 import torch
 
+from utils.iterating import Iterating
 
-class Structure:
-    @classmethod
-    def analyse(cls, x):
-        if isinstance(x, dict):
-            return cls.analyse_dict(x)
-        elif isinstance(x, list) or isinstance(x, tuple) or isinstance(x, set):
-            return cls.analyse_list(x)
-        elif isinstance(x, torch.Tensor):
+
+class TensorShape:
+    def __init__(self, shape):
+        self.shape = list(shape)
+
+    def __str__(self):
+        return f'tensor({self.shape})'
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class Structure(Iterating):
+    def __init__(self, use_shape=False):
+        super().__init__()
+        self.use_shape = use_shape
+
+    def custom_worker(self, x):
+        if isinstance(x, torch.Tensor):
+            if self.use_shape:
+                return TensorShape(x.shape)
             return f'tensor({list(x.shape)})'
         else:
             return type(x).__name__
 
-    @classmethod
-    def analyse_dict(cls, d: dict):
-        structure = dict()
-        for k in d:
-            structure[k] = cls.analyse(d[k])
-        return structure
+    def analyse(self, x):
+        return self.worker(x)
 
-    @classmethod
-    def analyse_list(cls, l: Union[list, tuple, set]):
-        structure = list()
-        for x in l:
-            structure.append(cls.analyse(x))
-        return structure
-
-    @classmethod
-    def analyse_and_stringify(cls, x):
-        structure = cls.analyse(x)
+    def analyse_and_stringify(self, x):
+        assert not self.use_shape, 'Cannot stringify shape'
+        structure = self.analyse(x)
         return json.dumps(structure, indent=4)
+
+
+if __name__ == '__main__':
+    a = dict(
+        x=torch.rand(3, 5, 6),
+        y=dict(
+            z=torch.rand(3, 6),
+            k=[torch.rand(3, 2, 6), torch.rand(3)]
+        )
+    )
+
+    print(Structure(use_shape=True).analyse(a))

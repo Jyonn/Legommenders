@@ -1,5 +1,6 @@
 import torch
 
+from loader.global_setting import Setting
 from model_v2.interaction.base_interaction import BaseInteraction
 
 
@@ -11,7 +12,8 @@ class NegativeSampling(BaseInteraction):
         # labels: unused
 
         user_embedding = user_embedding.unsqueeze(1)  # batch_size, 1, embedding_dim
-        scores = torch.sum(user_embedding * candidates, dim=2)  # batch_size, K+1
-        loss = torch.nn.functional.cross_entropy(scores, torch.zeros(scores.shape[0], dtype=torch.long))
+        scores = torch.sum(user_embedding * candidates, dim=2).to(Setting.device)  # batch_size, K+1
+        labels = torch.zeros(scores.shape[0], dtype=torch.long).to(Setting.device)
+        loss = torch.nn.functional.cross_entropy(scores, labels)
 
         return loss

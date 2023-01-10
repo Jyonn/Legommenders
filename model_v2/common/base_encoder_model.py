@@ -15,11 +15,12 @@ class BaseEncoderModel(nn.Module):
 
     def __init__(self, config, nrd: NRDepot):
         super().__init__()
+
         self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 
-        operator_config = self.operator_class.config_class(**config)
+        operator_config = self.operator_class.config_class(**Obj.raw(config))
         self.operator = self.operator_class(config=operator_config)
         self.inputer = self.inputer_class(nrd=nrd, **Obj.raw(config.inputer_config))
 
-    def forward(self, embeddings, **kwargs):
-        return self.operator(embeddings)
+    def forward(self, embeddings, mask=None, **kwargs):
+        return self.operator(embeddings, mask, **kwargs)

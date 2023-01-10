@@ -2,7 +2,6 @@ import json
 import os
 
 import torch
-from oba import Obj
 
 from utils.printer import printer
 
@@ -11,7 +10,6 @@ class Monitor:
     def __init__(
             self,
             interval=None,
-            monitor=None,
             save_dir=None,
             top=None,
             epoch_skip=None,
@@ -20,7 +18,6 @@ class Monitor:
     ):
         self.interval = interval
         self.candidates = []
-        self.monitor = monitor
         self.save_dir = save_dir
         self.top = top or 1
         self.epoch_skip = epoch_skip
@@ -44,7 +41,7 @@ class Monitor:
         torch.save(state_dict, epoch_path)
         self.step_export()
 
-    def push(self, epoch, loss: dict, state_dict):
+    def push(self, epoch, loss: float, state_dict):
         # print(epoch)
         if self.epoch_skip and epoch < self.epoch_skip:
             return
@@ -54,7 +51,7 @@ class Monitor:
                 self.store_checkpoint(epoch, state_dict)
             return
 
-        self.candidates.append((epoch, Obj(loss)))
+        self.candidates.append((epoch, loss))
 
         stay = [True] * len(self.candidates)
 
@@ -62,8 +59,7 @@ class Monitor:
             for ib in range(len(self.candidates)):
                 if ia == ib or not stay[ia] or not stay[ib]:
                     continue
-                a, b = self.candidates[ia][1], self.candidates[ib][1]
-                if eval(self.monitor):
+                if self.candidates[ia][1] < self.candidates[ib][1]:
                     stay[ib] = False
 
         remove = []
@@ -109,12 +105,13 @@ class Monitor:
 if __name__ == '__main__':
     m = Monitor(
         interval=None,
-        monitor='a.loss < b.loss',
+        monitor='a < b',
         save_dir=None,
         top=5,
         epoch_skip=0,
         early_stop=None,
+        debug=True
     )
     losses = [1.3518, 1.2661, 1.2446, 1.2297, 1.2367, 1.2472, 1.1911, 1.1674]
     for index, loss in enumerate(losses):
-        m.push(index, dict(loss=loss), None)
+        m.push(index, loss, None)

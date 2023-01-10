@@ -1,22 +1,27 @@
 from torch import nn
 
 from model.layer.attention import AdditiveAttention
-from model_v2.common.attention_fusion_config import AttentionFusionConfig
-from model_v2.common.base_model import BaseBatch, BaseOperator
+from model_v2.common.base_config import BaseConfig
+from model_v2.common.base_model import BaseOperator
 from model_v2.inputer.cat_inputer import CatInputer
+from utils.structure import Structure
 
 
-class AttentionBatch(BaseBatch):
-    def __init__(self, batch: dict):
-        super().__init__(batch)
+class AttentionFusionConfig(BaseConfig):
+    def __init__(
+            self,
+            num_attention_heads: int = 8,
+            attention_dropout: float = 0.1,
+            **kwargs,
+    ):
+        super().__init__(**kwargs)
 
-        self.input_embeds = batch['input_embeds']
-        self.attention_mask = batch['attention_mask']  # [batch_size, seq_len], 1 for valid, 0 for padding
+        self.num_attention_heads = num_attention_heads
+        self.attention_dropout = attention_dropout
 
 
 class AttentionFusionOperator(BaseOperator):
     config_class = AttentionFusionConfig
-    batcher = AttentionBatch
     inputer = CatInputer
 
     def __init__(self, config: AttentionFusionConfig):
@@ -38,21 +43,21 @@ class AttentionFusionOperator(BaseOperator):
             hidden_size=config.hidden_size,
         )
 
-    def forward(self, batch: AttentionBatch):
+    def forward(self, embeddings, mask=None, **kwargs):
         # first, use multi-head attention to capture sequence-level information
 
         # input_embeds: [B, L, D]
         # attention_mask: [B, L]
         # output: [B, L, D]
-        outputs = self.multi_head_attention(
-            query=batch.input_embeds,
-            key=batch.input_embeds,
-            value=batch.input_embeds,
-            key_padding_mask=batch.attention_mask,
-            need_weights=False
+        outputs, _ = self.multi_head_attention(
+            query=embeddings,
+            key=embeddings,
+            value=embeddings,
+            key_padding_mask=mask,
+            need_weights=False,
         )  # [B, L, D]
 
         outputs = self.linear(outputs)  # [B, L, D]
-        outputs = self.additive_attention(outputs, batch.attention_mask)  # [B, D]
+        outputs = self.additive_attention(outputs, mask)  # [B, D]
 
         return outputs

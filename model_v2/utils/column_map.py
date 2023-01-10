@@ -3,9 +3,11 @@ class ColumnMap:
             self,
             clicks_col: str = 'history',
             candidate_col: str = 'nid',
-            label_col: str = 'label',
+            label_col: str = 'click',
+            neg_col: str = 'neg',
     ):
         self.clicks_col = clicks_col
         self.candidate_col = candidate_col
         self.label_col = label_col
+        self.neg_col = neg_col
         self.clicks_mask_col = '__clicks_mask__'
