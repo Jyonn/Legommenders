@@ -1,7 +1,13 @@
+from model_v2.recommenders.dcn_model import DCNModel
 from model_v2.recommenders.nrms_model import NRMSModel
+from model_v2.recommenders.plmnr_nrms_model import PLMNRNRMSModel
+from model_v2.recommenders.prec_model import PRECModel
 
 recommender_list = [
     NRMSModel,
+    PRECModel,
+    PLMNRNRMSModel,
+    DCNModel,
 ]
 
 

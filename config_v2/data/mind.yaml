@@ -1,6 +1,7 @@
 name: MIND-${version}
 base_dir: data/${data.name}
 news:
+  filter_cache: true
   depot: ${data.base_dir}/news
   order:
     - title
@@ -8,6 +9,7 @@ news:
   append:
     - nid
 user:
+  filter_cache: true
   depots:
     train:
       path: ${data.base_dir}/train
@@ -26,3 +28,4 @@ user:
   label_col: click
   neg_col: neg
   group_col: imp
+  user_col: uid

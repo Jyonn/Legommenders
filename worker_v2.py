@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import time
@@ -9,7 +10,6 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.global_setting import Setting
 from model_v2.utils.config_manager import ConfigManager, Phases
-from task.base_batch import BaseBatch
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
@@ -17,24 +17,31 @@ from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.printer import printer, Color, Printer
+from utils.random_seed import seeding
 from utils.structure import Structure
 
 
 class Worker:
     def __init__(self, config):
         self.config = config
-        self.data, self.model, self.exp = self.config.data, self.config.model, self.config.exp
+        self.data, self.embed, self.model, self.exp = \
+            self.config.data, self.config.embed, self.config.model, self.config.exp
         self.disable_tqdm = self.exp.policy.disable_tqdm
+
+        config.seed = config.seed or 2023
+        seeding(config.seed)
 
         self.print = printer[('MAIN', '·', Color.CYAN)]
         self.logging = Logger(self.exp.log)
         Printer.logger = self.logging
+        self.print('START TIME:', datetime.datetime.now())
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
         Setting.device = self.get_device()
 
         self.config_manager = ConfigManager(
             data=self.data,
+            embed=self.embed,
             model=self.model,
             exp=self.exp,
         )
@@ -42,6 +49,8 @@ class Worker:
         self.recommender = self.config_manager.recommender.to(Setting.device)
         self.manager = self.config_manager.manager
         self.load_path = self.parse_load_path()
+
+        Setting.status = self.manager.status
 
         self.print(self.config_manager.depots.train_depot[0])
         self.print(Structure().analyse_and_stringify(self.config_manager.sets.train_set[0]))
@@ -57,7 +66,10 @@ class Worker:
                     raise e
                 time.sleep(60)
 
-        model_ckpt = state_dict['model']
+        # compatible to old version where each operator are wrapped with an encoder
+        model_ckpt = dict()
+        for key, value in state_dict['model'].items():
+            model_ckpt[key.replace('operator.', '')] = value
 
         self.recommender.load_state_dict(model_ckpt, strict=self.exp.load.strict)
         if not self.exp.load.model_only:
@@ -108,8 +120,7 @@ class Worker:
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.recommender.train()
-
-            for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):  # type: int, BaseBatch
+            for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
                 loss = self.recommender(batch=batch)
                 loss.backward()
 
@@ -127,7 +138,6 @@ class Worker:
                     else:
                         if (step + 1) % self.exp.policy.check_interval == 0:
                             self.log_interval(epoch, step, loss.item())
-
             dev_loss = self.dev()
             self.log_epoch(epoch, dev_loss)
 
@@ -230,7 +240,7 @@ class Worker:
 
 if __name__ == '__main__':
     configuration = ConfigInit(
-        required_args=['data', 'model', 'exp'],
+        required_args=['data', 'model', 'exp', 'embed'],
         makedirs=[
             'exp.dir',
         ]

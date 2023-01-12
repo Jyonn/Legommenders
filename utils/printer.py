@@ -203,7 +203,7 @@ class Printer:
 TimePrefix.init()
 Printer.init()
 printer = Printer.create([(TimePrefix.call, Bracket.DEFAULT, Color.GREEN)])
-printer('START TIME:', datetime.datetime.now())
+# printer('START TIME:', datetime.datetime.now())
 
 if __name__ == '__main__':
     printer(f'Smart Printer Activated at {datetime.datetime.now()}')

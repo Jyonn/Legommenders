@@ -6,8 +6,8 @@ from oba import Obj
 from torch import nn
 
 from loader.depot.depot_cache import DepotCache
-from model_v2.inputer.cat_inputer import CatInputer
-from model_v2.recommenders.base_model import BaseRecommender, BaseRecommenderConfig
+from model_v2.inputer.concat_inputer import ConcatInputer
+from model_v2.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model_v2.utils.column_map import ColumnMap
 from model_v2.utils.embedding_manager import EmbeddingManager
 from model_v2.utils.manager import Manager
@@ -26,9 +26,9 @@ class Phases:
 
 class Depots:
     def __init__(self, user_data):
-        self.train_depot = DepotCache.get(user_data.depots.train.path)
-        self.dev_depot = DepotCache.get(user_data.depots.dev.path)
-        self.test_depot = DepotCache.get(user_data.depots.test.path)
+        self.train_depot = DepotCache.get(user_data.depots.train.path, filter_cache=user_data.filter_cache)
+        self.dev_depot = DepotCache.get(user_data.depots.dev.path, filter_cache=user_data.filter_cache)
+        self.test_depot = DepotCache.get(user_data.depots.test.path, filter_cache=user_data.filter_cache)
 
         self.print = printer[(self.__class__.__name__, '|', Color.BLUE)]
 
@@ -45,18 +45,18 @@ class Depots:
         if user_data.filters:
             for col in user_data.filters:
                 for filter_str in user_data.filters[col]:
-                    filter_func = eval(f'lambda x: {filter_str}')
+                    filter_func_str = f'lambda x: {filter_str}'
                     for phase in self.depots:
                         depot = self.depots[phase]
                         sample_num = len(depot)
-                        depot.filter(filter_func, col=col)
+                        depot.filter(filter_func_str, col=col)
                         self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def negative_filter(self, col):
         for phase in [Phases.train, Phases.dev]:
             depot = self.depots[phase]
             sample_num = len(depot)
-            depot.filter(lambda x: x == 1, col=col)
+            depot.filter('lambda x: x == 1', col=col)
             self.print(f'Filter {col} with x==1 in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def __getitem__(self, item):
@@ -66,7 +66,13 @@ class Depots:
 class NRDepots:
     def __init__(self, depots: Depots, column_map: ColumnMap):
         order = [column_map.clicks_col]
-        append = [column_map.candidate_col, column_map.label_col, column_map.neg_col, column_map.group_col]
+        append = [
+            column_map.candidate_col,
+            column_map.label_col,
+            column_map.neg_col,
+            column_map.group_col,
+            column_map.user_col,
+        ]
         self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
         self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
         self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
@@ -100,8 +106,9 @@ class Datasets:
 
 
 class ConfigManager:
-    def __init__(self, data, model, exp):
+    def __init__(self, data, embed, model, exp):
         self.data = data
+        self.embed = embed
         self.model = model
         self.exp = exp
 
@@ -114,6 +121,7 @@ class ConfigManager:
             label_col=self.data.user.label_col,
             neg_col=self.data.user.neg_col,
             group_col=self.data.user.group_col,
+            user_col=self.data.user.user_col,
         )
 
         self.print('build news and user depots ...')
@@ -125,25 +133,31 @@ class ConfigManager:
             append=self.data.news.append,
         )
 
-        self.recommender_class = Recommenders()(self.model.name)  # type: Type[BaseRecommender]
-        self.print('selected recommender: ', self.recommender_class)
+        # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
+        self.model_name = self.model.name.split('.')[0].replace('-', '')
+        self.recommender_class = Recommenders()(self.model_name)  # type: Type[BaseRecommender]
+        self.print(f'selected recommender: {self.recommender_class}')
         self.recommender_config = self.recommender_class.config_class(
-            news_config=self.model.config.news_encoder,
-            user_config=self.model.config.user_encoder,
-            use_news_content=self.model.config.use_news_content,
+            **Obj.raw(self.model.config),
         )  # type: BaseRecommenderConfig
 
         self.print('build embedding manager ...')
-        assert self.model.config.news_encoder.hidden_size == self.model.config.user_encoder.hidden_size
         skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_news_content else []
-        self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.news_encoder.hidden_size)
-        self.embedding_manager.register_depot(self.doc_nrd)
+        self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.hidden_size)
+
+        self.print('load pretrained embeddings ...')
+        for embedding_info in self.embed.embeddings:
+            self.embedding_manager.load_pretrained_embedding(**Obj.raw(embedding_info))
+
+        self.print('register embeddings ...')
+        if self.model.config.use_news_content:
+            self.embedding_manager.register_depot(self.doc_nrd)
         self.embedding_manager.register_depot(self.nrds.train_nrd, skip_cols=skip_cols)
-        self.embedding_manager.register_vocab(CatInputer.vocab)
+        self.embedding_manager.register_vocab(ConcatInputer.vocab)
 
         self.print('set <pad> embedding to zeros ...')
-        cat_embeddings = self.embedding_manager(CatInputer.vocab.name)  # type: nn.Embedding
-        cat_embeddings.weight.data[CatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[CatInputer.PAD])
+        cat_embeddings = self.embedding_manager(ConcatInputer.vocab.name)  # type: nn.Embedding
+        cat_embeddings.weight.data[ConcatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[ConcatInputer.PAD])
 
         self.print('build recommender model and manager ...')
         self.recommender = self.recommender_class(
@@ -155,9 +169,13 @@ class ConfigManager:
         )
         self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
 
-        if self.recommender_class.user_encoder_class.use_neg_sampling:
+        if self.recommender_class.use_neg_sampling:
             self.print('neg sample filtering ...')
             self.depots.negative_filter(self.column_map.label_col)
+
+        self.print('caching depots ...')
+        for depot in self.depots.depots.values():
+            depot.start_caching()
 
         self.print('build datasets ...')
         self.sets = Datasets(nrds=self.nrds, manager=self.manager)

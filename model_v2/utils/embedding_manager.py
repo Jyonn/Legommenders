@@ -50,11 +50,12 @@ class EmbeddingManager:
             embedding = nn.Embedding.from_pretrained(embedding_weights)
             embedding.weight.requires_grad = not embedding_info.frozen
 
-            if int(embedding.shape[1]) != self.hidden_size:
-                self.print(f'transform hidden size from {int(embedding.shape[1])} to {self.hidden_size}')
+            embedding_size = int(embedding.weight.data.shape[1])
+            if embedding_size != self.hidden_size:
+                self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
                 embedding = TransformEmbedding(
                     embedding=embedding,
-                    from_dim=int(embedding.shape[1]),
+                    from_dim=embedding_size,
                     to_dim=self.hidden_size
                 )
             self._table.add_module(vocab_name, embedding)
@@ -88,6 +89,7 @@ class EmbeddingManager:
             vocab_size = depot.get_vocab_size(col)
 
             self._col_to_vocab[col] = vocab_name
+            self.print(f'build mapping {col} -> {vocab_name}')
             if vocab_name in self._vocab_to_size:
                 assert self._vocab_to_size[vocab_name] == vocab_size, f'conflict vocab {vocab_name}'
                 continue
