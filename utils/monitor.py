@@ -44,12 +44,12 @@ class Monitor:
     def push(self, epoch, loss: float, state_dict):
         # print(epoch)
         if self.epoch_skip and epoch < self.epoch_skip:
-            return
+            return 0
 
         if self.interval:
             if (epoch + 1) % self.interval == 0:
                 self.store_checkpoint(epoch, state_dict)
-            return
+            return 0
 
         self.candidates.append((epoch, loss))
 
@@ -83,11 +83,12 @@ class Monitor:
                     if stay[i]:
                         if epoch - self.candidates[i][0] >= self.early_stop:
                             self.print('Early Stop')
-                            exit(0)
-                        return
-            return
+                            return -1
+                        return 0
+            return 0
 
         self.store_checkpoint(epoch, state_dict)
+        return 0
 
     def step_export(self):
         candidates = list(map(lambda x: x[0], self.candidates))

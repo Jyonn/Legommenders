@@ -1,6 +1,7 @@
 import random
 
 import torch
+# from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
 
 from model_v2.recommenders.base_neg_recommender import BaseNegRecommender
@@ -59,6 +60,7 @@ class Manager:
         self.doc_inputer = None
         self.doc_cache = None
         self.stacker = Stacker(aggregator=torch.stack)
+        # self.stacker = default_collate
         if self.use_content:
             self.doc_dataset = BaseDataset(nrd=doc_nrd)
             self.doc_inputer = recommender.news_encoder.inputer

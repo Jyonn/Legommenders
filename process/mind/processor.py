@@ -325,20 +325,41 @@ if __name__ == '__main__':
     # p.tokenize()
     # p.tokenize_neg()
 
+    # build MIND-small dataset
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND/',
+    #     store_dir='../../data/MIND-small-v2',
+    #     v2=True,
+    # )
+    # p.tokenize()
+    # p.tokenize_neg()
+    #
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND/',
+    #     store_dir='../../data/MIND-small-v2-glove',
+    #     v2=True,
+    #     glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
+    #     imp_list_path='../../data/MIND-small-v2/imp_list.json',
+    # )
+    # # p.analyse_news()
+    # p.tokenize()
+    # p.tokenize_neg()
+
+    # MIND-large
     p = Processor(
-        data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small-v2',
+        data_dir='/data1/qijiong/Data/MIND-large/',
+        store_dir='../../data/MIND-large',
         v2=True,
     )
     p.tokenize()
     p.tokenize_neg()
 
     p = Processor(
-        data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small-v2-glove',
+        data_dir='/data1/qijiong/Data/MIND-large/',
+        store_dir='../../data/MIND-large-glove',
         v2=True,
         glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
-        imp_list_path='../../data/MIND-small-v2/imp_list.json',
+        imp_list_path='../../data/MIND-large/imp_list.json',
     )
     # p.analyse_news()
     p.tokenize()

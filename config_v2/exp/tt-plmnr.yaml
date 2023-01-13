@@ -1,0 +1,28 @@
+name: ${exp.mode}
+dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
+log: ${exp.dir}/exp.log
+mode: train_test
+load:
+  save_dir: ../../../../transfer/PREC-MINDsmall-L3H12E768
+  epochs: "[48]"
+  model_only: true
+  strict: false
+  wait: false
+store:
+  top: 1
+  early_stop: 2
+policy:
+  epoch_start: 0
+  epoch: 50
+  lr: 0.0001
+  freeze_emb: false
+  pin_memory: false
+  batch_size: 64
+  device: gpu
+  n_warmup: 6000
+  check_interval: -2
+metrics:
+  - GAUC
+  - MRR
+  - NDCG@5
+  - NDCG@10

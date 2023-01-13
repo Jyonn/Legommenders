@@ -28,7 +28,7 @@ class Worker:
             self.config.data, self.config.embed, self.config.model, self.config.exp
         self.disable_tqdm = self.exp.policy.disable_tqdm
 
-        config.seed = config.seed or 2023
+        config.seed = int(config.seed or 2023)
         seeding(config.seed)
 
         self.print = printer[('MAIN', '·', Color.CYAN)]
@@ -146,11 +146,13 @@ class Worker:
                 optimizer=self.m_optimizer.state_dict(),
                 scheduler=self.m_scheduler.state_dict(),
             )
-            monitor.push(
+            early_stop = monitor.push(
                 epoch=epoch,
                 loss=dev_loss,
                 state_dict=state_dict,
             )
+            if early_stop == -1:
+                return
 
         self.print('Training Ended')
         monitor.export()
@@ -236,6 +238,9 @@ class Worker:
             self.iter_runner(self.dev_runner)
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
+        elif mode == 'train_test':
+            self.train_runner()
+            self.test_runner()
 
 
 if __name__ == '__main__':

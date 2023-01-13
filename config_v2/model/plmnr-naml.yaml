@@ -1,4 +1,4 @@
-name: PLMNR-NRMS
+name: PLMNR-NAML
 config:
   use_news_content: true
   hidden_size: 768

@@ -1,5 +1,7 @@
 import random
 import string
+import time
+from hashlib import md5
 
 
 class Rand(dict):
@@ -12,7 +14,9 @@ class Rand(dict):
         return True
 
     def __getitem__(self, item):
-        return ''.join([random.choice(self.chars) for _ in range(int(item))])
+        crt_time = str(time.time())
+        crt_time = md5(crt_time.encode('utf-8')).hexdigest()
+        return ''.join([random.choice(crt_time) for _ in range(int(item))])
 
     def __str__(self):
         return '<Random class>'

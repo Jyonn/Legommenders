@@ -1,5 +1,8 @@
 from model_v2.recommenders.dcn_model import DCNModel
+from model_v2.recommenders.lstur_model import LSTURModel
+from model_v2.recommenders.naml_model import NAMLModel
 from model_v2.recommenders.nrms_model import NRMSModel
+from model_v2.recommenders.plmnr_naml_model import PLMNRNAMLModel
 from model_v2.recommenders.plmnr_nrms_model import PLMNRNRMSModel
 from model_v2.recommenders.prec_model import PRECModel
 
@@ -7,7 +10,10 @@ recommender_list = [
     NRMSModel,
     PRECModel,
     PLMNRNRMSModel,
+    PLMNRNAMLModel,
     DCNModel,
+    NAMLModel,
+    LSTURModel,
 ]
 
 

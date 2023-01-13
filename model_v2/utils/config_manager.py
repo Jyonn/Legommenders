@@ -136,7 +136,7 @@ class ConfigManager:
         # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
         self.model_name = self.model.name.split('.')[0].replace('-', '')
         self.recommender_class = Recommenders()(self.model_name)  # type: Type[BaseRecommender]
-        self.print(f'selected recommender: {self.recommender_class}')
+        self.print(f'selected recommender: {str(self.recommender_class)}')
         self.recommender_config = self.recommender_class.config_class(
             **Obj.raw(self.model.config),
         )  # type: BaseRecommenderConfig

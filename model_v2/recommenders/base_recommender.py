@@ -107,11 +107,6 @@ class BaseRecommender(nn.Module):
         )
         self.timer('user encoder')
 
-        # print(user_embedding[0])
-        # print(candidates[0])
-        # print(batch[self.label_col][0])
-        # exit(0)
-
         self.timer('interaction')
         results = self.predict(user_embedding, candidates, labels=batch[self.label_col].to(Setting.device))
         self.timer('interaction')

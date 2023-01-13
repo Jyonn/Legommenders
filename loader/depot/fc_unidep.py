@@ -1,6 +1,7 @@
 import json
 import os.path
 
+import numpy as np
 from UniTok import UniDep
 
 from utils.printer import printer, Color
@@ -27,7 +28,23 @@ class FCUniDep(UniDep):
         os.makedirs(self.filters_base_path, exist_ok=True)
 
         self.cached_filters_path = os.path.join(self.filters_base_path, 'filter_cache.json')
-        self.cached_filters = self.load_cache()  # type: list
+        self.cached_filters = []
+        self.load_cache()
+        self.attempt_update()
+
+    def attempt_update(self):
+        flag = False
+        for cached_filter in self.cached_filters:
+            if cached_filter['path'].endswith('.json'):
+                json_data = json.load(open(os.path.join(self.filters_base_path, cached_filter['path'])))
+                numpy_data = np.array(json_data)
+                np.save(os.path.join(self.filters_base_path, cached_filter['path'].replace('.json', '.npy')), numpy_data)
+                os.remove(os.path.join(self.filters_base_path, cached_filter['path']))
+                cached_filter['path'] = cached_filter['path'].replace('.json', '.npy')
+                self.print(f'update filter cache {cached_filter["path"]} on {str(self)} to npy format')
+                flag = True
+        if flag:
+            json.dump(self.cached_filters, open(self.cached_filters_path, 'w'))
 
     def is_same_filter(self, other: dict):
         other_global, other_col = other['global'], other['col']
@@ -73,15 +90,15 @@ class FCUniDep(UniDep):
             'path': filter_name
         })
         json.dump(self.cached_filters, open(self.cached_filters_path, 'w'))
+        self.load_cache()
 
     def load_cache(self):
+        self.cached_filters = []
         if not self.filter_cache:
-            return []
-        cache = []
+            return
         if os.path.exists(self.cached_filters_path):
-            cache = json.load(open(self.cached_filters_path))
-        self.print(f'load {len(cache)} filter caches on {str(self)}')
-        return cache
+            self.cached_filters = json.load(open(self.cached_filters_path))
+        self.print(f'load {len(self.cached_filters)} filter caches on {str(self)}')
 
     def filter(self, filter_func, col=None):
         if self.filter_cache:
@@ -96,7 +113,7 @@ class FCUniDep(UniDep):
 
             for cached_filter in self.cached_filters:
                 if self.is_same_filter(cached_filter):
-                    self._visible_indexes = json.load(open(os.path.join(self.filters_base_path, cached_filter['path'])))
+                    self._visible_indexes = list(np.load(os.path.join(self.filters_base_path, cached_filter['path'])))
                     self.sample_size = len(self._visible_indexes)
                     return self
 

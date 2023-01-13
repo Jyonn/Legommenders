@@ -1,12 +1,36 @@
 from typing import Dict, Union
 
+import torch
 from UniTok import Vocab
 from torch import nn
 
-from loader.embedding.embedding_init import TransformEmbedding
 from loader.embedding.embedding_loader import EmbeddingInfo
 from model_v2.utils.nr_depot import NRDepot
 from utils.printer import printer, Color
+
+
+class TransformEmbedding(nn.Module):
+    def __init__(self, embedding: nn.Embedding, from_dim: int, to_dim: int):
+        super(TransformEmbedding, self).__init__()
+        self.embedding = embedding
+        self.linear = nn.Linear(from_dim, to_dim)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, indexes):
+        return self.dropout(self.linear(self.embedding(indexes)))
+
+
+class TransformMultiEmbedding(nn.Module):
+    def __init__(self, embedding: torch.Tensor, to_dim: int):
+        # embedding: [V, L, D] -> [V, L * D]
+        super(TransformMultiEmbedding, self).__init__()
+        embedding = embedding.view(embedding.shape[0], -1)
+        self.embedding = nn.Embedding.from_pretrained(embedding)
+        self.linear = nn.Linear(embedding.shape[1], to_dim)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, indexes):
+        return self.dropout(self.linear(self.embedding(indexes)))
 
 
 class EmbeddingManager:
@@ -47,17 +71,22 @@ class EmbeddingManager:
             if int(embedding_weights.shape[0]) != vocab_size:
                 raise ValueError(f'not meet the expected vocab size {vocab_size}')
 
-            embedding = nn.Embedding.from_pretrained(embedding_weights)
-            embedding.weight.requires_grad = not embedding_info.frozen
+            if embedding_weights.dim() == 3:
+                embedding = TransformMultiEmbedding(embedding_weights, self.hidden_size)
+                embedding.embedding.weight.requires_grad = not embedding_info.frozen
+                self.print(f'load multi-embedding {embedding_weights.shape}')
+            else:
+                embedding = nn.Embedding.from_pretrained(embedding_weights)
+                embedding.weight.requires_grad = not embedding_info.frozen
 
-            embedding_size = int(embedding.weight.data.shape[1])
-            if embedding_size != self.hidden_size:
-                self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
-                embedding = TransformEmbedding(
-                    embedding=embedding,
-                    from_dim=embedding_size,
-                    to_dim=self.hidden_size
-                )
+                embedding_size = int(embedding.weight.data.shape[1])
+                if embedding_size != self.hidden_size:
+                    self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
+                    embedding = TransformEmbedding(
+                        embedding=embedding,
+                        from_dim=embedding_size,
+                        to_dim=self.hidden_size
+                    )
             self._table.add_module(vocab_name, embedding)
             return
 
@@ -80,13 +109,15 @@ class EmbeddingManager:
     def register_depot(self, nrd: NRDepot, skip_cols=None):
         depot, order = nrd.depot, nrd.order
         skip_cols = skip_cols or []
+        skip_vocabs = [depot.get_vocab(col) for col in skip_cols]
 
         for col in order:
-            if col in skip_cols:
-                self.print(f'skip col {col}')
-
             vocab_name = depot.get_vocab(col)
             vocab_size = depot.get_vocab_size(col)
+
+            if vocab_name in skip_vocabs:
+                self.print(f'skip col {col}')
+                continue
 
             self._col_to_vocab[col] = vocab_name
             self.print(f'build mapping {col} -> {vocab_name}')

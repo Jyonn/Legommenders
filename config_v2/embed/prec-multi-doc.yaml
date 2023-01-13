@@ -1,0 +1,7 @@
+name: prec-multidoc
+embeddings:
+  -
+    vocab_name: nid
+    vocab_type: numpy
+    path: data/${data.name}/newsencoder-raw.npy
+    frozen: true
