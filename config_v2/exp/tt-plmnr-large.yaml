@@ -3,10 +3,10 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: train_test
 load:
-  save_dir: null
-  epochs: null
+  save_dir: ../../../../transfer/PREC-MINDlarge-L3H12E768
+  epochs: "[48]"
   model_only: true
-  strict: true
+  strict: false
   wait: false
 store:
   top: 1
@@ -14,12 +14,13 @@ store:
 policy:
   epoch_start: 0
   epoch: 50
-  lr: 0.0005
+  lr: 0.0001
   freeze_emb: false
   pin_memory: false
-  batch_size: 512
+  epoch_batch: -4
+  batch_size: 64
   device: gpu
-  n_warmup: 0
+  n_warmup: 6000
   check_interval: -2
 metrics:
   - GAUC

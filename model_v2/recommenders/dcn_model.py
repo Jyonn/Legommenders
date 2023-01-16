@@ -85,8 +85,8 @@ class DCNModel(BaseRecommender):
         self.prediction = nn.Linear(output_dim, 1)
 
     def predict(self, user_embedding, candidates, labels):
-        candidates = candidates.squeeze(1)  # [batch_size, hidden_size]
-        input_embeddings = torch.cat([user_embedding, candidates], dim=1)  # [batch_size, 2 * hidden_size]
+        squeezed_candidates = candidates.squeeze(1)  # [batch_size, hidden_size]
+        input_embeddings = torch.cat([user_embedding, squeezed_candidates], dim=1)  # [batch_size, 2 * hidden_size]
         cross_output = self.cross_net(input_embeddings)
         dnn_output = self.dnn(input_embeddings)
         final_out = torch.cat([cross_output, dnn_output], dim=-1)

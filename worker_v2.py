@@ -21,12 +21,16 @@ from utils.random_seed import seeding
 from utils.structure import Structure
 
 
+torch.autograd.set_detect_anomaly(True)
+
+
 class Worker:
     def __init__(self, config):
         self.config = config
         self.data, self.embed, self.model, self.exp = \
             self.config.data, self.config.embed, self.config.model, self.config.exp
         self.disable_tqdm = self.exp.policy.disable_tqdm
+        self.mode = self.exp.mode.lower()
 
         config.seed = int(config.seed or 2023)
         seeding(config.seed)
@@ -52,8 +56,8 @@ class Worker:
 
         Setting.status = self.manager.status
 
-        self.print(self.config_manager.depots.train_depot[0])
-        self.print(Structure().analyse_and_stringify(self.config_manager.sets.train_set[0]))
+        self.print(self.config_manager.depots.a_depot()[0])
+        self.print(Structure().analyse_and_stringify(self.config_manager.sets.a_set()[0]))
 
     def load(self, path):
         while True:
@@ -138,6 +142,15 @@ class Worker:
                     else:
                         if (step + 1) % self.exp.policy.check_interval == 0:
                             self.log_interval(epoch, step, loss.item())
+
+                if self.exp.policy.epoch_batch:
+                    if self.exp.policy.epoch_batch < 0:  # step part
+                        if step > max(train_steps // (-self.exp.policy.epoch_batch), 1):
+                            break
+                    else:
+                        if step > self.exp.policy.epoch_batch:
+                            break
+
             dev_loss = self.dev()
             self.log_epoch(epoch, dev_loss)
 
@@ -231,14 +244,13 @@ class Worker:
             handler()
 
     def run(self):
-        mode = self.exp.mode.lower()
-        if mode == 'train':
+        if self.mode == 'train':
             self.train_runner()
-        elif mode == 'dev':
+        elif self.mode == 'dev':
             self.iter_runner(self.dev_runner)
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
-        elif mode == 'train_test':
+        elif self.mode == 'train_test':
             self.train_runner()
             self.test_runner()
 

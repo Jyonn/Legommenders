@@ -13,11 +13,11 @@ store:
   early_stop: 2
 policy:
   epoch_start: 0
-  epoch: 50
+  epoch: 10
   lr: 0.0005
   freeze_emb: false
   pin_memory: false
-  batch_size: 512
+  batch_size: 5000
   device: gpu
   n_warmup: 0
   check_interval: -2

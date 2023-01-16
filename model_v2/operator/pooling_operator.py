@@ -55,4 +55,7 @@ class PoolingOperator(BaseOperator):
             order = embeddings.keys()
             return torch.cat([pooled_embeddings[col] for col in order], dim=-1)  # B, D * K
 
-        return torch.stack(list(pooled_embeddings.values()), dim=1).mean(dim=1)  # B, D
+        stack = torch.stack([pooled_embeddings[col] for col in embeddings.keys()], dim=1)  # B, K, D
+        if self.config.max_pooling:
+            return stack.max(dim=1)[0]  # B, D
+        return stack.mean(dim=1)  # B, D

@@ -1,12 +1,8 @@
-name: LSTUR
+name: LSTUR.NRL-D${model.config.hidden_size}
 config:
-  use_news_content: true
-  hidden_size: 64
+  use_news_content: false
+  hidden_size: 768
   neg_count: 4
-  news_config:
-    hidden_size: ${model.config.hidden_size}$
-    dropout: 0.1
-    kernel_size: 3
   user_config:
     hidden_size: ${model.config.hidden_size}$
     columns: ${data.news.order}$

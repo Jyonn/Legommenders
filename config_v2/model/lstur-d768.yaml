@@ -1,7 +1,7 @@
-name: LSTUR
+name: LSTUR.D${model.config.hidden_size}
 config:
   use_news_content: true
-  hidden_size: 64
+  hidden_size: 768
   neg_count: 4
   news_config:
     hidden_size: ${model.config.hidden_size}$

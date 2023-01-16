@@ -25,10 +25,14 @@ class Phases:
 
 
 class Depots:
-    def __init__(self, user_data):
-        self.train_depot = DepotCache.get(user_data.depots.train.path, filter_cache=user_data.filter_cache)
-        self.dev_depot = DepotCache.get(user_data.depots.dev.path, filter_cache=user_data.filter_cache)
-        self.test_depot = DepotCache.get(user_data.depots.test.path, filter_cache=user_data.filter_cache)
+    def __init__(self, user_data, modes: set):
+        self.train_depot = self.dev_depot = self.test_depot = None
+        if Phases.train in modes:
+            self.train_depot = DepotCache.get(user_data.depots.train.path, filter_cache=user_data.filter_cache)
+        if Phases.dev in modes:
+            self.dev_depot = DepotCache.get(user_data.depots.dev.path, filter_cache=user_data.filter_cache)
+        if Phases.test in modes:
+            self.test_depot = DepotCache.get(user_data.depots.test.path, filter_cache=user_data.filter_cache)
 
         self.print = printer[(self.__class__.__name__, '|', Color.BLUE)]
 
@@ -40,6 +44,8 @@ class Depots:
 
         if user_data.union:
             for depot in self.depots.values():
+                if not depot:
+                    continue
                 depot.union(*[DepotCache.get(d) for d in user_data.union])
 
         if user_data.filters:
@@ -48,6 +54,8 @@ class Depots:
                     filter_func_str = f'lambda x: {filter_str}'
                     for phase in self.depots:
                         depot = self.depots[phase]
+                        if not depot:
+                            continue
                         sample_num = len(depot)
                         depot.filter(filter_func_str, col=col)
                         self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
@@ -55,12 +63,18 @@ class Depots:
     def negative_filter(self, col):
         for phase in [Phases.train, Phases.dev]:
             depot = self.depots[phase]
+            if not depot:
+                continue
+
             sample_num = len(depot)
             depot.filter('lambda x: x == 1', col=col)
             self.print(f'Filter {col} with x==1 in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def __getitem__(self, item):
         return self.depots[item]
+
+    def a_depot(self):
+        return self.train_depot or self.dev_depot or self.test_depot
 
 
 class NRDepots:
@@ -73,9 +87,14 @@ class NRDepots:
             column_map.group_col,
             column_map.user_col,
         ]
-        self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
-        self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
-        self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
+
+        self.train_nrd = self.dev_nrd = self.test_nrd = None
+        if depots.train_depot:
+            self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
+        if depots.dev_depot:
+            self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
+        if depots.test_depot:
+            self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
 
         self.nrds = {
             Phases.train: self.train_nrd,
@@ -86,14 +105,21 @@ class NRDepots:
     def __getitem__(self, item):
         return self.nrds[item]
 
+    def a_nrd(self):
+        return self.train_nrd or self.dev_nrd or self.test_nrd
+
 
 class Datasets:
     def __init__(self, nrds: NRDepots, manager: Manager):
         self.nrds = nrds
 
-        self.train_set = BaseDataset(nrd=self.nrds.train_nrd, manager=manager)
-        self.dev_set = BaseDataset(nrd=self.nrds.dev_nrd, manager=manager)
-        self.test_set = BaseDataset(nrd=self.nrds.test_nrd, manager=manager)
+        self.train_set = self.dev_set = self.test_set = None
+        if nrds.train_nrd:
+            self.train_set = BaseDataset(nrd=self.nrds.train_nrd, manager=manager)
+        if nrds.dev_nrd:
+            self.dev_set = BaseDataset(nrd=self.nrds.dev_nrd, manager=manager)
+        if nrds.test_nrd:
+            self.test_set = BaseDataset(nrd=self.nrds.test_nrd, manager=manager)
 
         self.sets = {
             Phases.train: self.train_set,
@@ -104,6 +130,9 @@ class Datasets:
     def __getitem__(self, item):
         return self.sets[item]
 
+    def a_set(self):
+        return self.train_set or self.dev_set or self.test_set
+
 
 class ConfigManager:
     def __init__(self, data, embed, model, exp):
@@ -111,6 +140,7 @@ class ConfigManager:
         self.embed = embed
         self.model = model
         self.exp = exp
+        self.modes = self.parse_mode()
 
         self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
 
@@ -125,7 +155,7 @@ class ConfigManager:
         )
 
         self.print('build news and user depots ...')
-        self.depots = Depots(user_data=self.data.user)
+        self.depots = Depots(user_data=self.data.user, modes=self.modes)
         self.nrds = NRDepots(depots=self.depots, column_map=self.column_map)
         self.doc_nrd = NRDepot(
             depot=self.data.news.depot,
@@ -152,7 +182,7 @@ class ConfigManager:
         self.print('register embeddings ...')
         if self.model.config.use_news_content:
             self.embedding_manager.register_depot(self.doc_nrd)
-        self.embedding_manager.register_depot(self.nrds.train_nrd, skip_cols=skip_cols)
+        self.embedding_manager.register_depot(self.nrds.a_nrd(), skip_cols=skip_cols)
         self.embedding_manager.register_vocab(ConcatInputer.vocab)
 
         self.print('set <pad> embedding to zeros ...')
@@ -164,7 +194,7 @@ class ConfigManager:
             config=self.recommender_config,
             column_map=self.column_map,
             embedding_manager=self.embedding_manager,
-            user_nrd=self.nrds.train_nrd,
+            user_nrd=self.nrds.a_nrd(),
             news_nrd=self.doc_nrd,
         )
         self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
@@ -173,12 +203,19 @@ class ConfigManager:
             self.print('neg sample filtering ...')
             self.depots.negative_filter(self.column_map.label_col)
 
-        self.print('caching depots ...')
-        for depot in self.depots.depots.values():
-            depot.start_caching()
+        if self.exp.policy.use_cache:
+            self.print('caching depots ...')
+            for depot in self.depots.depots.values():
+                depot.start_caching()
 
         self.print('build datasets ...')
         self.sets = Datasets(nrds=self.nrds, manager=self.manager)
+
+    def parse_mode(self):
+        modes = set(self.exp.mode.lower().split('_'))
+        if Phases.train in modes:
+            modes.add(Phases.dev)
+        return modes
 
     def get_loader(self, phase):
         shuffle = phase != Phases.test

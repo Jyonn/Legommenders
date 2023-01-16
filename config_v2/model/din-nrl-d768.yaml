@@ -1,0 +1,16 @@
+name: DIN.NRL-D${model.config.hidden_size}
+config:
+  use_news_content: false
+  hidden_size: 768
+  dnn_hidden_units: [128, 64]
+  dnn_activations: ReLU
+  attention_hidden_units: [64]
+  attention_dropout: 0.1
+  net_dropout: 0.1
+  batch_norm: false
+  din_use_softmax: false
+  user_config:
+    hidden_size: ${model.config.hidden_size}$
+    inputer_config:
+      use_sep_token: false
+      use_cls_token: false

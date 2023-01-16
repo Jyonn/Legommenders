@@ -1,9 +1,9 @@
 name: ${exp.mode}
 dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
-mode: train_test
+mode: test
 load:
-  save_dir: null
+  save_dir: ../${embed.name}-train_test
   epochs: null
   model_only: true
   strict: true
@@ -13,8 +13,8 @@ store:
   early_stop: 2
 policy:
   epoch_start: 0
-  epoch: 50
-  lr: 0.0005
+  epoch: 10
+  lr: 0.005
   freeze_emb: false
   pin_memory: false
   batch_size: 512

@@ -42,10 +42,10 @@ class Processor:
         self.glove = glove
         self.imp_list = json.load(open(imp_list_path, 'r')) if imp_list_path else None
 
-        if os.path.exists(self.store_dir):
-            c = input(f'{self.store_dir} exists, press Y to continue, or press any other to exit.')
-            if c.upper() != 'Y':
-                exit(0)
+        # if os.path.exists(self.store_dir):
+        #     c = input(f'{self.store_dir} exists, press Y to continue, or press any other to exit.')
+        #     if c.upper() != 'Y':
+        #         exit(0)
 
         os.makedirs(self.store_dir, exist_ok=True)
 
@@ -97,7 +97,7 @@ class Processor:
             data['neg'].append(' '.join(negs))
         return pd.DataFrame(data)
 
-    def read_inter_data(self, mode) ->pd.DataFrame:
+    def read_inter_data(self, mode) -> pd.DataFrame:
         df = self._read_inter_data(mode)
         data = dict(imp=[], uid=[], nid=[], click=[])
         for line in df.itertuples():
@@ -306,10 +306,13 @@ class Processor:
             inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, mode))
 
     def tokenize_neg(self):
+        print('tokenize neg')
         self.uid.load(os.path.join(self.store_dir, 'user'))
         self.nid.load(os.path.join(self.store_dir, 'news'))
 
+        print('combine neg df')
         neg_df = self.combine_neg_df()
+        print('get neg tok')
         neg_tok = self.get_neg_tok()
         neg_tok.read_file(neg_df).tokenize().store_data(os.path.join(self.store_dir, 'neg'))
 
@@ -351,7 +354,7 @@ if __name__ == '__main__':
         store_dir='../../data/MIND-large',
         v2=True,
     )
-    p.tokenize()
+    # p.tokenize()
     p.tokenize_neg()
 
     p = Processor(

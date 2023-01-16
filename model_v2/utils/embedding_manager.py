@@ -56,6 +56,7 @@ class EmbeddingManager:
 
     def load_pretrained_embedding(self, vocab_name, **kwargs):
         self._pretrained[vocab_name] = EmbeddingInfo(**kwargs).load()
+        self.print(f'load pretrained embedding {vocab_name} of {self._pretrained[vocab_name].embedding.shape}')
 
     def build_vocab_embedding(self, vocab_name, vocab_size):
         if vocab_name in self._table:
@@ -80,13 +81,13 @@ class EmbeddingManager:
                 embedding.weight.requires_grad = not embedding_info.frozen
 
                 embedding_size = int(embedding.weight.data.shape[1])
-                if embedding_size != self.hidden_size:
-                    self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
-                    embedding = TransformEmbedding(
-                        embedding=embedding,
-                        from_dim=embedding_size,
-                        to_dim=self.hidden_size
-                    )
+                # if embedding_size != self.hidden_size:
+                self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
+                embedding = TransformEmbedding(
+                    embedding=embedding,
+                    from_dim=embedding_size,
+                    to_dim=self.hidden_size
+                )
             self._table.add_module(vocab_name, embedding)
             return
 

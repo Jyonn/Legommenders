@@ -4,7 +4,8 @@ import sys
 sys.path.append('..')
 from utils.gpu import GPU
 
-path = '/data1/qijiong/Code/PREC/saving/MINDsmall/L3H12E768-B100/mind-mlm-news/epoch_48.bin'
+# path = '/data1/qijiong/Code/PREC/saving/MINDsmall/L3H12E768-B100/mind-mlm-news/epoch_48.bin'
+path = '/data1/qijiong/Code/PREC/saving/MINDlarge/mind-mlm-news/epoch_48.bin'
 
 device = GPU.auto_choose(torch_format=True)
 
@@ -21,5 +22,5 @@ state_dict = dict(
     model=state_dict
 )
 
-torch.save(state_dict, 'PREC-MINDsmall-L3H12E768-epoch_48.bin')
+torch.save(state_dict, 'PREC-MINDlarge-L3H12E768/epoch_48.bin')
 

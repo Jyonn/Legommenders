@@ -1,4 +1,6 @@
+from model_v2.recommenders.bst_model import BSTModel
 from model_v2.recommenders.dcn_model import DCNModel
+from model_v2.recommenders.din_model import DINModel
 from model_v2.recommenders.lstur_model import LSTURModel
 from model_v2.recommenders.naml_model import NAMLModel
 from model_v2.recommenders.nrms_model import NRMSModel
@@ -14,6 +16,8 @@ recommender_list = [
     DCNModel,
     NAMLModel,
     LSTURModel,
+    DINModel,
+    BSTModel,
 ]
 
 

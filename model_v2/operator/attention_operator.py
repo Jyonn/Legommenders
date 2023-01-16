@@ -4,6 +4,7 @@ from loader.global_setting import Setting
 from model.layer.attention import AdditiveAttention
 from model_v2.operator.base_operator import BaseOperator, BaseOperatorConfig
 from model_v2.inputer.concat_inputer import ConcatInputer
+from utils.structure import Structure
 
 
 class AttentionOperatorConfig(BaseOperatorConfig):
@@ -50,7 +51,7 @@ class AttentionOperator(BaseOperator):
             query=embeddings,
             key=embeddings,
             value=embeddings,
-            key_padding_mask=mask,
+            key_padding_mask=mask.float(),
             need_weights=False,
         )  # [B, L, D]
 

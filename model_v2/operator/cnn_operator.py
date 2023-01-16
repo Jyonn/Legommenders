@@ -49,10 +49,12 @@ class CNNOperator(BaseOperator):
             embedding = embeddings[col]
             if embedding.size()[1] > 1:
                 embedding = self.cnn(embedding.permute(0, 2, 1))
-                embedding = self.activation(embedding.permute(0, 2, 1))
-                embedding *= mask[col].unsqueeze(-1).to(Setting.device)
-                embedding = self.dropout(embedding)
-            output_list.append(embedding)
+                activation = self.activation(embedding.permute(0, 2, 1))
+                masked_activation = activation * mask[col].unsqueeze(-1).to(Setting.device)
+                output = self.dropout(masked_activation)
+            else:
+                output = embedding
+            output_list.append(output)
             output_mask.append(mask[col])
 
         outputs = torch.cat(output_list, dim=1).to(Setting.device)

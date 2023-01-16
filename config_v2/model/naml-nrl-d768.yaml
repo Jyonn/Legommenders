@@ -1,4 +1,4 @@
-name: NAML.NRL
+name: NAML.NRL-D${model.config.hidden_size}
 config:
   use_news_content: false
   hidden_size: 768
