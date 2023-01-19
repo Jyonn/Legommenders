@@ -2,7 +2,7 @@ name: DIN.D${model.config.hidden_size}
 config:
   use_news_content: true
   hidden_size: 768
-  dnn_hidden_units: [128, 64]
+  dnn_hidden_units: [1000, 1000, 1000]
   dnn_activations: ReLU
   attention_hidden_units: [64]
   attention_dropout: 0.1

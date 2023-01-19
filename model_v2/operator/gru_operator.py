@@ -57,5 +57,7 @@ class GRUOperator(BaseOperator):
             enforce_sorted=False,
         )
         _, last_hidden = self.gru(packed_sequence)
-        last_hidden = last_hidden.squeeze(0)
+        # last_hidden = last_hidden.squeeze(0)
+        last_hidden = last_hidden[-1]
+
         return self.linear(last_hidden)

@@ -1,4 +1,4 @@
-name: PLMNR-NRMS-D${model.config.hidden_size}
+name: PLMNR-NRMS.D${model.config.hidden_size}
 config:
   use_news_content: true
   hidden_size: 64

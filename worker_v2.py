@@ -125,6 +125,8 @@ class Worker:
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.recommender.train()
             for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+                # if step >= 1000:
+                #     break
                 loss = self.recommender(batch=batch)
                 loss.backward()
 
@@ -150,7 +152,6 @@ class Worker:
                     else:
                         if step > self.exp.policy.epoch_batch:
                             break
-
             dev_loss = self.dev()
             self.log_epoch(epoch, dev_loss)
 

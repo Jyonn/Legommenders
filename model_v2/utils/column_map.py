@@ -7,6 +7,8 @@ class ColumnMap:
             neg_col: str = 'neg',
             group_col: str = 'imp',
             user_col: str = 'uid',
+            index_col: str = 'index',
+            **kwargs
     ):
         self.clicks_col = clicks_col
         self.candidate_col = candidate_col
@@ -14,4 +16,5 @@ class ColumnMap:
         self.neg_col = neg_col
         self.group_col = group_col
         self.user_col = user_col
+        self.index_col = index_col
         self.clicks_mask_col = '__clicks_mask__'

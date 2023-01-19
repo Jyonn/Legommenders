@@ -1,6 +1,6 @@
-name: PREC.D${model.config.hidden_size}
+name: PREC.NRL-D${model.config.hidden_size}
 config:
-  use_news_content: true
+  use_news_content: false
   neg_count: 4
   hidden_size: 64
   news_config:

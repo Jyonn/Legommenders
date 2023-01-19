@@ -1,8 +1,8 @@
-name: PREC.D${model.config.hidden_size}
+name: PLMNR-LSTUR
 config:
   use_news_content: true
-  neg_count: 4
   hidden_size: 64
+  neg_count: 4
   news_config:
     hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 4
@@ -12,8 +12,9 @@ config:
       use_sep_token: true
   user_config:
     hidden_size: ${model.config.hidden_size}$
-    num_attention_heads: 4
-    num_hidden_layers: 3
+    columns:
+      - plmnr
+    use_news_content: ${model.config.use_news_content}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

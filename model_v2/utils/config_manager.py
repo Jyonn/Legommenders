@@ -145,14 +145,7 @@ class ConfigManager:
         self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
 
         self.print('build column map ...')
-        self.column_map = ColumnMap(
-            clicks_col=self.data.user.clicks_col,
-            candidate_col=self.data.user.candidate_col,
-            label_col=self.data.user.label_col,
-            neg_col=self.data.user.neg_col,
-            group_col=self.data.user.group_col,
-            user_col=self.data.user.user_col,
-        )
+        self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
         self.print('build news and user depots ...')
         self.depots = Depots(user_data=self.data.user, modes=self.modes)

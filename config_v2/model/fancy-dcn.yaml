@@ -1,20 +1,18 @@
-name: DIN
+name: Fancy-DCN
 config:
   use_news_content: true
   hidden_size: 64
   dnn_hidden_units: [1000, 1000, 1000]
   dnn_activations: ReLU
-  attention_hidden_units: [64]
-  attention_dropout: 0.1
-  net_dropout: 0.1
-  batch_norm: false
-  din_use_softmax: false
+  dnn_dropout: 0.1
+  dnn_batch_norm: false
+  cross_num: 3
+  neg_count: 4
   news_config:
     hidden_size: ${model.config.hidden_size}$
     flatten: false
     max_pooling: false
   user_config:
     hidden_size: ${model.config.hidden_size}$
-    inputer_config:
-      use_sep_token: false
-      use_cls_token: false
+    flatten: false
+    max_pooling: false

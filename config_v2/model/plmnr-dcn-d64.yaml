@@ -1,8 +1,12 @@
-name: PREC.D${model.config.hidden_size}
+name: PLMNR-DCN.D64
 config:
   use_news_content: true
-  neg_count: 4
   hidden_size: 64
+  dnn_hidden_units: [1000, 1000, 1000]
+  dnn_activations: ReLU
+  dnn_dropout: 0.1
+  dnn_batch_norm: false
+  cross_num: 3
   news_config:
     hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 4
@@ -12,8 +16,5 @@ config:
       use_sep_token: true
   user_config:
     hidden_size: ${model.config.hidden_size}$
-    num_attention_heads: 4
-    num_hidden_layers: 3
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
+    flatten: false
+    max_pooling: false

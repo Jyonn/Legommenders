@@ -104,12 +104,13 @@ class DINModel(BaseRecommender):
     user_encoder: NullConcatOperator
     use_neg_sampling = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_dim=None, **kwargs):
         super().__init__(**kwargs)
 
-        input_dim = self.config.hidden_size
-        if self.config.use_news_content and self.news_encoder.config.flatten:
-            input_dim *= len(self.news_encoder.inputer.order)
+        if input_dim is None:
+            input_dim = self.config.hidden_size
+            if self.config.use_news_content and self.news_encoder.config.flatten:
+                input_dim *= len(self.news_encoder.inputer.order)
 
         self.attention_layers = DINAttention(input_dim, self.config)
 

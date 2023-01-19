@@ -1,0 +1,11 @@
+name: prec-multidoc
+embeddings:
+  -
+    vocab_name: nid
+    vocab_type: numpy
+    path: data/${data.name}/newsencoder-raw.npy
+    frozen: true
+  - vocab_name: cat
+    vocab_type: numpy
+    path: transfer/PREC-MINDsmall-L3H4E64/cat_embeds.npy
+    frozen: true

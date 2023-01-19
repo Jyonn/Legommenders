@@ -60,13 +60,14 @@ class DCNModel(BaseRecommender):
     user_encoder: PoolingOperator
     use_neg_sampling = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_dim=None, **kwargs):
         super().__init__(**kwargs)
 
-        news_input_dim = self.config.hidden_size
-        if self.config.use_news_content and self.news_encoder.config.flatten:
-            news_input_dim *= len(self.news_encoder.inputer.order)
-        input_dim = 2 * news_input_dim
+        if input_dim is None:
+            input_dim = self.config.hidden_size
+            if self.config.use_news_content and self.news_encoder.config.flatten:
+                input_dim *= len(self.news_encoder.inputer.order)
+        input_dim *= 2
 
         self.dnn = MLPLayer(
             input_dim=input_dim,

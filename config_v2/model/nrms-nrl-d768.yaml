@@ -5,6 +5,7 @@ config:
   neg_count: 4
   user_config:
     hidden_size: ${model.config.hidden_size}$
+    num_attention_heads: 12
     inputer_config:
       use_cls_token: false
       use_sep_token: false

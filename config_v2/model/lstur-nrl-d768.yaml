@@ -6,6 +6,7 @@ config:
   user_config:
     hidden_size: ${model.config.hidden_size}$
     columns: ${data.news.order}$
+    num_layers: 3
     use_news_content: ${model.config.use_news_content}$
     inputer_config:
       use_cls_token: false

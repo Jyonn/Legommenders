@@ -1,4 +1,4 @@
-name: DIN
+name: FANCY-DIN
 config:
   use_news_content: true
   hidden_size: 64

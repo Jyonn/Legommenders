@@ -21,12 +21,19 @@ class TransformEmbedding(nn.Module):
 
 
 class TransformMultiEmbedding(nn.Module):
-    def __init__(self, embedding: torch.Tensor, to_dim: int):
+    def __init__(self, embedding: torch.Tensor, to_dim: int, hidden_dim: int = None):
         # embedding: [V, L, D] -> [V, L * D]
         super(TransformMultiEmbedding, self).__init__()
         embedding = embedding.view(embedding.shape[0], -1)
         self.embedding = nn.Embedding.from_pretrained(embedding)
-        self.linear = nn.Linear(embedding.shape[1], to_dim)
+        if hidden_dim:
+            self.linear = nn.Sequential(
+                nn.Linear(embedding.shape[1], hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, to_dim),
+            )
+        else:
+            self.linear = nn.Linear(embedding.shape[1], to_dim)
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, indexes):

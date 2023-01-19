@@ -16,4 +16,16 @@ class DynamicParser:
                 assert arg.startswith('--')
                 key = arg[2:]
 
+        for key, value in kwargs.items():
+            if value.isdigit():
+                kwargs[key] = int(value)
+            elif value.lower() == 'true':
+                kwargs[key] = True
+            elif value.lower() == 'false':
+                kwargs[key] = False
+            else:
+                try:
+                    kwargs[key] = float(value)
+                except ValueError:
+                    pass
         return kwargs

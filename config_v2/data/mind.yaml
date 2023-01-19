@@ -29,3 +29,4 @@ user:
   neg_col: neg
   group_col: imp
   user_col: uid
+  index_col: index

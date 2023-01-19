@@ -8,7 +8,7 @@ from model_v2.recommenders.base_neg_recommender import BaseNegRecommender
 from model_v2.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model_v2.utils.nr_depot import NRDepot
 from set.base_dataset import BaseDataset
-from utils.stacker import Stacker
+from utils.stacker import Stacker, FastStacker
 from utils.timer import Timer
 
 
@@ -42,6 +42,8 @@ class Manager:
     ):
         self.status = Status()
 
+        self.timer = Timer(activate=True)
+
         # parameter assignment
         self.recommender = recommender
         self.config = recommender.config  # type: BaseRecommenderConfig
@@ -53,6 +55,7 @@ class Manager:
         self.label_col = self.column_map.label_col
         self.neg_col = self.column_map.neg_col
         self.user_col = self.column_map.user_col
+        self.index_col = self.column_map.index_col
         self.clicks_mask_col = self.column_map.clicks_mask_col
 
         # document manager and cache
@@ -67,6 +70,7 @@ class Manager:
             self.doc_cache = self.get_doc_cache()
 
         self.user_cache = dict()
+        self.candidate_cache = dict()
 
         # clicks
         self.user_inputer = recommender.user_encoder.inputer
@@ -103,7 +107,16 @@ class Manager:
 
         # content injection and tensorization
         if self.use_content:
-            sample[self.candidate_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
+            if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
+                stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
+            else:
+                stacked_doc = self.candidate_cache[sample[self.candidate_col][0]]
+            sample[self.candidate_col] = stacked_doc
+            # sample[self.candidate_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
+            # elif sample[self.candidate_col][0] not in self.candidate_cache:
+            #     self.candidate_cache[sample[self.candidate_col][0]] = self.stacker([self.doc_cache[sample[self.candidate_col][0]]])
+            #     sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
+            # sample[self.candidate_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
             if sample[self.user_col] in self.user_cache:
                 sample[self.clicks_col] = self.user_cache[sample[self.user_col]]
             else:
