@@ -1,6 +1,4 @@
-# GreenNRL
-
-Green News Representation Learning Framework
+# GNRS: Green News Recommender System
 
 ## Environment
 
