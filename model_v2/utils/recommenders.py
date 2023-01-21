@@ -5,6 +5,7 @@ from model_v2.recommenders.fancy_dcn_model import FancyDCNModel
 from model_v2.recommenders.lstur_model import LSTURModel
 from model_v2.recommenders.naml_model import NAMLModel
 from model_v2.recommenders.nrms_model import NRMSModel
+from model_v2.recommenders.plmnr_bst_model import PLMNRBSTModel
 from model_v2.recommenders.plmnr_dcn_model import PLMNRDCNModel
 from model_v2.recommenders.plmnr_din_model import PLMNRDINModel
 from model_v2.recommenders.plmnr_fancy_dcn_model import PLMNRFancyDCNModel
@@ -17,6 +18,7 @@ recommender_list = [
     NRMSModel,
     PRECModel,
     PLMNRDCNModel,
+    PLMNRBSTModel,
     PLMNRNRMSModel,
     PLMNRNAMLModel,
     PLMNRLSTURModel,

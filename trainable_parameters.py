@@ -3,20 +3,15 @@ import re
 import numpy as np
 
 lines = """
-[00:00:18] ·MAIN· dnn.dnn.0.weight torch.Size([1000, 1536])
-[00:00:18] ·MAIN· dnn.dnn.0.bias torch.Size([1000])
-[00:00:18] ·MAIN· dnn.dnn.3.weight torch.Size([1000, 1000])
-[00:00:18] ·MAIN· dnn.dnn.3.bias torch.Size([1000])
-[00:00:18] ·MAIN· dnn.dnn.6.weight torch.Size([1000, 1000])
-[00:00:18] ·MAIN· dnn.dnn.6.bias torch.Size([1000])
-[00:00:18] ·MAIN· cross_net.cross_net.0.bias torch.Size([1536])
-[00:00:18] ·MAIN· cross_net.cross_net.0.weight.weight torch.Size([1, 1536])
-[00:00:18] ·MAIN· cross_net.cross_net.1.bias torch.Size([1536])
-[00:00:18] ·MAIN· cross_net.cross_net.1.weight.weight torch.Size([1, 1536])
-[00:00:18] ·MAIN· cross_net.cross_net.2.bias torch.Size([1536])
-[00:00:18] ·MAIN· cross_net.cross_net.2.weight.weight torch.Size([1, 1536])
-[00:00:18] ·MAIN· prediction.weight torch.Size([1, 2536])
-[00:00:18] ·MAIN· prediction.bias torch.Size([1])
+[00:05:28] ·MAIN· user_encoder.multi_head_attention.in_proj_weight torch.Size([192, 64])
+[00:05:28] ·MAIN· user_encoder.multi_head_attention.in_proj_bias torch.Size([192])
+[00:05:28] ·MAIN· user_encoder.multi_head_attention.out_proj.weight torch.Size([64, 64])
+[00:05:28] ·MAIN· user_encoder.multi_head_attention.out_proj.bias torch.Size([64])
+[00:05:28] ·MAIN· user_encoder.linear.weight torch.Size([64, 64])
+[00:05:28] ·MAIN· user_encoder.linear.bias torch.Size([64])
+[00:05:28] ·MAIN· user_encoder.additive_attention.encoder.0.weight torch.Size([64, 64])
+[00:05:28] ·MAIN· user_encoder.additive_attention.encoder.0.bias torch.Size([64])
+[00:05:28] ·MAIN· user_encoder.additive_attention.encoder.2.weight torch.Size([1, 64])
 """
 
 

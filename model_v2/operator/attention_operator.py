@@ -51,11 +51,9 @@ class AttentionOperator(BaseOperator):
             query=embeddings,
             key=embeddings,
             value=embeddings,
-            key_padding_mask=mask.float(),
+            key_padding_mask=mask,
             need_weights=False,
         )  # [B, L, D]
 
-        outputs = self.linear(outputs)  # [B, L, D]
-        outputs = self.additive_attention(outputs, mask)  # [B, D]
-
-        return outputs
+        linear_outputs = self.linear(outputs)  # [B, L, D]
+        return self.additive_attention(linear_outputs, mask)  # [B, D]
