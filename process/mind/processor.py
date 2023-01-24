@@ -35,10 +35,10 @@ class ClickTok(BaseTok):
 
 
 class Processor:
-    def __init__(self, data_dir, store_dir, v2=False, glove=None, imp_list_path: str = None):
+    def __init__(self, data_dir, store_dir, glove=None, imp_list_path: str = None, v2=True):
         self.data_dir = data_dir
         self.store_dir = store_dir
-        self.v2 = v2
+        self.v2 = True
         self.glove = glove
         self.imp_list = json.load(open(imp_list_path, 'r')) if imp_list_path else None
 
@@ -318,29 +318,17 @@ class Processor:
 
 
 if __name__ == '__main__':
-    # p = Processor(
-    #     data_dir='/data1/qijiong/Data/MIND/',
-    #     store_dir='../../data/MIND-small'
-    # )
-    # p.analyse_news()
-    # p.analyse_user()
-    # p.analyse_inter()
-    # p.tokenize()
-    # p.tokenize_neg()
-
     # build MIND-small dataset
-    # p = Processor(
-    #     data_dir='/data1/qijiong/Data/MIND/',
-    #     store_dir='../../data/MIND-small-v2',
-    #     v2=True,
-    # )
-    # p.tokenize()
-    # p.tokenize_neg()
+    p = Processor(
+        data_dir='/data1/qijiong/Data/MIND/',
+        store_dir='../../data/MIND-small',
+    )
+    p.tokenize()
+    p.tokenize_neg()
     #
     # p = Processor(
     #     data_dir='/data1/qijiong/Data/MIND/',
     #     store_dir='../../data/MIND-small-v2-glove',
-    #     v2=True,
     #     glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
     #     imp_list_path='../../data/MIND-small-v2/imp_list.json',
     # )
@@ -352,18 +340,16 @@ if __name__ == '__main__':
     p = Processor(
         data_dir='/data1/qijiong/Data/MIND-large/',
         store_dir='../../data/MIND-large',
-        v2=True,
     )
-    # p.tokenize()
-    p.tokenize_neg()
-
-    p = Processor(
-        data_dir='/data1/qijiong/Data/MIND-large/',
-        store_dir='../../data/MIND-large-glove',
-        v2=True,
-        glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
-        imp_list_path='../../data/MIND-large/imp_list.json',
-    )
-    # p.analyse_news()
     p.tokenize()
     p.tokenize_neg()
+
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND-large/',
+    #     store_dir='../../data/MIND-large-glove',
+    #     glove='/data1/qijiong/Data/Glove/300d/tok.vocab.dat',
+    #     imp_list_path='../../data/MIND-large/imp_list.json',
+    # )
+    # # p.analyse_news()
+    # p.tokenize()
+    # p.tokenize_neg()

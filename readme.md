@@ -37,10 +37,10 @@ We support the following models on both MIND small and large datasets:
 ## Training and Testing
 
 ```bash
-python worker_v2.py 
-    --config config_v2/data/mind.yaml 
-    --model config_v2/model/nrms.yaml 
-    --exp config_v2/exp/tt-nrms.yaml
-    --embed config_v2/embed/null.yaml
+python worker.py 
+    --config config/data/mind.yaml 
+    --model config/model/nrms.yaml 
+    --exp config/exp/tt-nrms.yaml
+    --embed config/embed/null.yaml
     --version small-v2 
 ```
