@@ -1,4 +1,4 @@
-name: PLMNR-DCN.D64
+name: DeepFM
 config:
   use_news_content: true
   hidden_size: 64
@@ -6,14 +6,10 @@ config:
   dnn_activations: ReLU
   dnn_dropout: 0.1
   dnn_batch_norm: false
-  cross_num: 3
   news_config:
     hidden_size: ${model.config.hidden_size}$
-    num_attention_heads: 8
-    num_hidden_layers: 1
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: true
+    flatten: false
+    max_pooling: false
   user_config:
     hidden_size: ${model.config.hidden_size}$
     flatten: false

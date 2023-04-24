@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import pandas as pd
 import torch
 from oba import Obj
 from tqdm import tqdm
@@ -36,8 +37,7 @@ class Worker:
         seeding(config.seed)
 
         self.print = printer[('MAIN', '·', Color.CYAN)]
-        self.logging = Logger(self.exp.log)
-        Printer.logger = self.logging
+        Printer.logger = Logger(self.exp.log)
         self.print('START TIME:', datetime.datetime.now())
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
@@ -187,6 +187,52 @@ class Worker:
 
         return meaner.mean()
 
+    def test_fake(self):
+        self.recommender.eval()
+        loader = self.config_manager.get_loader(Phases.test).test()
+
+        score_series, label_series, group_series, fake_series = [], [], [], []
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            with torch.no_grad():
+                scores = self.recommender(batch=batch).squeeze(1)
+            labels = batch[self.config_manager.column_map.label_col].tolist()
+            groups = batch[self.config_manager.column_map.group_col].tolist()
+            fakes = batch[self.config_manager.column_map.fake_col].tolist()
+            score_series.extend(scores.cpu().detach().tolist())
+            label_series.extend(labels)
+            group_series.extend(groups)
+            fake_series.extend(fakes)
+
+        df = pd.DataFrame(dict(
+            score=score_series,
+            label=label_series,
+            group=group_series,
+            fake=fake_series,
+        ))
+        groups = df.groupby('fake')
+        self.print('group by fake done')
+
+        for fake, group in groups:
+            self.print('inactive users' if fake else 'active users')
+            pool = MetricPool.parse(self.exp.metrics)
+            results = pool.calculate(group['score'].tolist(), group['label'].tolist(), group['group'].tolist())
+            for metric in results:
+                self.print(f'{metric}: {results[metric]:.4f}')
+        #
+        # meta_groups = [dict(), dict()]
+        # for i, (score, label, group, fake) in enumerate(zip(score_series, label_series, group_series, fake_series)):
+        #     meta_groups[fake] = meta_groups[fake] or dict()
+        #     meta_groups[fake]['group'] = meta_groups[fake].get('group', []) + [group]
+        #     meta_groups[fake]['score'] = meta_groups[fake].get('score', []) + [score]
+        #     meta_groups[fake]['label'] = meta_groups[fake].get('label', []) + [label]
+        #
+        # for fake, meta_group in enumerate(meta_groups):
+        #     pool = MetricPool.parse(self.exp.metrics)
+        #     results = pool.calculate(meta_group['score'], meta_group['label'], meta_group['group'])
+        #     self.print('inactive users' if fake else 'active users')
+        #     for metric in results:
+        #         self.print(f'{metric}: {results[metric]}')
+
     def test(self, steps=None):
         pool = MetricPool.parse(self.exp.metrics)
 
@@ -251,6 +297,8 @@ class Worker:
             self.iter_runner(self.dev_runner)
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
+        elif self.exp.mode == 'test_fake':
+            self.iter_runner(self.test_fake)
         elif self.mode == 'train_test':
             self.train_runner()
             self.test_runner()

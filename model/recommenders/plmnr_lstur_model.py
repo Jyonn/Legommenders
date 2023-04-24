@@ -1,4 +1,3 @@
-from model.operator.attention_operator import AttentionOperator
 from model.operator.gru_operator import GRUOperator
 from model.operator.transformer_operator import TransformerOperator
 from model.recommenders.base_neg_recommender import BaseNegRecommender

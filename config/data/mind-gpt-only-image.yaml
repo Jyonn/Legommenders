@@ -1,11 +1,12 @@
-name: MIND-${version}
+name: MIND-${version}-GPT-Only-Image
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
-  depot: ${data.base_dir}/news
+  depot: ${data.base_dir}/news-v2-image
   order:
-    - title
+    - newtitle
     - cat
+    - cover
   append:
     - nid
 user:
@@ -21,7 +22,7 @@ user:
     history:
       - x
   union:
-    - ${data.base_dir}/user-grp
+    - ${data.base_dir}/user
     - ${data.base_dir}/neg
   candidate_col: nid
   clicks_col: history
@@ -30,4 +31,3 @@ user:
   group_col: imp
   user_col: uid
   index_col: index
-  fake_col: fake

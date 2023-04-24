@@ -28,9 +28,10 @@ class BaseNegRecommender(BaseRecommender, abc.ABC):
 
         self.neg_count = self.config.neg_count
 
-    def predict(self, user_embedding, candidates, labels):
+    def predict(self, user_embedding, candidates, batch):
         user_embedding = user_embedding.unsqueeze(1)  # batch_size, 1, embedding_dim
         scores = torch.sum(user_embedding * candidates, dim=2).to(Setting.device)  # batch_size, K+1
+
         if Setting.status.is_testing:
             return scores
 

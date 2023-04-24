@@ -1,11 +1,12 @@
 from typing import Dict, Type
 
 import torch
-from UniTok import UniDep
 from oba import Obj
 from torch import nn
 
 from loader.depot.depot_cache import DepotCache
+from loader.depot.fc_unidep import FCUniDep
+from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model.utils.column_map import ColumnMap
@@ -40,7 +41,7 @@ class Depots:
             Phases.train: self.train_depot,
             Phases.dev: self.dev_depot,
             Phases.test: self.test_depot,
-        }  # type: Dict[str, UniDep]
+        }  # type: Dict[str, FCUniDep]
 
         if user_data.union:
             for depot in self.depots.values():
@@ -87,6 +88,8 @@ class NRDepots:
             column_map.group_col,
             column_map.user_col,
         ]
+        if column_map.fake_col:
+            append.append(column_map.fake_col)
 
         self.train_nrd = self.dev_nrd = self.test_nrd = None
         if depots.train_depot:
@@ -182,6 +185,15 @@ class ConfigManager:
         cat_embeddings = self.embedding_manager(ConcatInputer.vocab.name)  # type: nn.Embedding
         cat_embeddings.weight.data[ConcatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[ConcatInputer.PAD])
 
+        user_plugin = None
+        if self.data.user.plugin:
+            self.print(f'user plugin ...')
+            user_plugin = UserPlugin(
+                depot=DepotCache.get(self.data.user.plugin),
+                hidden_size=self.model.config.hidden_size,
+                select_cols=self.data.user.plugin_cols,
+            )
+
         self.print('build recommender model and manager ...')
         self.recommender = self.recommender_class(
             config=self.recommender_config,
@@ -189,6 +201,7 @@ class ConfigManager:
             embedding_manager=self.embedding_manager,
             user_nrd=self.nrds.a_nrd(),
             news_nrd=self.doc_nrd,
+            user_plugin=user_plugin,
         )
         self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
 

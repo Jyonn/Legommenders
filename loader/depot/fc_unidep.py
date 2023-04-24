@@ -38,7 +38,8 @@ class FCUniDep(UniDep):
             if cached_filter['path'].endswith('.json'):
                 json_data = json.load(open(os.path.join(self.filters_base_path, cached_filter['path'])))
                 numpy_data = np.array(json_data)
-                np.save(os.path.join(self.filters_base_path, cached_filter['path'].replace('.json', '.npy')), numpy_data)
+                np.save(os.path.join(
+                    self.filters_base_path, cached_filter['path'].replace('.json', '.npy')), numpy_data)
                 os.remove(os.path.join(self.filters_base_path, cached_filter['path']))
                 cached_filter['path'] = cached_filter['path'].replace('.json', '.npy')
                 self.print(f'update filter cache {cached_filter["path"]} on {str(self)} to npy format')
@@ -83,7 +84,8 @@ class FCUniDep(UniDep):
 
         filter_name = f'{Rand()[6]}.json'
         filter_path = os.path.join(self.filters_base_path, filter_name)
-        json.dump(self._visible_indexes, open(filter_path, 'w'))
+        self._indexes = [int(i) for i in self._indexes]
+        json.dump(self._indexes, open(filter_path, 'w'))
         self.cached_filters.append({
             'global': self.global_filters,
             'col': self.col_filters,
@@ -100,7 +102,7 @@ class FCUniDep(UniDep):
             self.cached_filters = json.load(open(self.cached_filters_path))
         self.print(f'load {len(self.cached_filters)} filter caches on {str(self)}')
 
-    def filter(self, filter_func, col=None):
+    def filter(self, filter_func: str, col=None):
         if self.filter_cache:
             if col is None:
                 if filter_func not in self.global_filters:
@@ -113,8 +115,8 @@ class FCUniDep(UniDep):
 
             for cached_filter in self.cached_filters:
                 if self.is_same_filter(cached_filter):
-                    self._visible_indexes = list(np.load(os.path.join(self.filters_base_path, cached_filter['path'])))
-                    self.sample_size = len(self._visible_indexes)
+                    self._indexes = list(np.load(os.path.join(self.filters_base_path, cached_filter['path'])))
+                    self.sample_size = len(self._indexes)
                     return self
 
         super().filter(eval(filter_func), col)

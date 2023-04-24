@@ -1,3 +1,7 @@
+"""
+This file requires UniTok~=2.4.3.2, 3.x is not supported.
+"""
+
 import json
 import os
 import random
@@ -318,14 +322,14 @@ class Processor:
 
 
 if __name__ == '__main__':
-    # build MIND-small dataset
-    p = Processor(
-        data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small',
-    )
-    p.tokenize()
-    p.tokenize_neg()
-    #
+    # # build MIND-small dataset
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND/',
+    #     store_dir='../../data/MIND-small',
+    # )
+    # p.tokenize()
+    # p.tokenize_neg()
+
     # p = Processor(
     #     data_dir='/data1/qijiong/Data/MIND/',
     #     store_dir='../../data/MIND-small-v2-glove',
@@ -336,13 +340,13 @@ if __name__ == '__main__':
     # p.tokenize()
     # p.tokenize_neg()
 
-    # MIND-large
-    p = Processor(
-        data_dir='/data1/qijiong/Data/MIND-large/',
-        store_dir='../../data/MIND-large',
-    )
-    p.tokenize()
-    p.tokenize_neg()
+    # # MIND-large
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND-large/',
+    #     store_dir='../../data/MIND-large',
+    # )
+    # p.tokenize()
+    # p.tokenize_neg()
 
     # p = Processor(
     #     data_dir='/data1/qijiong/Data/MIND-large/',
@@ -353,3 +357,10 @@ if __name__ == '__main__':
     # # p.analyse_news()
     # p.tokenize()
     # p.tokenize_neg()
+
+    p = Processor(
+        data_dir='/data1/qijiong/Data/MIND/',
+        store_dir='../../data/MIND-small',
+    )
+
+    p.analyse_news()

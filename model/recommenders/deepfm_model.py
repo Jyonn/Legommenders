@@ -7,14 +7,13 @@ from model.operator.pooling_operator import PoolingOperator
 from model.recommenders.base_recommender import BaseRecommenderConfig, BaseRecommender
 
 
-class DCNModelConfig(BaseRecommenderConfig):
+class DeepFMModelConfig(BaseRecommenderConfig):
     def __init__(
             self,
             dnn_hidden_units,
             dnn_activations,
             dnn_dropout,
             dnn_batch_norm,
-            cross_num,
             **kwargs,
     ):
         super().__init__(**kwargs)
@@ -23,39 +22,28 @@ class DCNModelConfig(BaseRecommenderConfig):
         self.dnn_activations = dnn_activations
         self.dnn_dropout = dnn_dropout
         self.dnn_batch_norm = dnn_batch_norm
-        self.cross_num = cross_num
 
 
-class CrossInteractionLayer(nn.Module):
+class FactorizationMachine(nn.Module):
     def __init__(self, input_dim):
-        super(CrossInteractionLayer, self).__init__()
-        self.weight = nn.Linear(input_dim, 1, bias=False)
-        self.bias = nn.Parameter(torch.zeros(input_dim))
-
-    def forward(self, input_embeddings, hidden_states):
-        return self.weight(hidden_states) * input_embeddings + self.bias
-
-
-class CrossNet(nn.Module):
-    def __init__(self, input_dim, num_layers):
-        super(CrossNet, self).__init__()
-        self.num_layers = num_layers
-        self.cross_net = nn.ModuleList(
-            CrossInteractionLayer(input_dim) for _ in range(self.num_layers)
-        )
+        super(FactorizationMachine, self).__init__()
+        # self.linear = nn.Linear(input_dim, 1, bias=False)
+        # self.bias = nn.Parameter(torch.zeros(1), requires_grad=True)
 
     def forward(self, input_embeddings):
-        output_embeddings = input_embeddings
-        for cross_net in self.cross_net:
-            output_embeddings = output_embeddings + cross_net(input_embeddings, output_embeddings)
-        return output_embeddings
+        # lr_out = self.linear(input_embeddings) + self.bias
+        sum_of_square = torch.sum(input_embeddings, dim=1) ** 2  # sum then square
+        square_of_sum = torch.sum(input_embeddings ** 2, dim=1)  # square then sum
+        bi_interaction = (sum_of_square - square_of_sum) * 0.5
+        # print(lr_out.shape, bi_interaction.shape)
+        return bi_interaction.sum(dim=-1, keepdim=True)
 
 
-class DCNModel(BaseRecommender):
+class DeepFMModel(BaseRecommender):
     news_encoder_class = PoolingOperator
     user_encoder_class = PoolingOperator
-    config_class = DCNModelConfig
-    config: DCNModelConfig
+    config_class = DeepFMModelConfig
+    config: DeepFMModelConfig
     news_encoder: PoolingOperator
     user_encoder: PoolingOperator
     use_neg_sampling = False
@@ -69,9 +57,11 @@ class DCNModel(BaseRecommender):
                 input_dim *= len(self.news_encoder.inputer.order)
         input_dim *= 2
 
+        self.fm = FactorizationMachine(input_dim // 2)
+
         self.dnn = MLPLayer(
             input_dim=input_dim,
-            output_dim=None,  # output hidden layer
+            output_dim=1,  # output hidden layer
             hidden_units=self.config.dnn_hidden_units,
             hidden_activations=self.config.dnn_activations,
             output_activation=None,
@@ -80,20 +70,15 @@ class DCNModel(BaseRecommender):
             use_bias=True
         )
 
-        self.cross_net = CrossNet(input_dim, self.config.cross_num)
-
-        output_dim = input_dim + self.config.dnn_hidden_units[-1]
-        self.prediction = nn.Linear(output_dim, 1)
-
     def predict(self, user_embedding, candidates, batch):
         labels = batch[self.label_col].to(Setting.device)
 
         squeezed_candidates = candidates.squeeze(1)  # [batch_size, hidden_size]
-        input_embeddings = torch.cat([user_embedding, squeezed_candidates], dim=1)  # [batch_size, 2 * hidden_size]
-        cross_output = self.cross_net(input_embeddings)
-        dnn_output = self.dnn(input_embeddings)
-        final_out = torch.cat([cross_output, dnn_output], dim=-1)
-        scores = self.prediction(final_out)  # [batch_size]
+        input_embeddings = torch.stack([user_embedding, squeezed_candidates], dim=1)  # [batch_size, 2, hidden_size]
+
+        fm_output = self.fm(input_embeddings)
+        dnn_output = self.dnn(input_embeddings.flatten(start_dim=1))
+        scores = (fm_output + dnn_output) / 2
 
         if Setting.status.is_testing:
             return scores

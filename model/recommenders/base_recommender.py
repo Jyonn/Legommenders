@@ -1,8 +1,10 @@
 from typing import Type
 
+import torch
 from torch import nn
 
 from loader.global_setting import Setting
+from model.common.user_plugin import UserPlugin
 from model.operator.base_operator import BaseOperator
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
@@ -42,6 +44,7 @@ class BaseRecommender(nn.Module):
             embedding_manager: EmbeddingManager,
             user_nrd: NRDepot,
             news_nrd: NRDepot,
+            user_plugin: UserPlugin = None,
     ):
         super().__init__()
 
@@ -54,6 +57,7 @@ class BaseRecommender(nn.Module):
         self.embedding_manager = embedding_manager
         self.embedding_table = embedding_manager.get_table()
 
+        self.user_col = column_map.user_col
         self.clicks_col = column_map.clicks_col
         self.candidate_col = column_map.candidate_col
         self.label_col = column_map.label_col
@@ -73,6 +77,7 @@ class BaseRecommender(nn.Module):
                 embedding_manager=embedding_manager,
             )
 
+        self.user_plugin = user_plugin
         self.shaper = Shaper()
 
     def timing(self, activate=True):
@@ -88,6 +93,11 @@ class BaseRecommender(nn.Module):
         news_content = self.news_encoder(news_content, mask=attention_mask)  # batch_size * click_size, embedding_dim
         news_content = self.shaper.recover(news_content)
         return news_content
+
+    def fuse_user_plugin(self, batch, user_embedding):
+        if self.user_plugin:
+            return self.user_plugin(batch[self.user_col], user_embedding)
+        return user_embedding
 
     def forward(self, batch):
         self.timer('news encoder')
@@ -106,12 +116,16 @@ class BaseRecommender(nn.Module):
         )
         self.timer('user encoder')
 
+        self.fuse_user_plugin(batch, user_embedding)
+
         self.timer('interaction')
-        results = self.predict(user_embedding, candidates, labels=batch[self.label_col].to(Setting.device))
+        results = self.predict(user_embedding, candidates, batch)
+        # if not Setting.status.is_testing:
+        #     results += l2_loss
         self.timer('interaction')
         return results
 
-    def predict(self, user_embedding, candidates, labels):
+    def predict(self, user_embedding, candidates, batch):
         raise NotImplementedError
 
     def __str__(self):

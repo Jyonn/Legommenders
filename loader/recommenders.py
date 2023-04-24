@@ -1,8 +1,10 @@
 from model.recommenders.bst_model import BSTModel
 from model.recommenders.dcn_model import DCNModel
+from model.recommenders.deepfm_model import DeepFMModel
 from model.recommenders.din_model import DINModel
 from model.recommenders.fancy_dcn_model import FancyDCNModel
 from model.recommenders.lstur_model import LSTURModel
+from model.recommenders.naml_dcn_model import NAMLDCNModel
 from model.recommenders.naml_model import NAMLModel
 from model.recommenders.nrms_model import NRMSModel
 from model.recommenders.plmnr_bst_model import PLMNRBSTModel
@@ -12,6 +14,7 @@ from model.recommenders.plmnr_fancy_dcn_model import PLMNRFancyDCNModel
 from model.recommenders.plmnr_lstur_model import PLMNRLSTURModel
 from model.recommenders.plmnr_naml_model import PLMNRNAMLModel
 from model.recommenders.plmnr_nrms_model import PLMNRNRMSModel
+from model.recommenders.pnn_model import PNNModel
 
 recommender_list = [
     NRMSModel,
@@ -23,7 +26,10 @@ recommender_list = [
     PLMNRFancyDCNModel,
     PLMNRDINModel,
     FancyDCNModel,
+    NAMLDCNModel,
     DCNModel,
+    DeepFMModel,
+    PNNModel,
     NAMLModel,
     LSTURModel,
     DINModel,

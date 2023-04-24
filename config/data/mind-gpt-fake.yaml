@@ -1,10 +1,10 @@
-name: MIND-${version}
+name: MIND-${version}-GPT-Fake
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
-  depot: ${data.base_dir}/news
+  depot: ${data.base_dir}/news-v2-fake
   order:
-    - title
+    - newtitle
     - cat
   append:
     - nid
@@ -12,17 +12,17 @@ user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/train
+      path: ${data.base_dir}/train-fake
     dev:
-      path: ${data.base_dir}/dev
+      path: ${data.base_dir}/dev-fake
     test:
-      path: ${data.base_dir}/test
+      path: ${data.base_dir}/test-fake
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/user-grp
-    - ${data.base_dir}/neg
+    - ${data.base_dir}/user-fake-grp
+    - ${data.base_dir}/neg-fake
   candidate_col: nid
   clicks_col: history
   label_col: click
@@ -30,4 +30,3 @@ user:
   group_col: imp
   user_col: uid
   index_col: index
-  fake_col: fake

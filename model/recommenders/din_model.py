@@ -125,11 +125,16 @@ class DINModel(BaseRecommender):
             use_bias=True
         )
 
-    def predict(self, user_embedding, candidates, labels):
-        user_embedding, mask = user_embedding['embedding'], user_embedding['mask']
-        # print(user_embedding.shape, candidates.shape, mask.shape)
+    def fuse_user_plugin(self, batch, user_embedding):
+        return user_embedding
 
+    def predict(self, user_embedding, candidates, batch):
+        labels = batch[self.label_col].to(Setting.device)
+
+        user_embedding, mask = user_embedding['embedding'], user_embedding['mask']
         pooling_embedding = self.attention_layers(candidates, user_embedding, mask)
+        if self.user_plugin:
+            pooling_embedding = self.user_plugin(batch[self.user_col], pooling_embedding)
         scores = self.dnn(pooling_embedding)
 
         if Setting.status.is_testing:

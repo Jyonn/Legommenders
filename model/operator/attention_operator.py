@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 from loader.global_setting import Setting
@@ -50,9 +51,8 @@ class AttentionOperator(BaseOperator):
             query=embeddings,
             key=embeddings,
             value=embeddings,
-            key_padding_mask=mask,
+            key_padding_mask=(1 - mask).bool(),
             need_weights=False,
         )  # [B, L, D]
-
         linear_outputs = self.linear(outputs)  # [B, L, D]
         return self.additive_attention(linear_outputs, mask)  # [B, D]

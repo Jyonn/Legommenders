@@ -16,7 +16,8 @@ class Monitor:
             early_stop=None,
             debug=False,
     ):
-        self.interval = interval
+        # self.interval = interval
+        self.interval = 1
         self.candidates = []
         self.save_dir = save_dir
         self.top = top or 1

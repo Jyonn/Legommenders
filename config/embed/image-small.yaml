@@ -1,0 +1,7 @@
+name: image
+embeddings:
+  -
+    vocab_name: cover
+    vocab_type: numpy
+    path: /data1/qijiong/Code/NewsRecommenders/data/MIND-small-v2/image_embeds.npy
+    frozen: true
