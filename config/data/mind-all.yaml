@@ -12,17 +12,17 @@ user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/train-fake
+      path: ${data.base_dir}/train-fake-v2
     dev:
-      path: ${data.base_dir}/dev-fake
+      path: ${data.base_dir}/dev-fake-v2
     test:
-      path: ${data.base_dir}/test-fake
+      path: ${data.base_dir}/test-fake-v2
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/user-fake
-    - ${data.base_dir}/neg-fake
+    - ${data.base_dir}/user-fake-v2
+    - ${data.base_dir}/neg-fake-v2
   candidate_col: nid
   clicks_col: history
   label_col: click

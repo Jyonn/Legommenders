@@ -56,9 +56,9 @@ from UniTok import UniDep, Vocab, Voc
 news_dir = '../../data/MIND-small-v2/news'
 user_dir = '../../data/MIND-small-v2/user'
 
-fake_dirs = ['../../data/MIND-small-v2/cold', '../../data/MIND-small-v2/cold-2']
-final_news_dir = '../../data/MIND-small-v2/news-fake-v2'
-final_user_dir = '../../data/MIND-small-v2/user-fake-v2'
+fake_dirs = ['../../data/MIND-small-v2/cold-3']
+final_news_dir = '../../data/MIND-small-v2/news-fake-v3'
+final_user_dir = '../../data/MIND-small-v2/user-fake-v3'
 
 fake_depots = [UniDep(fake_dir) for fake_dir in fake_dirs]
 
@@ -121,7 +121,7 @@ user_depot.export(final_user_dir)
 # 3. add fake news to interaction depot
 
 mode_dir = '../../data/MIND-small-v2/{mode}'
-final_mode_dir = '../../data/MIND-small-v2/{mode}-fake-v2'
+final_mode_dir = '../../data/MIND-small-v2/{mode}-fake-v3'
 
 for mode in ['train', 'dev', 'test']:
     depot = UniDep(mode_dir.format(mode=mode))
@@ -132,7 +132,7 @@ for mode in ['train', 'dev', 'test']:
 # 4. add fake news to neg depot
 
 neg_dir = '../../data/MIND-small-v2/neg'
-final_neg_dir = '../../data/MIND-small-v2/neg-fake-v2'
+final_neg_dir = '../../data/MIND-small-v2/neg-fake-v3'
 
 depot = UniDep(neg_dir)
 depot.vocabs['nid'].load(final_news_dir)

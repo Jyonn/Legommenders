@@ -1,0 +1,34 @@
+name: MIND-${version}-Fake-Allow
+base_dir: data/MIND-${version}
+news:
+  filter_cache: true
+  depot: ${data.base_dir}/news-fake
+  order:
+    - title
+    - cat
+  append:
+    - nid
+user:
+  filter_cache: false
+  depots:
+    train:
+      path: ${data.base_dir}/train-fake
+    dev:
+      path: ${data.base_dir}/dev-fake
+    test:
+      path: ${data.base_dir}/test-fake
+  filters:
+    history:
+      - x
+  allowed: ${data.base_dir}/allowed_user.json
+  union:
+    - ${data.base_dir}/user-fake-grp
+    - ${data.base_dir}/neg-fake
+  candidate_col: nid
+  clicks_col: history
+  label_col: click
+  neg_col: neg
+  group_col: imp
+  user_col: uid
+  index_col: index
+  fake_col: fake

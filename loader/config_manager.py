@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Type
 
 import torch
@@ -48,6 +49,16 @@ class Depots:
                 if not depot:
                     continue
                 depot.union(*[DepotCache.get(d) for d in user_data.union])
+
+        if user_data.allowed:
+            allowed_list = json.load(open(user_data.allowed))
+            for phase in self.depots:
+                depot = self.depots[phase]
+                if not depot:
+                    continue
+                sample_num = len(depot)
+                super(FCUniDep, depot).filter(lambda x: x in allowed_list, col=depot.id_col)
+                self.print(f'Filter {phase} phase with allowed list, sample num: {sample_num} -> {len(depot)}')
 
         if user_data.filters:
             for col in user_data.filters:
