@@ -5,6 +5,7 @@ news:
   depot: ${data.base_dir}/news-fake
   order:
     - title
+    - abs
     - cat
   append:
     - nid
@@ -12,15 +13,14 @@ user:
   filter_cache: false
   depots:
     train:
-      path: ${data.base_dir}/train-fake
+      path: ${data.base_dir}/train-fake-allowed
     dev:
-      path: ${data.base_dir}/dev-fake
+      path: ${data.base_dir}/dev-fake-allowed
     test:
-      path: ${data.base_dir}/test-fake
+      path: ${data.base_dir}/test-fake-allowed
   filters:
     history:
       - x
-  allowed: ${data.base_dir}/allowed_user.json
   union:
     - ${data.base_dir}/user-fake-grp
     - ${data.base_dir}/neg-fake

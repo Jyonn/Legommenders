@@ -9,12 +9,11 @@ load:
   strict: true
   wait: false
 store:
-  interval: 1
   top: 1
   early_stop: 2
 policy:
   epoch_start: 0
-  epoch: ${epochs}$
+  epoch: 50
   lr: ${lr}$
   freeze_emb: false
   pin_memory: false
