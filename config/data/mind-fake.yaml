@@ -1,3 +1,4 @@
+# cold-1 得到的单条fake数据，在全量user数据集
 name: MIND-${version}-Fake
 base_dir: data/MIND-${version}
 news:

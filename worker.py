@@ -256,6 +256,24 @@ class Worker:
         for metric in results:
             self.print(f'{metric}: {results[metric]}')
 
+    def evaluate(self, phase, metrics):
+        pool = MetricPool.parse(metrics)
+
+        self.recommender.eval()
+        loader = self.config_manager.get_loader(phase).test()
+
+        score_series, label_series, group_series = [], [], []
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            with torch.no_grad():
+                scores = self.recommender(batch=batch).squeeze(1)
+            labels = batch[self.config_manager.column_map.label_col].tolist()
+            groups = batch[self.config_manager.column_map.group_col].tolist()
+            score_series.extend(scores.cpu().detach().tolist())
+            label_series.extend(labels)
+            group_series.extend(groups)
+
+        return pool.calculate(score_series, label_series, group_series)
+
     def train_runner(self):
         self.m_optimizer = torch.optim.Adam(
             params=filter(lambda p: p.requires_grad, self.recommender.parameters()),

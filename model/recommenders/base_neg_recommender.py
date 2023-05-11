@@ -4,7 +4,6 @@ import torch
 
 from loader.global_setting import Setting
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
-from utils.structure import Structure
 
 
 class BaseNegRecommenderConfig(BaseRecommenderConfig):

@@ -27,7 +27,6 @@ class PathSearcher(DictCompiler):
 
 class ConfigInit:
     def __init__(self, required_args, makedirs):
-        # required_args = ['data', 'model', 'exp']
         self.required_args = required_args
         self.makedirs = makedirs
 
