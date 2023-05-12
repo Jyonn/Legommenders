@@ -73,7 +73,8 @@ class Depots:
                         self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def negative_filter(self, col):
-        for phase in [Phases.train, Phases.dev]:
+        # for phase in [Phases.train, Phases.dev]:
+        for phase in [Phases.train]:
             depot = self.depots[phase]
             if not depot:
                 continue
@@ -235,11 +236,10 @@ class ConfigManager:
         return modes
 
     def get_loader(self, phase):
-        shuffle = phase != Phases.test
         return NRDataLoader(
             manager=self.manager,
             dataset=self.sets[phase],
-            shuffle=shuffle,
+            shuffle=phase == Phases.train,
             batch_size=self.exp.policy.batch_size,
             pin_memory=self.exp.policy.pin_memory,
         )

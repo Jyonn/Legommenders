@@ -15,6 +15,8 @@ class Monitor:
             epoch_skip=None,
             early_stop=None,
             debug=False,
+            maximize=False,
+            **kwargs,
     ):
         self.interval = interval
         # self.interval = 1
@@ -24,6 +26,7 @@ class Monitor:
         self.epoch_skip = epoch_skip
         self.early_stop = early_stop
         self.debug = debug
+        self.maximize = maximize
         self.print = printer.MONITOR
 
     def remove_checkpoint(self, epoch):
@@ -42,7 +45,9 @@ class Monitor:
         torch.save(state_dict, epoch_path)
         self.step_export()
 
-    def push(self, epoch, loss: float, state_dict):
+    def push(self, epoch, metric: float, state_dict):
+        if self.maximize:
+            metric = -metric
         # print(epoch)
         if self.epoch_skip and epoch < self.epoch_skip:
             return 0
@@ -52,7 +57,7 @@ class Monitor:
                 self.store_checkpoint(epoch, state_dict)
             return 0
 
-        self.candidates.append((epoch, loss))
+        self.candidates.append((epoch, metric))
 
         stay = [True] * len(self.candidates)
 
@@ -103,17 +108,20 @@ class Monitor:
             self.candidates = self.candidates[-self.top:]
         self.step_export()
 
+    def get_best_epoch(self):
+        return self.candidates[-1][0]
 
-if __name__ == '__main__':
-    m = Monitor(
-        interval=None,
-        monitor='a < b',
-        save_dir=None,
-        top=5,
-        epoch_skip=0,
-        early_stop=None,
-        debug=True
-    )
-    losses = [1.3518, 1.2661, 1.2446, 1.2297, 1.2367, 1.2472, 1.1911, 1.1674]
-    for index, loss in enumerate(losses):
-        m.push(index, loss, None)
+#
+# if __name__ == '__main__':
+#     m = Monitor(
+#         interval=None,
+#         monitor='a < b',
+#         save_dir=None,
+#         top=5,
+#         epoch_skip=0,
+#         early_stop=None,
+#         debug=True
+#     )
+#     losses = [1.3518, 1.2661, 1.2446, 1.2297, 1.2367, 1.2472, 1.1911, 1.1674]
+#     for index, loss in enumerate(losses):
+#         m.push(index, loss, None)

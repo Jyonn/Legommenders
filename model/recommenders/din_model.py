@@ -137,8 +137,6 @@ class DINModel(BaseRecommender):
             pooling_embedding = self.user_plugin(batch[self.user_col], pooling_embedding)
         scores = self.dnn(pooling_embedding)
 
-        if Setting.status.is_testing:
+        if not Setting.status.is_training:
             return scores
-
-        scores = scores.squeeze(1)
-        return nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+        return nn.functional.binary_cross_entropy_with_logits(scores.squeeze(1), labels.float())

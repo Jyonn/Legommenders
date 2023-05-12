@@ -142,6 +142,9 @@ class MetricPool:
         return cls(metrics)
 
     def calculate(self, scores, labels, groups, group_worker=5):
+        if not self.metrics:
+            return {}
+
         df = pd.DataFrame(dict(groups=groups, scores=scores, labels=labels))
 
         groups = None

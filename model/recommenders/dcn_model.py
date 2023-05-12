@@ -95,8 +95,6 @@ class DCNModel(BaseRecommender):
         final_out = torch.cat([cross_output, dnn_output], dim=-1)
         scores = self.prediction(final_out)  # [batch_size]
 
-        if Setting.status.is_testing:
+        if not Setting.status.is_training:
             return scores
-
-        scores = scores.squeeze(1)
-        return nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+        return nn.functional.binary_cross_entropy_with_logits(scores.squeeze(1), labels.float())

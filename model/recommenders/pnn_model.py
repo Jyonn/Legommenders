@@ -79,8 +79,7 @@ class PNNModel(BaseRecommender):
         input_embeddings = torch.cat([input_embeddings.flatten(start_dim=1), inner_products], dim=1)
         scores = self.dnn(input_embeddings)
 
-        if Setting.status.is_testing:
-            return scores
-
         scores = scores.squeeze(1)
-        return nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+        loss = nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+
+        return scores, loss

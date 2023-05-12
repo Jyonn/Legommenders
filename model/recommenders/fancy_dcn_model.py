@@ -61,11 +61,13 @@ class FancyDCNModel(BaseNegRecommender):
         final_out = torch.cat([cross_output, dnn_output], dim=-1)
         scores = self.prediction(final_out)  # B*(K+1)
 
-        if Setting.status.is_testing:
+        if not Setting.status.is_training:
             return scores
 
         scores = scores.squeeze(1)
         labels = torch.zeros(shape[:-1], device=scores.device)
         labels[:, 0] = 1
         labels = labels.view(-1)
-        return nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+        loss = nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+
+        return loss

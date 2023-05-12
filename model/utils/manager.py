@@ -97,7 +97,8 @@ class Manager:
         # negative sampling
         if self.use_neg_sampling:
             assert isinstance(self.recommender, BaseNegRecommender)
-            if not self.status.is_testing:
+            # if not self.status.is_testing:
+            if self.status.is_training:
                 true_negs = sample[self.neg_col]
                 rand_neg = max(self.recommender.neg_count - len(true_negs), 0)
                 neg_samples = random.sample(true_negs, k=min(self.recommender.neg_count, len(true_negs)))

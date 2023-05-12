@@ -80,8 +80,6 @@ class DeepFMModel(BaseRecommender):
         dnn_output = self.dnn(input_embeddings.flatten(start_dim=1))
         scores = (fm_output + dnn_output) / 2
 
-        if Setting.status.is_testing:
+        if not Setting.status.is_training:
             return scores
-
-        scores = scores.squeeze(1)
-        return nn.functional.binary_cross_entropy_with_logits(scores, labels.float())
+        return nn.functional.binary_cross_entropy_with_logits(scores.squeeze(1), labels.float())

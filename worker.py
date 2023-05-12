@@ -14,7 +14,6 @@ from loader.config_manager import ConfigManager, Phases
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
-from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.printer import printer, Color, Printer
@@ -106,10 +105,11 @@ class Worker:
     def log_interval(self, epoch, step, loss):
         self.print[f'epoch {epoch}'](f'step {step}, loss {loss:.4f}')
 
-    def log_epoch(self, epoch, loss):
-        self.print[f'epoch {epoch}'](f'loss {loss:.4f}')
+    def log_epoch(self, epoch, results):
+        line = ', '.join([f'{metric} {results[metric]:.4f}' for metric in results])
+        self.print[f'epoch {epoch}'](line)
 
-    def train(self):
+    def train(self) -> int:
         monitor = Monitor(
             save_dir=self.exp.dir,
             **Obj.raw(self.exp.store)
@@ -124,6 +124,7 @@ class Worker:
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.recommender.train()
+            loader.train()
             for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
                 # if step >= 1000:
                 #     break
@@ -152,8 +153,9 @@ class Worker:
                     else:
                         if step > self.exp.policy.epoch_batch:
                             break
-            dev_loss = self.dev()
-            self.log_epoch(epoch, dev_loss)
+
+            dev_results, monitor_metric = self.dev()
+            self.log_epoch(epoch, dev_results)
 
             state_dict = dict(
                 model=self.recommender.state_dict(),
@@ -162,30 +164,23 @@ class Worker:
             )
             early_stop = monitor.push(
                 epoch=epoch,
-                loss=dev_loss,
+                metric=monitor_metric,
                 state_dict=state_dict,
             )
             if early_stop == -1:
-                return
+                return monitor.get_best_epoch()
 
         self.print('Training Ended')
         monitor.export()
 
-    def dev(self, steps=None):
-        self.recommender.eval()
+        return monitor.get_best_epoch()
+
+    def dev(self):
+        assert self.exp.store.metric
         loader = self.config_manager.get_loader(Phases.dev).eval()
 
-        meaner = Meaner()
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            with torch.no_grad():
-                loss = self.recommender(batch=batch)  # [B, neg+1]
-
-            meaner.add(loss.item())
-
-            if steps and step >= steps:
-                break
-
-        return meaner.mean()
+        results = self.evaluate(loader, metrics=[self.exp.store.metric])
+        return results, results[self.exp.store.metric]
 
     def test_fake(self):
         self.recommender.eval()
@@ -233,34 +228,16 @@ class Worker:
         #     for metric in results:
         #         self.print(f'{metric}: {results[metric]}')
 
-    def test(self, steps=None):
-        pool = MetricPool.parse(self.exp.metrics)
-
-        self.recommender.eval()
+    def test(self):
         loader = self.config_manager.get_loader(Phases.test).test()
-
-        score_series, label_series, group_series = [], [], []
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            with torch.no_grad():
-                scores = self.recommender(batch=batch).squeeze(1)
-            labels = batch[self.config_manager.column_map.label_col].tolist()
-            groups = batch[self.config_manager.column_map.group_col].tolist()
-            score_series.extend(scores.cpu().detach().tolist())
-            label_series.extend(labels)
-            group_series.extend(groups)
-
-            if steps and step >= steps:
-                break
-
-        results = pool.calculate(score_series, label_series, group_series)
+        results = self.evaluate(loader, metrics=self.exp.metrics)
         for metric in results:
-            self.print(f'{metric}: {results[metric]}')
+            self.print(f'{metric}: {results[metric]:.4f}')
 
-    def evaluate(self, phase, metrics):
+    def evaluate(self, loader, metrics):
         pool = MetricPool.parse(metrics)
 
         self.recommender.eval()
-        loader = self.config_manager.get_loader(phase).test()
 
         score_series, label_series, group_series = [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
@@ -272,7 +249,8 @@ class Worker:
             label_series.extend(labels)
             group_series.extend(groups)
 
-        return pool.calculate(score_series, label_series, group_series)
+        results = pool.calculate(score_series, label_series, group_series)
+        return results
 
     def train_runner(self):
         self.m_optimizer = torch.optim.Adam(
@@ -294,11 +272,7 @@ class Worker:
 
         if self.load_path:
             self.load(self.load_path[0])
-        self.train()
-
-    def dev_runner(self):
-        loss_depot = self.dev(10)
-        self.log_epoch(0, loss_depot)
+        return self.train()
 
     def test_runner(self):
         self.test()
@@ -311,14 +285,13 @@ class Worker:
     def run(self):
         if self.mode == 'train':
             self.train_runner()
-        elif self.mode == 'dev':
-            self.iter_runner(self.dev_runner)
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
         elif self.exp.mode == 'test_fake':
             self.iter_runner(self.test_fake)
         elif self.mode == 'train_test':
-            self.train_runner()
+            epoch = self.train_runner()
+            self.load(os.path.join(self.exp.dir, f'epoch_{epoch}.bin'))
             self.test_runner()
 
 

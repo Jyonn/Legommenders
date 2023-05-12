@@ -100,32 +100,26 @@ class BaseRecommender(nn.Module):
         return user_embedding
 
     def forward(self, batch):
-        self.timer('news encoder')
         if self.config.use_news_content:
             candidates = self.get_content(batch, self.candidate_col)  # batch_size, candidate_size, embedding_dim
             clicks = self.get_content(batch, self.clicks_col)  # batch_size, click_size, embedding_dim
         else:
             candidates = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Setting.device))
             clicks = self.user_encoder.inputer.get_embeddings(batch[self.clicks_col])
-        self.timer('news encoder')
 
-        self.timer('user encoder')
         user_embedding = self.user_encoder(
             clicks,
             mask=batch[self.clicks_mask_col].to(Setting.device),
         )
-        self.timer('user encoder')
 
         self.fuse_user_plugin(batch, user_embedding)
 
-        self.timer('interaction')
         results = self.predict(user_embedding, candidates, batch)
         # if not Setting.status.is_testing:
         #     results += l2_loss
-        self.timer('interaction')
         return results
 
-    def predict(self, user_embedding, candidates, batch):
+    def predict(self, user_embedding, candidates, batch) -> [torch.Tensor, torch.Tensor]:
         raise NotImplementedError
 
     def __str__(self):
