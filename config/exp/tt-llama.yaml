@@ -6,7 +6,7 @@ load:
   save_dir: null
   epochs: null
   model_only: true
-  strict: true
+  strict: false
   wait: false
 store:
   metric: GAUC
@@ -19,7 +19,9 @@ policy:
   lr: 0.0001
   freeze_emb: false
   pin_memory: false
-  batch_size: 100
+  epoch_batch: ${epoch_batch}$
+  batch_size: ${batch_size}$
+  accumulate_batch: ${acc_batch}$
   device: gpu
   n_warmup: ${warmup}$
   check_interval: -2

@@ -4,6 +4,8 @@ import torch
 # from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
 
+from loader.global_setting import Setting
+from model.operator.llama_operator import LlamaOperator
 from model.recommenders.base_neg_recommender import BaseNegRecommender
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model.utils.nr_depot import NRDepot
@@ -98,7 +100,7 @@ class Manager:
         if self.use_neg_sampling:
             assert isinstance(self.recommender, BaseNegRecommender)
             # if not self.status.is_testing:
-            if self.status.is_training:
+            if self.status.is_training or (self.status.is_evaluating and Setting.simple_dev):
                 true_negs = sample[self.neg_col]
                 rand_neg = max(self.recommender.neg_count - len(true_negs), 0)
                 neg_samples = random.sample(true_negs, k=min(self.recommender.neg_count, len(true_negs)))
@@ -107,17 +109,13 @@ class Manager:
         del sample[self.neg_col]
 
         # content injection and tensorization
-        if self.use_content:
+        if self.use_content and not self.recommender.llama_skip and not self.recommender.fast_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
                 stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
             else:
                 stacked_doc = self.candidate_cache[sample[self.candidate_col][0]]
             sample[self.candidate_col] = stacked_doc
-            # sample[self.candidate_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
-            # elif sample[self.candidate_col][0] not in self.candidate_cache:
-            #     self.candidate_cache[sample[self.candidate_col][0]] = self.stacker([self.doc_cache[sample[self.candidate_col][0]]])
-            #     sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
-            # sample[self.candidate_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
+
             if sample[self.user_col] in self.user_cache:
                 sample[self.clicks_col] = self.user_cache[sample[self.user_col]]
             else:
@@ -125,7 +123,10 @@ class Manager:
                 self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
         else:
             sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-            sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
+            if self.recommender.llama_skip or self.recommender.fast_eval:
+                sample[self.clicks_col] = torch.tensor(sample[self.clicks_col], dtype=torch.long)
+            else:
+                sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
 
         sample[self.clicks_mask_col] = torch.tensor(sample[self.clicks_mask_col], dtype=torch.long)
         return sample

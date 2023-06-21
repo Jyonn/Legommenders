@@ -9,6 +9,8 @@ load:
   strict: true
   wait: false
 store:
+#  metric: GAUC
+#  maximize: true
   top: 1
   early_stop: 2
 policy:
@@ -21,6 +23,7 @@ policy:
   device: gpu
   n_warmup: 0
   check_interval: -2
+  simple_dev: true
 metrics:
   - GAUC
   - MRR

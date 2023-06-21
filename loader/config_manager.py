@@ -7,8 +7,10 @@ from torch import nn
 
 from loader.depot.depot_cache import DepotCache
 from loader.depot.fc_unidep import FCUniDep
+from loader.global_setting import Setting
 from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
+from model.inputer.natural_concat_inputer import NaturalConcatInputer
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
@@ -73,8 +75,11 @@ class Depots:
                         self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def negative_filter(self, col):
-        # for phase in [Phases.train, Phases.dev]:
-        for phase in [Phases.train]:
+        phases = [Phases.train]
+        if Setting.simple_dev:
+            phases.append(Phases.dev)
+
+        for phase in phases:
             depot = self.depots[phase]
             if not depot:
                 continue
@@ -174,24 +179,28 @@ class ConfigManager:
         # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
         self.model_name = self.model.name.split('.')[0].replace('-', '')
         self.recommender_class = Recommenders()(self.model_name)  # type: Type[BaseRecommender]
-        self.print(f'selected recommender: {str(self.recommender_class)}')
+        self.print(f'selected recommender: {str(self.recommender_class.__name__)}')
         self.recommender_config = self.recommender_class.config_class(
             **Obj.raw(self.model.config),
         )  # type: BaseRecommenderConfig
 
         self.print('build embedding manager ...')
         skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_news_content else []
-        self.embedding_manager = EmbeddingManager(hidden_size=self.model.config.hidden_size)
+        self.embedding_manager = EmbeddingManager(
+            hidden_size=self.recommender_config.embed_hidden_size,
+            same_dim_transform=self.model.config.same_dim_transform,
+        )
 
         self.print('load pretrained embeddings ...')
         for embedding_info in self.embed.embeddings:
             self.embedding_manager.load_pretrained_embedding(**Obj.raw(embedding_info))
 
         self.print('register embeddings ...')
-        if self.model.config.use_news_content:
-            self.embedding_manager.register_depot(self.doc_nrd)
         self.embedding_manager.register_depot(self.nrds.a_nrd(), skip_cols=skip_cols)
         self.embedding_manager.register_vocab(ConcatInputer.vocab)
+        if self.model.config.use_news_content:
+            self.embedding_manager.register_depot(self.doc_nrd)
+            self.embedding_manager.clone_vocab(NaturalConcatInputer.special_col, clone_col_name='title')
 
         self.print('set <pad> embedding to zeros ...')
         cat_embeddings = self.embedding_manager(ConcatInputer.vocab.name)  # type: nn.Embedding

@@ -1,7 +1,7 @@
-name: bert-doc
+name: llama
 embeddings:
   -
     vocab_name: nid
     vocab_type: numpy
-    path: data/${data.name}/bertencoder-last.npy
+    path: data/${data.name}/news-llama.npy
     frozen: true

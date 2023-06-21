@@ -2,10 +2,12 @@ from typing import Type
 
 import torch
 from torch import nn
+from tqdm import tqdm
 
 from loader.global_setting import Setting
 from model.common.user_plugin import UserPlugin
 from model.operator.base_operator import BaseOperator
+from model.operator.llama_operator import LlamaOperator
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.nr_depot import NRDepot
@@ -19,13 +21,21 @@ class BaseRecommenderConfig:
             self,
             hidden_size,
             user_config,
+            embed_hidden_size=None,
             news_config=None,
             use_news_content: bool = True,
+            max_news_content_batch_size: int = 0,
+            same_dim_transform: bool = True,
+            use_fast_eval: bool = False,
     ):
         self.hidden_size = hidden_size
         self.news_config = news_config
         self.user_config = user_config
         self.use_news_content = use_news_content
+        self.embed_hidden_size = embed_hidden_size or hidden_size
+        self.max_news_content_batch_size = max_news_content_batch_size
+        self.same_dim_transform = same_dim_transform
+        self.use_fast_eval = use_fast_eval
 
         if self.use_news_content and not self.news_config:
             raise ValueError('news_config is required when use_news_content is True')
@@ -80,19 +90,51 @@ class BaseRecommender(nn.Module):
         self.user_plugin = user_plugin
         self.shaper = Shaper()
 
+        # fast evaluation by caching news representations
+        self.fast_eval = False
+        self.fast_doc_repr = None
+
+        # special cases for llama
+        self.llama_skip = False
+        if self.config.use_news_content:
+            if isinstance(self.news_encoder, LlamaOperator):
+                if self.news_encoder.config.layer_split:
+                    self.llama_skip = True
+                    self.print("llama skip")
+
     def timing(self, activate=True):
         self.timer.activate = activate
 
     def get_content(self, batch, col):
-        news_content = self.shaper.transform(batch[col])
-        attention_mask = self.news_encoder.inputer.get_mask(news_content)
+        if self.fast_eval:
+            return self.fast_doc_repr[batch[col]]
 
-        # batch_size * click_size, max_seq_len, embedding_dim
-        news_content = self.news_encoder.inputer.get_embeddings(news_content)
+        if not self.llama_skip:
+            _shape = None
+            news_content = self.shaper.transform(batch[col])  # batch_size, click_size, max_seq_len
+            attention_mask = self.news_encoder.inputer.get_mask(news_content)
+            news_content = self.news_encoder.inputer.get_embeddings(news_content)
+        else:
+            _shape = batch[col].shape
+            news_content = batch[col].reshape(-1)
+            attention_mask = None
 
-        news_content = self.news_encoder(news_content, mask=attention_mask)  # batch_size * click_size, embedding_dim
-        news_content = self.shaper.recover(news_content)
-        return news_content
+        allow_batch_size = self.config.max_news_content_batch_size or news_content.shape[0]
+        batch_num = (news_content.shape[0] + allow_batch_size - 1) // allow_batch_size
+
+        news_contents = torch.zeros(news_content.shape[0], self.config.hidden_size, dtype=torch.float).to(Setting.device)
+        for i in range(batch_num):
+            start = i * allow_batch_size
+            end = min((i + 1) * allow_batch_size, news_content.shape[0])
+            mask = attention_mask[start:end] if attention_mask else None
+            content = self.news_encoder(news_content[start:end], mask=mask)
+            news_contents[start:end] = content
+
+        if not self.llama_skip:
+            news_contents = self.shaper.recover(news_contents)
+        else:
+            news_contents = news_contents.view(*_shape, -1)
+        return news_contents
 
     def fuse_user_plugin(self, batch, user_embedding):
         if self.user_plugin:
@@ -100,6 +142,8 @@ class BaseRecommender(nn.Module):
         return user_embedding
 
     def forward(self, batch):
+        # print(Structure().analyse_and_stringify(batch))
+        # exit(0)
         if self.config.use_news_content:
             candidates = self.get_content(batch, self.candidate_col)  # batch_size, candidate_size, embedding_dim
             clicks = self.get_content(batch, self.clicks_col)  # batch_size, click_size, embedding_dim
@@ -121,6 +165,35 @@ class BaseRecommender(nn.Module):
 
     def predict(self, user_embedding, candidates, batch) -> [torch.Tensor, torch.Tensor]:
         raise NotImplementedError
+
+    def start_fast_eval(self, doc_list):
+        if not self.config.use_news_content:
+            return
+        if not self.config.use_fast_eval:
+            return
+        if self.fast_eval:
+            return
+
+        self.print("start fast eval")
+        self.fast_eval = True
+        self.fast_doc_repr = torch.zeros(
+            len(doc_list), self.config.hidden_size, dtype=torch.float).to(Setting.device)
+
+        with torch.no_grad():
+            for index, sample in enumerate(tqdm(doc_list)):
+                if self.llama_skip:
+                    embedding = torch.tensor([index], dtype=torch.long)
+                    mask = None
+                else:
+                    mask = self.news_encoder.inputer.get_mask(sample)
+                    embedding = self.news_encoder.inputer.get_embeddings(sample)
+                    mask = mask.unsqueeze(0)
+                    embedding = embedding.unsqueeze(0)
+                self.fast_doc_repr[index] = self.news_encoder(embedding, mask).squeeze(0)
+
+    def end_fast_eval(self):
+        self.fast_eval = False
+        self.fast_doc_repr = None
 
     def __str__(self):
         return self.__class__.__name__

@@ -41,12 +41,13 @@ class TransformMultiEmbedding(nn.Module):
 
 
 class EmbeddingManager:
-    def __init__(self, hidden_size):
+    def __init__(self, hidden_size, same_dim_transform):
         self._col_to_vocab = dict()
         self._vocab_to_size = dict()
         self._table = nn.ModuleDict()
 
         self.hidden_size = hidden_size
+        self.same_dim_transform = same_dim_transform
         self._pretrained = dict()  # type: Dict[str, EmbeddingInfo]
 
         self.print = printer[(self.__class__.__name__, '|', Color.YELLOW)]
@@ -77,7 +78,7 @@ class EmbeddingManager:
             self.print(f'load {is_frozen} vocab: {vocab_name} {embedding_weights.shape}')
 
             if int(embedding_weights.shape[0]) != vocab_size:
-                raise ValueError(f'not meet the expected vocab size {vocab_size}')
+                raise ValueError(f'{vocab_name} not meet the expected vocab size {vocab_size}')
 
             if embedding_weights.dim() == 3:
                 embedding = TransformMultiEmbedding(embedding_weights, self.hidden_size)
@@ -88,13 +89,15 @@ class EmbeddingManager:
                 embedding.weight.requires_grad = not embedding_info.frozen
 
                 embedding_size = int(embedding.weight.data.shape[1])
-                # if embedding_size != self.hidden_size:
-                self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
-                embedding = TransformEmbedding(
-                    embedding=embedding,
-                    from_dim=embedding_size,
-                    to_dim=self.hidden_size
-                )
+                if embedding_size != self.hidden_size or self.same_dim_transform:
+                    self.print(f'transform hidden size from {embedding_size} to {self.hidden_size}')
+                    embedding = TransformEmbedding(
+                        embedding=embedding,
+                        from_dim=embedding_size,
+                        to_dim=self.hidden_size
+                    )
+                else:
+                    self.print(f'keep transform size {embedding_size}')
             self._table.add_module(vocab_name, embedding)
             return
 
@@ -104,9 +107,12 @@ class EmbeddingManager:
             embedding_dim=self.hidden_size
         ))
 
+    def clone_vocab(self, col_name, clone_col_name):
+        self._col_to_vocab[col_name] = self._col_to_vocab[clone_col_name]
+
     def register_vocab(self, vocab_name: Union[str, Vocab], vocab_size=None):
         if isinstance(vocab_name, Vocab):
-            vocab_name, vocab_size = vocab_name.name, vocab_name.get_size()
+            vocab_name, vocab_size = vocab_name.name, len(vocab_name)
         else:
             assert vocab_size is not None, f'vocab size is required for {vocab_name}'
 

@@ -31,7 +31,7 @@ class BaseNegRecommender(BaseRecommender, abc.ABC):
         user_embedding = user_embedding.unsqueeze(1)  # batch_size, 1, embedding_dim
         scores = torch.sum(user_embedding * candidates, dim=2).to(Setting.device)  # batch_size, K+1
 
-        if not Setting.status.is_training:
+        if Setting.status.is_testing or (Setting.status.is_evaluating and not Setting.simple_dev):
             return scores
 
         labels = torch.zeros(scores.shape[0], dtype=torch.long).to(Setting.device)

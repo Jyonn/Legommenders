@@ -39,7 +39,7 @@ class ConcatInputer(BaseInputer):
     def get_max_content_len(self):
         length = 0
         for col in self.order:
-            length += self.depot.get_max_length(col) or 1
+            length += self.depot.cols[col].max_length or 1
         return length
 
     def get_vocabs(self) -> Optional[List[Vocab]]:

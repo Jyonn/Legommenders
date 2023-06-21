@@ -1,8 +1,11 @@
 import datetime
 import json
 import os
+import sys
 import time
+from typing import List, Union
 
+import numpy as np
 import pandas as pd
 import torch
 from oba import Obj
@@ -11,9 +14,11 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.global_setting import Setting
 from loader.config_manager import ConfigManager, Phases
+from model.operator.llama_operator import LlamaOperator
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
+from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.printer import printer, Color, Printer
@@ -38,9 +43,12 @@ class Worker:
         self.print = printer[('MAIN', '·', Color.CYAN)]
         Printer.logger = Logger(self.exp.log)
         self.print('START TIME:', datetime.datetime.now())
+        # print command line arguments
+        self.print(' '.join(sys.argv))
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
         Setting.device = self.get_device()
+        Setting.simple_dev = self.exp.policy.simple_dev
 
         self.config_manager = ConfigManager(
             data=self.data,
@@ -110,9 +118,17 @@ class Worker:
         self.print[f'epoch {epoch}'](line)
 
     def train(self) -> int:
+        monitor_kwargs = Obj.raw(self.exp.store)
+
+        dev_func = self.dev
+        if Setting.simple_dev:
+            monitor_kwargs['maximize'] = False
+            dev_func = self.simple_evaluate
+            self.print('activate simple dev mode')
+
         monitor = Monitor(
             save_dir=self.exp.dir,
-            **Obj.raw(self.exp.store)
+            **monitor_kwargs,
         )
 
         train_steps = len(self.config_manager.sets.train_set) // self.exp.policy.batch_size
@@ -154,7 +170,7 @@ class Worker:
                         if step > self.exp.policy.epoch_batch:
                             break
 
-            dev_results, monitor_metric = self.dev()
+            dev_results, monitor_metric = dev_func()
             self.log_epoch(epoch, dev_results)
 
             state_dict = dict(
@@ -236,7 +252,6 @@ class Worker:
 
     def evaluate(self, loader, metrics):
         pool = MetricPool.parse(metrics)
-
         self.recommender.eval()
 
         score_series, label_series, group_series = [], [], []
@@ -251,6 +266,18 @@ class Worker:
 
         results = pool.calculate(score_series, label_series, group_series)
         return results
+
+    def simple_evaluate(self, **kwargs):
+        loader = self.config_manager.get_loader(Phases.dev).eval()
+        total_loss = Meaner()
+
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            with torch.no_grad():
+                loss = self.recommender(batch=batch)
+            total_loss.add(loss.item())
+
+        total_loss = total_loss.mean()
+        return dict(loss=total_loss), total_loss
 
     def train_runner(self):
         self.m_optimizer = torch.optim.Adam(
@@ -282,6 +309,48 @@ class Worker:
             self.load(path)
             handler()
 
+    def test_size(self):
+        named_parameters = list(self.recommender.named_parameters())
+        # filter out the parameters that don't require a gradient
+        named_parameters = [(name, p) for (name, p) in named_parameters if p.requires_grad]
+        # list of (name, parameter) pairs
+        for (name, p) in named_parameters:
+            self.print(name, p.data.shape)
+        num_params = sum([p.numel() for (_, p) in named_parameters])
+        # to a million
+        num_params /= 1e6
+        self.print(f'number of parameters: {num_params:.2f}M')
+
+    def test_llama_layer_split(self):
+        llama_operator = self.recommender.news_encoder  # type: LlamaOperator
+        assert isinstance(llama_operator, LlamaOperator), 'llama operator not found'
+
+        layers = Obj.raw(self.exp.store.layers)
+        store_dir = self.exp.store.dir
+        os.makedirs(store_dir, exist_ok=True)
+
+        features = [[] for _ in range(len(layers))]  # type: List[Union[List[np.ndarray], np.ndarray]]
+        masks = []
+
+        inputer = llama_operator.inputer
+
+        doc_cache = self.manager.doc_cache
+        for sample in tqdm(doc_cache):
+            mask = inputer.get_mask(sample)
+            embedding = inputer.get_embeddings(sample)
+            mask = mask.unsqueeze(0)
+            embedding = embedding.unsqueeze(0)
+            all_hidden_states, attention_mask = llama_operator.get_all_hidden_states(embedding, mask)
+            for index, layer in enumerate(layers):
+                features[index].append(all_hidden_states[layer].squeeze(0).cpu().detach().numpy())
+            masks.append(mask.cpu().detach().numpy())
+
+        # features[i]: number of docs, sequence length, hidden size (60k x 33 x 4096)
+        for index, layer in enumerate(layers):
+            features[index] = np.concatenate(features[index], axis=0)
+            np.save(os.path.join(store_dir, f'layer_{layer}.npy'), features[index])
+        np.save(os.path.join(store_dir, f'mask.npy'), np.concatenate(masks, axis=0))
+
     def run(self):
         if self.mode == 'train':
             self.train_runner()
@@ -293,6 +362,10 @@ class Worker:
             epoch = self.train_runner()
             self.load(os.path.join(self.exp.dir, f'epoch_{epoch}.bin'))
             self.test_runner()
+        elif self.mode == 'test_size':
+            self.test_size()
+        elif self.mode == 'test_llama_layer_split':
+            self.test_llama_layer_split()
 
 
 if __name__ == '__main__':
