@@ -126,7 +126,7 @@ class BaseRecommender(nn.Module):
         for i in range(batch_num):
             start = i * allow_batch_size
             end = min((i + 1) * allow_batch_size, news_content.shape[0])
-            mask = attention_mask[start:end] if attention_mask else None
+            mask = None if attention_mask is None else attention_mask[start:end]
             content = self.news_encoder(news_content[start:end], mask=mask)
             news_contents[start:end] = content
 

@@ -3,5 +3,5 @@ embeddings:
   -
     vocab_name: english
     vocab_type: bert_tf
-    path: /data1/qijiong/Data/PLM/bert-base-uncased
+    path: PLM/bert-base-uncased
     frozen: true

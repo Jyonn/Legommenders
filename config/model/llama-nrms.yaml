@@ -4,15 +4,15 @@ config:
   use_fast_eval: ${fast_eval}$
   max_news_content_batch_size: 0
   same_dim_transform: false
-  embed_hidden_size: 4096
+  embed_hidden_size: ${embed_hidden_size}$
   hidden_size: ${hidden_size}$
   neg_count: 4
   news_config:
     hidden_size: ${model.config.hidden_size}$
-    llama_dir: /home/qijiong/Code/LLaMA/7B
+    llama_dir: /home/data1/qijiong/llama-${llama}
     layer_split: ${layer}$
     lora: ${lora}$
-    weights_dir: data/${data.name}/llama-split
+    weights_dir: data/${data.name}/llama-${llama}-split
   user_config:
     hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 8

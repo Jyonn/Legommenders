@@ -3,8 +3,8 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: test_llama_layer_split
 store:
-  layers: [31, 30, 28, 24]
-  dir: data/${data.name}/llama-split
+  layers: [39, 38, 36, 32]
+  dir: data/${data.name}/llama-${llama}-split
 load:
   save_dir: null
   model_only: true

@@ -34,5 +34,8 @@ class BaseOperator(nn.Module):
             **config.inputer_config,
         )
 
+    def get_pretrained_parameters(self):
+        return []
+
     def forward(self, embeddings, mask=None, **kwargs):
         raise NotImplementedError

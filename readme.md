@@ -25,14 +25,13 @@ Please refer to `config_v2/data/mind.yaml` for the data configuration.
 
 We support the following models on both MIND small and large datasets:
 
-|            | NAML            | LSTUR            | NRMS            | DCN            | DIN            | BST            |
-|------------|-----------------|------------------|-----------------|----------------|----------------|----------------|
-| id-based   | id-NAML         | id-LSTUR         | id-NRMS         | DCN            | DIN            | BST            |
-| text-based | NAML            | LSTUR            | NRMS            | text-DCN       | text-DIN       | text-BST       |
-| bert-token | bert-token-NAML | bert-token-LSTUR | bert-token-NRMS | bert-token-DCN | bert-token-DIN | bert-token-BST |
-| PLMNR      | PLMNR-NAML      | PLMNR-LSTUR      | PLMNR-NRMS      | PLMNR-DCN      | PLMNR-DIN      | PLMNR-BST      |
-| bert-news  | bert-news-NAML  | bert-news-LSTUR  | bert-news-NRMS  | bert-news-DCN  | bert-news-DIN  | bert-news-BST  |
-| mft-news   | mft-news-NAML   | mft-news-LSTUR   | mft-news-NRMS   | mft-news-DCN   | mft-news-DIN   | mft-news-BST   |
+|            | NAML       | LSTUR       | NRMS       | DCN       | DIN           | BST           |
+|------------|------------|-------------|------------|-----------|---------------|---------------|
+| id-based   | id-NAML    | id-LSTUR    | id-NRMS    | DCN       | DIN           | BST           |
+| text-based | NAML       | LSTUR       | NRMS       | text-DCN  | text-DIN      | text-BST      |
+| PLMNR      | PLMNR-NAML | PLMNR-LSTUR | PLMNR-NRMS | PLMNR-DCN | PLMNR-DIN     | PLMNR-BST     |
+| BERT       | BERT-NAML  | BERT-LSTUR  | BERT-NRMS  | BERT-DCN  | bert-news-DIN | bert-news-BST |
+| MFT        | MFT-NAML   | MFT-LSTUR   | MFT-NRMS   | MFT-DCN   | MFT-DIN       | MFT-BST       |
 
 ## Training and Testing
 

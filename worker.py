@@ -280,10 +280,31 @@ class Worker:
         return dict(loss=total_loss), total_loss
 
     def train_runner(self):
-        self.m_optimizer = torch.optim.Adam(
-            params=filter(lambda p: p.requires_grad, self.recommender.parameters()),
-            lr=self.exp.policy.lr
-        )
+        if self.recommender.config.use_news_content and self.exp.policy.news_lr:
+            news_parameters = self.recommender.news_encoder.named_parameters()
+            rec_parameters = self.recommender.named_parameters()
+            news_parameters = filter(lambda p: p[1].requires_grad, news_parameters)
+            rec_parameters = filter(lambda p: p[1].requires_grad, rec_parameters)
+            rec_parameters = filter(lambda p: 'news_encoder' not in p[0], rec_parameters)
+            news_parameters = map(lambda p: p[1], news_parameters)
+            rec_parameters = map(lambda p: p[1], rec_parameters)
+            self.m_optimizer = torch.optim.Adam(
+                [
+                    dict(
+                        params=news_parameters,
+                        lr=self.exp.policy.news_lr,
+                    ), dict(
+                        params=rec_parameters,
+                        lr=self.exp.policy.lr,
+                    )
+                ],
+                lr=self.exp.policy.lr
+            )
+        else:
+            self.m_optimizer = torch.optim.Adam(
+                params=filter(lambda p: p.requires_grad, self.recommender.parameters()),
+                lr=self.exp.policy.lr
+            )
         self.m_scheduler = get_linear_schedule_with_warmup(
             self.m_optimizer,
             num_warmup_steps=self.exp.policy.n_warmup,
