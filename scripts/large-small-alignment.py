@@ -12,7 +12,7 @@ def get_md5(news):
     return m.hexdigest()
 
 
-small_depot = UniDep('data/MIND-small-v2/news')
+small_depot = UniDep('../data/MIND-small-v2/news')
 large_depot = UniDep('data/MIND-large/news')
 small_nid = small_depot.vocabs['nid']  # type: Vocab
 large_nid = large_depot.vocabs['nid']  # type: Vocab

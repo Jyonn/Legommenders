@@ -20,4 +20,3 @@ nt_col = Col('newtitle', voc=depot.vocs['english'], max_length=25)
 depot.vocs['english'].cols.append(nt_col)
 depot.cols['newtitle'] = nt_col
 depot.export('data/MIND-small-v2/news-ABtoC')
-n

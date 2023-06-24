@@ -21,7 +21,7 @@ image_embeds = torch.load(image_embed_file)
 assert len(image_list) == len(image_embeds)
 
 index_dict = {image: i for i, image in enumerate(image_list)}
-nid_vocab = Vocab('nid').load('data/MIND-small-v2/news')
+nid_vocab = Vocab('nid').load('../data/MIND-small-v2/news')
 news_align_dict = json.load(open('news-align.json'))
 
 not_found = 0
