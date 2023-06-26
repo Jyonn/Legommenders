@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 from loader.global_setting import Setting
 from model.common.user_plugin import UserPlugin
+from model.operator.base_llm_operator import BaseLLMOperator
 from model.operator.base_operator import BaseOperator
-from model.operator.llama_operator import LlamaOperator
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.nr_depot import NRDepot
@@ -73,14 +73,22 @@ class BaseRecommender(nn.Module):
         self.label_col = column_map.label_col
         self.clicks_mask_col = column_map.clicks_mask_col
 
-        self.user_config = self.user_encoder_class.config_class(**config.user_config)
+        self.user_config = self.user_encoder_class.config_class(
+            hidden_size=config.hidden_size,
+            embed_hidden_size=config.embed_hidden_size,
+            **config.user_config
+        )
         self.user_encoder = self.user_encoder_class(
             config=self.user_config,
             nrd=user_nrd,
             embedding_manager=embedding_manager
         )
         if self.config.use_news_content:
-            self.news_config = self.news_encoder_class.config_class(**config.news_config)
+            self.news_config = self.news_encoder_class.config_class(
+                hidden_size=config.hidden_size,
+                embed_hidden_size=config.embed_hidden_size,
+                **config.news_config
+            )
             self.news_encoder = self.news_encoder_class(
                 config=self.news_config,
                 nrd=news_nrd,
@@ -95,12 +103,12 @@ class BaseRecommender(nn.Module):
         self.fast_doc_repr = None
 
         # special cases for llama
-        self.llama_skip = False
+        self.llm_skip = False
         if self.config.use_news_content:
-            if isinstance(self.news_encoder, LlamaOperator):
+            if isinstance(self.news_encoder, BaseLLMOperator):
                 if self.news_encoder.config.layer_split:
-                    self.llama_skip = True
-                    self.print("llama skip")
+                    self.llm_skip = True
+                    self.print("LLM SKIP")
 
     def timing(self, activate=True):
         self.timer.activate = activate
@@ -109,7 +117,7 @@ class BaseRecommender(nn.Module):
         if self.fast_eval:
             return self.fast_doc_repr[batch[col]]
 
-        if not self.llama_skip:
+        if not self.llm_skip:
             _shape = None
             news_content = self.shaper.transform(batch[col])  # batch_size, click_size, max_seq_len
             attention_mask = self.news_encoder.inputer.get_mask(news_content)
@@ -130,7 +138,7 @@ class BaseRecommender(nn.Module):
             content = self.news_encoder(news_content[start:end], mask=mask)
             news_contents[start:end] = content
 
-        if not self.llama_skip:
+        if not self.llm_skip:
             news_contents = self.shaper.recover(news_contents)
         else:
             news_contents = news_contents.view(*_shape, -1)
@@ -181,7 +189,7 @@ class BaseRecommender(nn.Module):
 
         with torch.no_grad():
             for index, sample in enumerate(tqdm(doc_list)):
-                if self.llama_skip:
+                if self.llm_skip:
                     embedding = torch.tensor([index], dtype=torch.long)
                     mask = None
                 else:
@@ -194,6 +202,14 @@ class BaseRecommender(nn.Module):
     def end_fast_eval(self):
         self.fast_eval = False
         self.fast_doc_repr = None
+
+    def parameter_split(self):
+        news_names, news_parameters = self.news_encoder.get_pretrained_parameters(prefix='news_encoder')
+        rec_parameters = self.named_parameters()
+        rec_parameters = filter(lambda p: p[1].requires_grad, rec_parameters)
+        rec_parameters = filter(lambda p: p[0] not in news_names, rec_parameters)
+        rec_parameters = map(lambda p: p[1], rec_parameters)
+        return news_parameters, rec_parameters
 
     def __str__(self):
         return self.__class__.__name__

@@ -14,6 +14,7 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.global_setting import Setting
 from loader.config_manager import ConfigManager, Phases
+from model.operator.base_llm_operator import BaseLLMOperator
 from model.operator.llama_operator import LlamaOperator
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
@@ -281,13 +282,7 @@ class Worker:
 
     def train_runner(self):
         if self.recommender.config.use_news_content and self.exp.policy.news_lr:
-            news_parameters = self.recommender.news_encoder.named_parameters()
-            rec_parameters = self.recommender.named_parameters()
-            news_parameters = filter(lambda p: p[1].requires_grad, news_parameters)
-            rec_parameters = filter(lambda p: p[1].requires_grad, rec_parameters)
-            rec_parameters = filter(lambda p: 'news_encoder' not in p[0], rec_parameters)
-            news_parameters = map(lambda p: p[1], news_parameters)
-            rec_parameters = map(lambda p: p[1], rec_parameters)
+            news_parameters, rec_parameters = self.recommender.parameter_split()
             self.m_optimizer = torch.optim.Adam(
                 [
                     dict(
@@ -342,9 +337,9 @@ class Worker:
         num_params /= 1e6
         self.print(f'number of parameters: {num_params:.2f}M')
 
-    def test_llama_layer_split(self):
-        llama_operator = self.recommender.news_encoder  # type: LlamaOperator
-        assert isinstance(llama_operator, LlamaOperator), 'llama operator not found'
+    def test_llm_layer_split(self):
+        news_encoder = self.recommender.news_encoder  # type: BaseLLMOperator
+        assert isinstance(news_encoder, BaseLLMOperator), 'llama operator not found'
 
         layers = Obj.raw(self.exp.store.layers)
         store_dir = self.exp.store.dir
@@ -353,15 +348,15 @@ class Worker:
         features = [[] for _ in range(len(layers))]  # type: List[Union[List[np.ndarray], np.ndarray]]
         masks = []
 
-        inputer = llama_operator.inputer
+        inputer = news_encoder.inputer
 
         doc_cache = self.manager.doc_cache
         for sample in tqdm(doc_cache):
             mask = inputer.get_mask(sample)
             embedding = inputer.get_embeddings(sample)
-            mask = mask.unsqueeze(0)
+            mask = mask.unsqueeze(0).to(Setting.device)
             embedding = embedding.unsqueeze(0)
-            all_hidden_states, attention_mask = llama_operator.get_all_hidden_states(embedding, mask)
+            all_hidden_states = news_encoder.get_all_hidden_states(embedding, mask)
             for index, layer in enumerate(layers):
                 features[index].append(all_hidden_states[layer].squeeze(0).cpu().detach().numpy())
             masks.append(mask.cpu().detach().numpy())
@@ -385,8 +380,8 @@ class Worker:
             self.test_runner()
         elif self.mode == 'test_size':
             self.test_size()
-        elif self.mode == 'test_llama_layer_split':
-            self.test_llama_layer_split()
+        elif self.mode == 'test_llm_layer_split':
+            self.test_llm_layer_split()
 
 
 if __name__ == '__main__':

@@ -12,10 +12,12 @@ class BaseOperatorConfig:
     def __init__(
             self,
             hidden_size,
+            embed_hidden_size,
             inputer_config=None,
             **kwargs,
     ):
         self.hidden_size = hidden_size
+        self.embed_hidden_size = embed_hidden_size
         self.inputer_config = inputer_config or {}
 
 
@@ -34,8 +36,23 @@ class BaseOperator(nn.Module):
             **config.inputer_config,
         )
 
-    def get_pretrained_parameters(self):
-        return []
+    def _get_attr_parameters(self, attr_name):
+        names, params = [], []
+
+        for name, param in self.named_parameters():
+            if name.startswith(attr_name + '.') and param.requires_grad:
+                names.append(name)
+                params.append(param)
+
+        return names, params
+
+    def _get_pretrained_parameters(self):
+        return [], []
+
+    def get_pretrained_parameters(self, prefix: str):
+        names, parameters = self._get_pretrained_parameters()
+        names = {f'{prefix}.{name}' for name in names}
+        return names, parameters
 
     def forward(self, embeddings, mask=None, **kwargs):
         raise NotImplementedError

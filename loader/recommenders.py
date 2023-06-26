@@ -1,3 +1,4 @@
+from model.recommenders.bert_naml_model import BERTNAMLModel
 from model.recommenders.bst_model import BSTModel
 from model.recommenders.dcn_model import DCNModel
 from model.recommenders.deepfm_model import DeepFMModel
@@ -32,6 +33,8 @@ recommender_list = [
     LLAMANAMLModel,
     LLAMANRMSModel,
     LLAMALSTURModel,
+
+    BERTNAMLModel,
 
     DCNModel,
     DeepFMModel,

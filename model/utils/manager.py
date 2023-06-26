@@ -109,7 +109,7 @@ class Manager:
         del sample[self.neg_col]
 
         # content injection and tensorization
-        if self.use_content and not self.recommender.llama_skip and not self.recommender.fast_eval:
+        if self.use_content and not self.recommender.llm_skip and not self.recommender.fast_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
                 stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
             else:
@@ -123,7 +123,7 @@ class Manager:
                 self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
         else:
             sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-            if self.recommender.llama_skip or self.recommender.fast_eval:
+            if self.recommender.llm_skip or self.recommender.fast_eval:
                 sample[self.clicks_col] = torch.tensor(sample[self.clicks_col], dtype=torch.long)
             else:
                 sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)

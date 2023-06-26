@@ -12,26 +12,33 @@ class NaturalConcatInputer(BaseInputer):
     vocab = None
     special_col = 'natural_cat'
 
-    start_prompt = [10130, 4274, 29901]
-    start_prompt = torch.LongTensor(start_prompt)
-
-    col_map = dict(
-        title=[529, 3257, 29958],
-        abs=[529, 16595, 29958],
-        cat=[529, 7320, 29958],
-        subCat=[529, 1491, 7320, 29958],
-    )
-    # convert col_map to LongTensor
-    col_map = {k: torch.LongTensor(v) for k, v in col_map.items()}
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.start_prompt, self.col_prompt_map = self.get_prompt()
 
         self.max_content_len = self.get_max_content_len()
         self.max_sequence_len = self.max_content_len + len(self.start_prompt)
         for col in self.order:
-            self.max_sequence_len += len(self.col_map[col])
+            self.max_sequence_len += len(self.col_prompt_map[col])
         print(f'max_sequence_len: {self.max_sequence_len}')
+
+    @staticmethod
+    def get_start_prompt():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_col_prompts():
+        raise NotImplementedError
+
+    @classmethod
+    def get_prompt(cls):
+        start_prompt = cls.get_start_prompt()
+        start_prompt = torch.LongTensor(start_prompt)
+
+        col_prompt_map = cls.get_col_prompts()
+        col_prompt_map = {k: torch.LongTensor(v) for k, v in col_prompt_map.items()}
+        return start_prompt, col_prompt_map
 
     def get_max_content_len(self):
         length = 0
@@ -55,7 +62,7 @@ class NaturalConcatInputer(BaseInputer):
                 value = [value]
             value = torch.tensor(value, dtype=torch.long)
 
-            pointer.update_input(input_id, self.col_map[col])
+            pointer.update_input(input_id, self.col_prompt_map[col])
             pointer.update_input(input_id, value)
 
         input_ids[self.special_col] = input_id

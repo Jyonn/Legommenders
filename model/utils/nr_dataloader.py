@@ -16,11 +16,13 @@ class NRDataLoader(DataLoader):
 
     def test(self):
         self.manager.status.test()
+        self.manager.recommender.end_fast_eval()
         self.manager.recommender.start_fast_eval(self.manager.doc_cache)
         return self
 
     def eval(self):
         self.manager.status.eval()
+        self.manager.recommender.end_fast_eval()
         self.manager.recommender.start_fast_eval(self.manager.doc_cache)
         return self
 
