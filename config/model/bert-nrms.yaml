@@ -1,4 +1,4 @@
-name: LLAMA-NAML.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+name: BERT-NRMS.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
 config:
   use_news_content: true
   use_fast_eval: ${fast_eval}$
@@ -8,12 +8,12 @@ config:
   hidden_size: ${hidden_size}$
   neg_count: 4
   news_config:
-    llm_dir: /home/data1/qijiong/llama-${llm_ver}
+    llm_dir: bert-base-uncased
     layer_split: ${layer}$
     lora: ${lora}$
-    weights_dir: data/${data.name}/llama-${llm_ver}-split
+    weights_dir: data/${data.name}/bert-${llm_ver}-split
   user_config:
-    num_attention_heads: 12
+    num_attention_heads: 8
     inputer_config:
       use_cls_token: false
       use_sep_token: false
