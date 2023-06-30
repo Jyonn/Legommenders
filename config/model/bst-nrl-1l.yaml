@@ -4,7 +4,6 @@ config:
   hidden_size: 64
   neg_count: 4
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 4
     num_hidden_layers: 1
     inputer_config:

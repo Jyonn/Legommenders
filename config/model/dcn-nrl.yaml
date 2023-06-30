@@ -8,6 +8,5 @@ config:
   dnn_batch_norm: false
   cross_num: 3
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     flatten: false
     max_pooling: false

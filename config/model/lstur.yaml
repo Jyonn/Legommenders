@@ -4,11 +4,9 @@ config:
   hidden_size: 64
   neg_count: 4
   news_config:
-    hidden_size: ${model.config.hidden_size}$
     dropout: 0.1
     kernel_size: 3
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     columns: ${data.news.order}$
     use_news_content: ${model.config.use_news_content}$
     inputer_config:

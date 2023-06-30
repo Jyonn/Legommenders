@@ -4,13 +4,11 @@ config:
   hidden_size: 64
   neg_count: 4
   news_config:
-    hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 8
     inputer_config:
       use_cls_token: false
       use_sep_token: true
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 8
     inputer_config:
       use_cls_token: false

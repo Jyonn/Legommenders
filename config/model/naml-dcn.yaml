@@ -8,11 +8,9 @@ config:
   dnn_batch_norm: false
   cross_num: 3
   news_config:
-    hidden_size: ${model.config.hidden_size}$
     dropout: 0.1
     kernel_size: 3
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

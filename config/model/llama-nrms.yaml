@@ -8,13 +8,11 @@ config:
   hidden_size: ${hidden_size}$
   neg_count: 4
   news_config:
-    hidden_size: ${model.config.hidden_size}$
     llama_dir: /home/data1/qijiong/llama-${llama}
     layer_split: ${layer}$
     lora: ${lora}$
     weights_dir: data/${data.name}/llama-${llama}-split
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 8
     inputer_config:
       use_cls_token: false

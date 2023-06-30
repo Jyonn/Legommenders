@@ -4,7 +4,6 @@ config:
   hidden_size: 64
   neg_count: 4
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     columns: ${data.news.order}$
     use_news_content: ${model.config.use_news_content}$
     inputer_config:

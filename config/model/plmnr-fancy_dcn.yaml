@@ -9,13 +9,11 @@ config:
   cross_num: 3
   neg_count: 4
   news_config:
-    hidden_size: ${model.config.hidden_size}$
     num_attention_heads: 12
     num_hidden_layers: 3
     inputer_config:
       use_cls_token: false
       use_sep_token: true
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     flatten: false
     max_pooling: false

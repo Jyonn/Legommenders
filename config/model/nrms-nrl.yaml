@@ -4,7 +4,6 @@ config:
   hidden_size: 64
   neg_count: 4
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

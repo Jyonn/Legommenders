@@ -10,7 +10,6 @@ config:
   batch_norm: false
   din_use_softmax: false
   user_config:
-    hidden_size: ${model.config.hidden_size}$
     inputer_config:
       use_sep_token: false
       use_cls_token: false
