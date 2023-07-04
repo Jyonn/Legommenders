@@ -1,6 +1,7 @@
 from typing import Optional
 
 import torch
+from peft import get_peft_model
 from transformers import BertModel
 
 from model.inputer.llm_concat_inputer import BertConcatInputer
@@ -19,6 +20,10 @@ class BertOperator(BaseLLMOperator):
 
     def _slice_transformer_layers(self):
         self.transformer.encoder.layer = self.transformer.encoder.layer[self.config.layer_split + 1:]
+
+    def _lora_encoder(self, peft_config):
+        self.transformer.encoder = get_peft_model(self.transformer.encoder, peft_config)
+        self.transformer.encoder.print_trainable_parameters()
 
     def get_all_hidden_states(
             self,

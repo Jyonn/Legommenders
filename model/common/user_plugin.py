@@ -2,6 +2,8 @@ import torch
 from UniTok import UniDep
 from torch import nn
 
+from loader.global_setting import Setting
+
 
 class UserPlugin(nn.Module):
     attr_embeds: nn.ModuleDict
@@ -34,11 +36,22 @@ class UserPlugin(nn.Module):
         self.init_projection(hidden_size)
         self._device = None
 
+        self.fast_eval = False
+        self.fast_user_repr = None
+
     def init_projection(self, user_embed_size):
         self.project = nn.Sequential(
             nn.Linear(self.col_count * self.hidden_size + user_embed_size, user_embed_size),
             nn.ReLU(),
         )
+
+    def start_fast_eval(self):
+        self.fast_eval = True
+        self.fast_user_repr = dict()
+
+    def end_fast_eval(self):
+        self.fast_eval = False
+        self.fast_user_repr = None
 
     @property
     def device(self):
@@ -48,6 +61,9 @@ class UserPlugin(nn.Module):
         return self._device
 
     def get_user_embedding(self, uid):
+        if self.fast_eval and uid in self.fast_user_repr:
+            return self.fast_user_repr[uid]
+
         attrs = self.depot[uid]
         values = []
         for attr in self.attr_embeds:
@@ -61,8 +77,17 @@ class UserPlugin(nn.Module):
                 value = self.empty_embed
             values.append(value)
         # return torch.stack(values).mean(dim=0)
-        return torch.cat(values, dim=0)
+        user_embedding = torch.cat(values, dim=0)
+        if self.fast_eval:
+            self.fast_user_repr[uid] = user_embedding
+        return user_embedding
 
-    def forward(self, uids: torch.Tensor, user_embedding=None):
-        plugged_embedding = torch.stack([self.get_user_embedding(uid) for uid in uids.cpu().tolist()]).to(self.device)
+    def forward(self, uids: torch.Tensor, user_embedding):
+        user_embedding_dict = dict()
+        user_embedding_list = []
+        for uid in uids.cpu().tolist():
+            if uid not in user_embedding_dict:
+                user_embedding_dict[uid] = self.get_user_embedding(uid)
+            user_embedding_list.append(user_embedding_dict[uid])
+        plugged_embedding = torch.stack(user_embedding_list).to(self.device)
         return self.project(torch.cat([user_embedding, plugged_embedding], dim=1))

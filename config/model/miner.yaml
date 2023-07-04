@@ -1,8 +1,10 @@
-name: PLMNR-NRMS.D${model.config.hidden_size}
+name: MINER
 config:
   use_news_content: true
+  use_fast_eval: true
   hidden_size: 64
   neg_count: 4
+  score_type: weighted
   news_config:
     num_attention_heads: 8
     num_hidden_layers: 3
@@ -10,7 +12,8 @@ config:
       use_cls_token: false
       use_sep_token: true
   user_config:
-    num_attention_heads: 8
+    num_context_codes: 32
+    context_code_dim: 200
     inputer_config:
       use_cls_token: false
       use_sep_token: false

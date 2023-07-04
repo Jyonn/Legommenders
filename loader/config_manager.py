@@ -175,6 +175,7 @@ class ConfigManager:
             order=self.data.news.order,
             append=self.data.news.append,
         )
+        self.print('doc nrd size: ', len(self.doc_nrd.depot))
 
         # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
         self.model_name = self.model.name.split('.')[0].replace('-', '')
@@ -200,7 +201,10 @@ class ConfigManager:
         self.embedding_manager.register_vocab(ConcatInputer.vocab)
         if self.model.config.use_news_content:
             self.embedding_manager.register_depot(self.doc_nrd)
-            self.embedding_manager.clone_vocab(NaturalConcatInputer.special_col, clone_col_name='title')
+            self.embedding_manager.clone_vocab(
+                col_name=NaturalConcatInputer.special_col,
+                clone_col_name=self.data.news.lm_col or 'title'
+            )
 
         self.print('set <pad> embedding to zeros ...')
         cat_embeddings = self.embedding_manager(ConcatInputer.vocab.name)  # type: nn.Embedding

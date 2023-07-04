@@ -109,7 +109,8 @@ class Monitor:
         self.step_export()
 
     def get_best_epoch(self):
-        return self.candidates[-1][0]
+        if self.candidates:
+            return self.candidates[-1][0]
 
 #
 # if __name__ == '__main__':

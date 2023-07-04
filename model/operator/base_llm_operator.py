@@ -59,6 +59,10 @@ class BaseLLMOperator(BaseOperator):
     def _slice_transformer_layers(self):
         raise NotImplementedError
 
+    def _lora_encoder(self, peft_config):
+        self.transformer = get_peft_model(self.transformer, peft_config)
+        self.transformer.print_trainable_parameters()
+
     def layer_split(self, num_hidden_layers):
         if self.config.layer_split:
             self._slice_transformer_layers()
@@ -78,8 +82,7 @@ class BaseLLMOperator(BaseOperator):
                 lora_alpha=self.config.lora_alpha,
                 lora_dropout=self.config.lora_dropout
             )
-            self.transformer = get_peft_model(self.transformer, peft_config)
-            self.transformer.print_trainable_parameters()
+            self._lora_encoder(peft_config)
 
     def _get_pretrained_parameters(self):
         return self._get_attr_parameters('transformer')

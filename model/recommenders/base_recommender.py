@@ -27,15 +27,19 @@ class BaseRecommenderConfig:
             max_news_content_batch_size: int = 0,
             same_dim_transform: bool = True,
             use_fast_eval: bool = False,
+            fast_eval_batch_size: int = 64,
     ):
         self.hidden_size = hidden_size
         self.news_config = news_config
         self.user_config = user_config
         self.use_news_content = use_news_content
         self.embed_hidden_size = embed_hidden_size or hidden_size
+
         self.max_news_content_batch_size = max_news_content_batch_size
         self.same_dim_transform = same_dim_transform
+
         self.use_fast_eval = use_fast_eval
+        self.fast_eval_batch_size = fast_eval_batch_size
 
         if self.use_news_content and not self.news_config:
             raise ValueError('news_config is required when use_news_content is True')
@@ -187,17 +191,51 @@ class BaseRecommender(nn.Module):
         self.fast_doc_repr = torch.zeros(
             len(doc_list), self.config.hidden_size, dtype=torch.float).to(Setting.device)
 
+        batch_size = self.config.fast_eval_batch_size
+        i_batch = 0
+        cache_embeddings = []
+        cache_masks = []
+        current_embeddings = []
+        current_masks = []
+
         with torch.no_grad():
             for index, sample in enumerate(tqdm(doc_list)):
                 if self.llm_skip:
-                    embedding = torch.tensor([index], dtype=torch.long)
-                    mask = None
+                    # embedding = torch.tensor([index], dtype=torch.long)
+                    # mask = None
+                    current_embeddings.append(index)
+                    current_masks = None
                 else:
                     mask = self.news_encoder.inputer.get_mask(sample)
                     embedding = self.news_encoder.inputer.get_embeddings(sample)
-                    mask = mask.unsqueeze(0)
-                    embedding = embedding.unsqueeze(0)
-                self.fast_doc_repr[index] = self.news_encoder(embedding, mask).squeeze(0)
+                    # mask = mask.unsqueeze(0)
+                    # embedding = embedding.unsqueeze(0)
+                    current_embeddings.append(embedding)
+                    current_masks.append(mask)
+                # self.fast_doc_repr[index] = self.news_encoder(embedding, mask).squeeze(0)
+
+                i_batch += 1
+                if i_batch >= batch_size:
+                    cache_embeddings.append(current_embeddings)
+                    cache_masks.append(current_masks)
+                    current_embeddings = []
+                    current_masks = []
+                    i_batch = 0
+
+            if i_batch > 0:
+                cache_embeddings.append(current_embeddings)
+                cache_masks.append(current_masks)
+
+        with torch.no_grad():
+            for i, (embeddings, masks) in enumerate(zip(cache_embeddings, cache_masks)):
+                current_batch_size = len(embeddings)
+                embeddings = torch.stack(embeddings)
+                if masks is not None:
+                    masks = torch.stack(masks)
+                else:
+                    masks = None
+                embeddings = self.news_encoder(embeddings, masks)
+                self.fast_doc_repr[i * batch_size: i * batch_size + current_batch_size] = embeddings
 
     def end_fast_eval(self):
         self.fast_eval = False

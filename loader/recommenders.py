@@ -1,71 +1,30 @@
-from model.recommenders.bert_lstur_model import BERTLSTURModel
-from model.recommenders.bert_naml_model import BERTNAMLModel
-from model.recommenders.bert_nrms_model import BERTNRMSModel
-from model.recommenders.bst_model import BSTModel
-from model.recommenders.dcn_model import DCNModel
-from model.recommenders.deepfm_model import DeepFMModel
-from model.recommenders.din_model import DINModel
-from model.recommenders.fancy_dcn_model import FancyDCNModel
-from model.recommenders.llama_lstur_model import LLAMALSTURModel
-from model.recommenders.llama_naml_model import LLAMANAMLModel
-from model.recommenders.llama_nrms_model import LLAMANRMSModel
-from model.recommenders.lstur_model import LSTURModel
-from model.recommenders.naml_dcn_model import NAMLDCNModel
-from model.recommenders.naml_fancy_dcn_model import NAMLFancyDCNModel
-from model.recommenders.naml_model import NAMLModel
-from model.recommenders.nrms_model import NRMSModel
-from model.recommenders.plmnr_bst_model import PLMNRBSTModel
-from model.recommenders.plmnr_dcn_model import PLMNRDCNModel
-from model.recommenders.plmnr_din_model import PLMNRDINModel
-from model.recommenders.plmnr_fancy_dcn_model import PLMNRFancyDCNModel
-from model.recommenders.plmnr_lstur_model import PLMNRLSTURModel
-from model.recommenders.plmnr_naml_model import PLMNRNAMLModel
-from model.recommenders.plmnr_nrms_model import PLMNRNRMSModel
-from model.recommenders.pnn_model import PNNModel
+import glob
+import importlib
 
-recommender_list = [
-    NRMSModel,
-    PLMNRDCNModel,
-    PLMNRBSTModel,
-    PLMNRNRMSModel,
-    PLMNRNAMLModel,
-    PLMNRLSTURModel,
-    PLMNRDINModel,
-
-    LLAMANAMLModel,
-    LLAMANRMSModel,
-    LLAMALSTURModel,
-
-    BERTNAMLModel,
-    BERTNRMSModel,
-    BERTLSTURModel,
-
-    DCNModel,
-    DeepFMModel,
-    PNNModel,
-    NAMLModel,
-    LSTURModel,
-    DINModel,
-    BSTModel,
-
-    NAMLDCNModel,
-    FancyDCNModel,
-    NAMLFancyDCNModel,
-    PLMNRFancyDCNModel,
-]
+from model.recommenders.base_recommender import BaseRecommender
 
 
 class Recommenders:
     def __init__(self):
-        self.recommender_list = recommender_list
+        self.recommender_list = self.get_recommender_list()
         self.recommender_dict = dict()
         for recommender in self.recommender_list:
             name = recommender.__name__
             name = name.replace('Model', '')
             self.recommender_dict[name] = recommender
 
-    def get(self, name):
-        return self.recommender_dict[name]
+    @staticmethod
+    def get_recommender_list():
+        file_paths = glob.glob('model/recommenders/*_model.py')
+        recommender_list = []
+        for file_path in file_paths:
+            file_name = file_path.split('/')[-1].split('.')[0]
+            module = importlib.import_module(f'model.recommenders.{file_name}')
+
+            for name, obj in module.__dict__.items():
+                if isinstance(obj, type) and issubclass(obj, BaseRecommender) and obj is not BaseRecommender:
+                    recommender_list.append(obj)
+        return recommender_list
 
     def __call__(self, name):
-        return self.get(name)
+        return self.recommender_dict[name]

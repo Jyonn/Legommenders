@@ -8,6 +8,7 @@ news:
     - cat
   append:
     - nid
+  lm_col: newtitle
 user:
   filter_cache: true
   depots:

@@ -9,8 +9,10 @@ load:
   strict: false
   wait: false
 store:
+  metric: GAUC
+  maximize: true
   top: 1
-  early_stop: 2
+  early_stop: 5
 policy:
   epoch_start: 0
   epoch: 50
@@ -20,6 +22,7 @@ policy:
   batch_size: 128
   device: gpu
   n_warmup: 0
+  epoch_batch: ${epoch_batch}$
   check_interval: -2
 metrics:
   - GAUC
