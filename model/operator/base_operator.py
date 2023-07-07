@@ -24,6 +24,7 @@ class BaseOperatorConfig:
 class BaseOperator(nn.Module):
     config_class = BaseOperatorConfig
     inputer_class: Type[BaseInputer]
+    inputer: BaseInputer
 
     def __init__(self, config: BaseOperatorConfig, nrd: NRDepot, embedding_manager: EmbeddingManager):
         super().__init__()

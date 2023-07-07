@@ -1,6 +1,7 @@
 name: NAML
 config:
   use_news_content: true
+  use_fast_eval: true
   hidden_size: 64
   neg_count: 4
   news_config:

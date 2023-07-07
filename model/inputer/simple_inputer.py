@@ -6,6 +6,7 @@ from UniTok import Vocab
 
 from loader.global_setting import Setting
 from model.inputer.base_inputer import BaseInputer
+from utils.slice_dict import SliceOrderedDict, SliceDict
 
 
 class SimpleInputer(BaseInputer):
@@ -22,7 +23,7 @@ class SimpleInputer(BaseInputer):
         attention_mask = dict()
 
         for col in self.order:
-            max_len = self.depot.get_max_length(col)
+            max_len = self.depot.cols[col].max_length
             if not max_len:
                 sample[col] = [sample[col]]
                 max_len = 1
@@ -37,13 +38,13 @@ class SimpleInputer(BaseInputer):
         )
 
     def get_mask(self, batched_samples: Dict[str, torch.Tensor]):
-        return batched_samples['attention_mask']
+        return SliceDict(batched_samples['attention_mask'])
 
     def get_embeddings(
             self,
             batched_samples: Dict[str, torch.Tensor],
     ):
-        input_embeddings = OrderedDict()
+        input_embeddings = SliceOrderedDict()
 
         input_ids = batched_samples['input_ids']
         attention_mask = batched_samples['attention_mask']

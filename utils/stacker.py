@@ -26,23 +26,25 @@ class Stacker:
             else:
                 prototype[k].append(item[k])
 
-    def _aggregate(self, prototype: dict):
+    def _aggregate(self, prototype: dict, apply: Callable = None):
         for k in prototype.keys():
             if isinstance(prototype[k], dict):
                 self._aggregate(prototype[k])
             else:
                 prototype[k] = self.aggregator(prototype[k])
+                if apply:
+                    prototype[k] = apply(prototype[k])
 
-    def stack(self, item_list: List[dict]):
+    def stack(self, item_list: List[dict], apply: Callable = None):
         prototype = self._build_prototype(item_list[0])
         for item in item_list:
             self._insert_data(prototype, item)
         if self.aggregator:
-            self._aggregate(prototype)
+            self._aggregate(prototype, apply=apply)
         return prototype
 
-    def __call__(self, item_list: List[dict]):
-        return self.stack(item_list)
+    def __call__(self, item_list: List[dict], apply: Callable = None):
+        return self.stack(item_list, apply=apply)
 
 
 class OneDepthStacker(Stacker):

@@ -21,7 +21,6 @@ class NaturalConcatInputer(BaseInputer):
         self.max_sequence_len = self.max_content_len + len(self.start_prompt)
         for col in self.order:
             self.max_sequence_len += len(self.col_prompt_map[col])
-        print(f'max_sequence_len: {self.max_sequence_len}')
 
     @staticmethod
     def get_start_prompt():

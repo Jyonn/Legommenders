@@ -39,6 +39,7 @@ class BaseLLMOperatorConfig(AttentionOperatorConfig):
 class BaseLLMOperator(BaseOperator):
     config_class = BaseLLMOperatorConfig
     inputer_class = NaturalConcatInputer
+    inputer: NaturalConcatInputer
     config: BaseLLMOperatorConfig
 
     def __init__(self, **kwargs):

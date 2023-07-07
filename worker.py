@@ -3,9 +3,8 @@ import json
 import os
 import sys
 import time
-from typing import List, Union
+from typing import Optional
 
-import numpy as np
 import pandas as pd
 import torch
 from oba import Obj
@@ -15,19 +14,21 @@ from transformers import get_linear_schedule_with_warmup
 from loader.global_setting import Setting
 from loader.config_manager import ConfigManager, Phases
 from model.operator.base_llm_operator import BaseLLMOperator
-from model.operator.llama_operator import LlamaOperator
 from utils.config_init import ConfigInit
 from utils.gpu import GPU
 from utils.logger import Logger
 from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
+from utils.pagers.llm_split_pager import LLMSplitPager
 from utils.printer import printer, Color, Printer
 from utils.random_seed import seeding
 from utils.structure import Structure
 
 
 torch.autograd.set_detect_anomaly(True)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 
 class Worker:
@@ -67,6 +68,9 @@ class Worker:
         self.print(self.config_manager.depots.a_depot()[0])
         self.print(Structure().analyse_and_stringify(self.config_manager.sets.a_set()[0]))
 
+        self.m_optimizer: Optional[torch.optim.Optimizer] = None
+        self.m_scheduler = None
+
     def load(self, path):
         while True:
             self.print(f"load model from exp {path}")
@@ -104,12 +108,13 @@ class Worker:
 
     def get_device(self):
         cuda = self.config.cuda
-        if cuda in ['-1', -1, False]:
+        if cuda in ['-1', -1] or cuda is False:
             self.print('choose cpu')
             return 'cpu'
-        if not cuda:
-            return GPU.auto_choose(torch_format=True)
-        return f"cuda:{cuda}"
+        if isinstance(cuda, int) or isinstance(cuda, str):
+            self.print(f'User select cuda {cuda}')
+            return f"cuda:{cuda}"
+        return GPU.auto_choose(torch_format=True)
 
     def log_interval(self, epoch, step, loss):
         self.print[f'epoch {epoch}'](f'step {step}, loss {loss:.4f}')
@@ -341,31 +346,18 @@ class Worker:
         news_encoder = self.recommender.news_encoder  # type: BaseLLMOperator
         assert isinstance(news_encoder, BaseLLMOperator), 'llama operator not found'
 
-        layers = Obj.raw(self.exp.store.layers)
-        store_dir = self.exp.store.dir
-        os.makedirs(store_dir, exist_ok=True)
+        pager = LLMSplitPager(
+            inputer=news_encoder.inputer,
+            layers=Obj.raw(self.exp.store.layers),
+            hidden_size=news_encoder.config.embed_hidden_size,
+            contents=self.manager.doc_cache,
+            model=news_encoder.get_all_hidden_states,
+            page_size=self.exp.policy.batch_size,
+        )
 
-        features = [[] for _ in range(len(layers))]  # type: List[Union[List[np.ndarray], np.ndarray]]
-        masks = []
-
-        inputer = news_encoder.inputer
-
-        doc_cache = self.manager.doc_cache
-        for sample in tqdm(doc_cache):
-            mask = inputer.get_mask(sample)
-            embedding = inputer.get_embeddings(sample)
-            mask = mask.unsqueeze(0).to(Setting.device)
-            embedding = embedding.unsqueeze(0)
-            all_hidden_states = news_encoder.get_all_hidden_states(embedding, mask)
-            for index, layer in enumerate(layers):
-                features[index].append(all_hidden_states[layer].squeeze(0).cpu().detach().numpy())
-            masks.append(mask.cpu().detach().numpy())
-
-        # features[i]: number of docs, sequence length, hidden size (60k x 33 x 4096)
-        for index, layer in enumerate(layers):
-            features[index] = np.concatenate(features[index], axis=0)
-            np.save(os.path.join(store_dir, f'layer_{layer}.npy'), features[index])
-        np.save(os.path.join(store_dir, f'mask.npy'), np.concatenate(masks, axis=0))
+        pager.prepare()
+        pager.process()
+        pager.store(self.exp.store.dir)
 
     def run(self):
         if self.mode == 'train':

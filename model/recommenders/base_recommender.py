@@ -2,7 +2,6 @@ from typing import Type
 
 import torch
 from torch import nn
-from tqdm import tqdm
 
 from loader.global_setting import Setting
 from model.common.user_plugin import UserPlugin
@@ -11,6 +10,7 @@ from model.operator.base_operator import BaseOperator
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.nr_depot import NRDepot
+from utils.pagers.fast_doc_pager import FastDocPager
 from utils.printer import printer, Color
 from utils.shaper import Shaper
 from utils.timer import Timer
@@ -117,6 +117,14 @@ class BaseRecommender(nn.Module):
     def timing(self, activate=True):
         self.timer.activate = activate
 
+    @staticmethod
+    def get_sample_size(news_content):
+        if isinstance(news_content, torch.Tensor):
+            return news_content.shape[0]
+        assert isinstance(news_content, dict)
+        key = list(news_content.keys())[0]
+        return news_content[key].shape[0]
+
     def get_content(self, batch, col):
         if self.fast_eval:
             return self.fast_doc_repr[batch[col]]
@@ -131,13 +139,14 @@ class BaseRecommender(nn.Module):
             news_content = batch[col].reshape(-1)
             attention_mask = None
 
-        allow_batch_size = self.config.max_news_content_batch_size or news_content.shape[0]
-        batch_num = (news_content.shape[0] + allow_batch_size - 1) // allow_batch_size
+        sample_size = self.get_sample_size(news_content)
+        allow_batch_size = self.config.max_news_content_batch_size or sample_size
+        batch_num = (sample_size + allow_batch_size - 1) // allow_batch_size
 
-        news_contents = torch.zeros(news_content.shape[0], self.config.hidden_size, dtype=torch.float).to(Setting.device)
+        news_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
         for i in range(batch_num):
             start = i * allow_batch_size
-            end = min((i + 1) * allow_batch_size, news_content.shape[0])
+            end = min((i + 1) * allow_batch_size, sample_size)
             mask = None if attention_mask is None else attention_mask[start:end]
             content = self.news_encoder(news_content[start:end], mask=mask)
             news_contents[start:end] = content
@@ -154,8 +163,6 @@ class BaseRecommender(nn.Module):
         return user_embedding
 
     def forward(self, batch):
-        # print(Structure().analyse_and_stringify(batch))
-        # exit(0)
         if self.config.use_news_content:
             candidates = self.get_content(batch, self.candidate_col)  # batch_size, candidate_size, embedding_dim
             clicks = self.get_content(batch, self.clicks_col)  # batch_size, click_size, embedding_dim
@@ -171,8 +178,6 @@ class BaseRecommender(nn.Module):
         self.fuse_user_plugin(batch, user_embedding)
 
         results = self.predict(user_embedding, candidates, batch)
-        # if not Setting.status.is_testing:
-        #     results += l2_loss
         return results
 
     def predict(self, user_embedding, candidates, batch) -> [torch.Tensor, torch.Tensor]:
@@ -188,54 +193,20 @@ class BaseRecommender(nn.Module):
 
         self.print("start fast eval")
         self.fast_eval = True
-        self.fast_doc_repr = torch.zeros(
-            len(doc_list), self.config.hidden_size, dtype=torch.float).to(Setting.device)
 
-        batch_size = self.config.fast_eval_batch_size
-        i_batch = 0
-        cache_embeddings = []
-        cache_masks = []
-        current_embeddings = []
-        current_masks = []
+        pager = FastDocPager(
+            inputer=self.news_encoder.inputer,
+            contents=doc_list,
+            model=self.news_encoder,
+            page_size=self.config.fast_eval_batch_size,
+            hidden_size=self.config.hidden_size,
+            llm_skip=self.llm_skip,
+        )
 
-        with torch.no_grad():
-            for index, sample in enumerate(tqdm(doc_list)):
-                if self.llm_skip:
-                    # embedding = torch.tensor([index], dtype=torch.long)
-                    # mask = None
-                    current_embeddings.append(index)
-                    current_masks = None
-                else:
-                    mask = self.news_encoder.inputer.get_mask(sample)
-                    embedding = self.news_encoder.inputer.get_embeddings(sample)
-                    # mask = mask.unsqueeze(0)
-                    # embedding = embedding.unsqueeze(0)
-                    current_embeddings.append(embedding)
-                    current_masks.append(mask)
-                # self.fast_doc_repr[index] = self.news_encoder(embedding, mask).squeeze(0)
+        pager.prepare()
+        pager.process()
 
-                i_batch += 1
-                if i_batch >= batch_size:
-                    cache_embeddings.append(current_embeddings)
-                    cache_masks.append(current_masks)
-                    current_embeddings = []
-                    current_masks = []
-                    i_batch = 0
-
-            if i_batch > 0:
-                cache_embeddings.append(current_embeddings)
-                cache_masks.append(current_masks)
-
-        with torch.no_grad():
-            for i, (embeddings, masks) in enumerate(zip(cache_embeddings, cache_masks)):
-                current_batch_size = len(embeddings)
-                embeddings = torch.stack(embeddings)
-                if masks is not None:
-                    masks = torch.stack(masks)
-                else:
-                    masks = None
-                embeddings = self.news_encoder(embeddings, masks)
-                self.fast_doc_repr[i * batch_size: i * batch_size + current_batch_size] = embeddings
+        self.fast_doc_repr = pager.fast_doc_repr
 
     def end_fast_eval(self):
         self.fast_eval = False
