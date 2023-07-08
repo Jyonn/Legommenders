@@ -1,11 +1,9 @@
-import json
 import os
-import random
 
-import numpy as np
 import pandas as pd
 from UniTok import Vocab, UniTok, Column
-from UniTok.tok import IdTok, SplitTok, BertTok, EntTok, BaseTok, NumberTok
+from UniTok.tok import IdTok, SplitTok, BertTok, EntTok, NumberTok
+from tqdm import tqdm
 
 
 class Processor:
@@ -32,37 +30,19 @@ class Processor:
 
     def read_user_data(self, mode):
         return pd.read_csv(
-            filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors.tsv'),
+            filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors_v2.tsv'),
             sep='\t',
-            names=['imp', 'uid', 'time', 'history', 'predict'],
+            names=['imp', 'uid', 'history', 'predict'],
             usecols=['uid', 'history']
         )
 
     def _read_inter_data(self, mode):
         return pd.read_csv(
-            filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors.tsv'),
+            filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors_v2.tsv'),
             sep='\t',
-            names=['imp', 'uid', 'time', 'history', 'predict'],
+            names=['imp', 'uid', 'history', 'predict'],
             usecols=['imp', 'uid', 'predict']
         )
-
-    def read_neg_data(self, mode):
-        df = self._read_inter_data(mode)
-        data = dict(uid=[], neg=[])
-        for line in df.itertuples():
-            if line.uid in data['uid']:
-                continue
-
-            predicts = line.predict.split(' ')
-            negs = []
-            for predict in predicts:
-                nid, click = predict.split('-')
-                if not int(click):
-                    negs.append(nid)
-
-            data['uid'].append(line.uid)
-            data['neg'].append(' '.join(negs))
-        return pd.DataFrame(data)
 
     def read_inter_data(self, mode) -> pd.DataFrame:
         df = self._read_inter_data(mode)
@@ -72,7 +52,11 @@ class Processor:
             data['imp'].extend([line.imp] * len(predicts))
             data['uid'].extend([line.uid] * len(predicts))
             for predict in predicts:
-                nid, click = predict.split('-')
+                if '-' in predict:
+                    nid, click = predict.split('-')
+                else:
+                    nid = predict
+                    click = 0
                 data['nid'].append(nid)
                 data['click'].append(int(click))
         return pd.DataFrame(data)
@@ -145,25 +129,48 @@ class Processor:
     def combine_news_data(self):
         news_train_df = self.read_news_data('train')
         news_dev_df = self.read_news_data('dev')
-        news_df = pd.concat([news_train_df, news_dev_df])
+        news_test_df = self.read_news_data('test')
+        news_df = pd.concat([news_train_df, news_dev_df, news_test_df])
         news_df = news_df.drop_duplicates(['nid'])
         return news_df
 
     def combine_user_df(self):
         user_train_df = self.read_user_data('train')
         user_dev_df = self.read_user_data('dev')
+        user_test_df = self.read_user_data('test')
 
-        user_df = pd.concat([user_train_df, user_dev_df])
+        user_df = pd.concat([user_train_df, user_dev_df, user_test_df])
         user_df = user_df.drop_duplicates(['uid'])
         return user_df
 
     def combine_neg_df(self):
-        neg_train_df = self.read_neg_data('train')
-        neg_dev_df = self.read_neg_data('dev')
+        data = dict()
+        uid_set = set()
 
-        neg_df = pd.concat([neg_train_df, neg_dev_df])
-        neg_df = neg_df.drop_duplicates(['uid'])
-        return neg_df
+        df_train = self._read_inter_data('train')
+        df_dev = self._read_inter_data('dev')
+        for df in [df_train, df_dev]:
+            for line in tqdm(df.itertuples()):
+                if line.uid in uid_set:
+                    continue
+                predicts = line.predict.split(' ')
+                negs = []
+                for predict in predicts:
+                    nid, click = predict.split('-')
+                    if not int(click):
+                        negs.append(nid)
+
+                data[line.uid] = ' '.join(negs)
+                uid_set.add(line.uid)
+
+        ordered_data = dict(uid=[], neg=[])
+        for i in range(len(self.uid)):
+            uid = self.uid[i]
+            ordered_data['uid'].append(uid)
+            neg = data.get(uid, None)
+            ordered_data['neg'].append(neg)
+
+        return pd.DataFrame(ordered_data)
 
     def combine_inter_df(self):
         inter_train_df = self.read_inter_data('train')
@@ -173,43 +180,12 @@ class Processor:
         inter_df = pd.concat([inter_train_df, inter_dev_df])
         return inter_df
 
-    def splitter(self, l: list, portions: list):
-        if self.imp_list:
-            l = self.imp_list
-        else:
-            random.shuffle(l)
-        json.dump(l, open(os.path.join(self.store_dir, 'imp_list.json'), 'w'))
-
-        portions = np.array(portions)
-        portions = portions * 1.0 / portions.sum() * len(l)
-        portions = list(map(int, portions))
-        portions[-1] = len(l) - sum(portions[:-1])
-
-        pos = 0
-        parts = []
-        for i in portions:
-            parts.append(l[pos: pos+i])
-            pos += i
-        return parts
-
     def reassign_inter_df_v2(self):
         inter_train_df = self.read_inter_data('train')
-        inter_df = self.read_inter_data('dev')
-
-        imp_list = inter_df.imp.drop_duplicates().to_list()
-
-        dev_imps, test_imps = self.splitter(imp_list, [5, 5])
-        inter_dev_df, inter_test_df = [], []
-
-        inter_groups = inter_df.groupby('imp')
-        for imp, imp_df in inter_groups:
-            if imp in dev_imps:
-                inter_dev_df.append(imp_df)
-            else:
-                inter_test_df.append(imp_df)
-        return inter_train_df, \
-               pd.concat(inter_dev_df, ignore_index=True), \
-               pd.concat(inter_test_df, ignore_index=True)
+        inter_dev_df = self.read_inter_data('dev')
+        inter_train_df = pd.concat([inter_train_df, inter_dev_df])
+        inter_test_df = self.read_inter_data('test')
+        return inter_train_df, inter_dev_df, inter_test_df
 
     def analyse_news(self):
         tok = self.get_news_tok(
@@ -260,9 +236,9 @@ class Processor:
 
 if __name__ == '__main__':
     p = Processor(
-        data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small-v3',
+        data_dir='/data1/qijiong/Data/MIND-large/',
+        store_dir='../../data/MIND-large-v2',
     )
 
-    p.tokenize()
+    # p.tokenize()
     p.tokenize_neg()

@@ -26,8 +26,9 @@ class PathSearcher(DictCompiler):
 
 
 class ConfigInit:
-    def __init__(self, required_args, makedirs):
+    def __init__(self, required_args, default_args, makedirs):
         self.required_args = required_args
+        self.default_args = default_args
         self.makedirs = makedirs
 
     def parse(self):
@@ -36,6 +37,10 @@ class ConfigInit:
         for arg in self.required_args:
             if arg not in kwargs:
                 raise ValueError(f'miss argument {arg}')
+
+        for arg in self.default_args:
+            if arg not in kwargs:
+                kwargs[arg] = self.default_args[arg]
 
         config = RefConfig().add(refconfig.CType.SMART, **kwargs)
         config = config.add(refconfig.CType.RAW, rand=Rand(), time=Timing()).parse()

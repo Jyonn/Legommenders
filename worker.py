@@ -379,6 +379,17 @@ class Worker:
 if __name__ == '__main__':
     configuration = ConfigInit(
         required_args=['data', 'model', 'exp', 'embed'],
+        default_args=dict(
+            warmup=0,
+            fast_eval=True,
+            simple_dev=False,
+            batch_size=64,
+            acc_batch=1,
+            lora=1,
+            lora_r=32,
+            mind_large_submission=False,
+            hidden_size=64,
+        ),
         makedirs=[
             'exp.dir',
         ]
