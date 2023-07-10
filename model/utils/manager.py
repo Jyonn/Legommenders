@@ -91,16 +91,16 @@ class Manager:
         return doc_cache
 
     def rebuild_sample(self, sample):
-        self.timer.run('rebuild 1')
+        # self.timer.run('rebuild 1')
         # reform features
         len_clicks = len(sample[self.clicks_col])
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
         if self.use_news_content:
             sample[self.clicks_col].extend([0] * (self.max_click_num - len_clicks))
         sample[self.candidate_col] = [sample[self.candidate_col]]
-        self.timer.run('rebuild 1')
+        # self.timer.run('rebuild 1')
 
-        self.timer.run('rebuild 2')
+        # self.timer.run('rebuild 2')
         # negative sampling
         if self.use_neg_sampling:
             assert isinstance(self.recommender, BaseNegRecommender)
@@ -112,9 +112,9 @@ class Manager:
                 neg_samples += [random.randint(0, self.news_size - 1) for _ in range(rand_neg)]
                 sample[self.candidate_col].extend(neg_samples)
         del sample[self.neg_col]
-        self.timer.run('rebuild 2')
-
-        self.timer.run('rebuild 3')
+        # self.timer.run('rebuild 2')
+        #
+        # self.timer.run('rebuild 3')
         # content injection and tensorization
         if self.use_news_content and not self.recommender.llm_skip and not self.recommender.fast_doc_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
@@ -136,6 +136,6 @@ class Manager:
                 sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
 
         sample[self.clicks_mask_col] = torch.tensor(sample[self.clicks_mask_col], dtype=torch.long)
-        self.timer.run('rebuild 3')
+        # self.timer.run('rebuild 3')
 
         return sample

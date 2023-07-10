@@ -25,6 +25,7 @@ from utils.printer import printer, Color, Printer
 from utils.random_seed import seeding
 from utils.structure import Structure
 from utils.submission import Submission
+from utils.timer import Timer
 
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -207,6 +208,7 @@ class Worker:
     def test_fake(self):
         self.recommender.eval()
         loader = self.config_manager.get_loader(Phases.test).test()
+        loader.dataset.timer.clear()
 
         score_series, label_series, group_series, fake_series = [], [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
@@ -251,6 +253,10 @@ class Worker:
         #         self.print(f'{metric}: {results[metric]}')
 
     def mind_large_evaluate(self, loader):
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            pass
+        loader.dataset.timer.summarize()
+        exit(0)
         self.recommender.eval()
 
         # group_series = submission.depot.data[self.config_manager.column_map.group_col].tolist()
@@ -261,8 +267,7 @@ class Worker:
         item_series, group_series = col_series[item_col], col_series[group_col]
         item_series = [v[0] for v in item_series]
 
-        self.recommender.timer.summarize()
-        self.manager.timer.summarize()
+        loader.dataset.timer.summarize()
 
         submission = Submission(
             depot=self.config_manager.depots[Phases.test],
@@ -289,16 +294,24 @@ class Worker:
             self.print(f'{metric}: {results[metric]:.4f}')
 
     def base_evaluate(self, loader, cols):
+        timer = Timer(activate=True)
+
         score_series = []
         col_series = {col: [] for col in cols}
 
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            timer.run('score')
             with torch.no_grad():
                 scores = self.recommender(batch=batch).squeeze(1)
+            timer.run('score')
+
+            timer.run('extend')
             for col in cols:
                 col_series[col].extend(batch[col].tolist())
             score_series.extend(scores.cpu().detach().tolist())
+            timer.run('extend')
 
+        timer.summarize()
         return score_series, col_series
 
     def evaluate(self, loader, metrics):
