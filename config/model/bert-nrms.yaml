@@ -11,6 +11,7 @@ config:
     llm_dir: bert-base-uncased
     layer_split: ${layer}$
     lora: ${lora}$
+    lora_r: ${lora_r}$
     weights_dir: data/${data.name}/bert-${llm_ver}-split
   user_config:
     num_attention_heads: 8

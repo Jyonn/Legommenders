@@ -183,7 +183,6 @@ class Processor:
     def reassign_inter_df_v2(self):
         inter_train_df = self.read_inter_data('train')
         inter_dev_df = self.read_inter_data('dev')
-        inter_train_df = pd.concat([inter_train_df, inter_dev_df])
         inter_test_df = self.read_inter_data('test')
         return inter_train_df, inter_dev_df, inter_test_df
 
@@ -194,16 +193,6 @@ class Processor:
         )
         df = self.combine_news_data()
         tok.read(df).analyse()
-
-    def analyse_user(self):
-        tok = self.get_user_tok(max_history=0)
-        df = self.combine_user_df()
-        tok.read(df).analyse()
-
-    def analyse_inter(self):
-        tok = self.get_inter_tok()
-        df = self.combine_inter_df()
-        tok.read_file(df).analyse()
 
     def tokenize(self):
         news_tok = self.get_news_tok(
@@ -237,8 +226,8 @@ class Processor:
 if __name__ == '__main__':
     p = Processor(
         data_dir='/data1/qijiong/Data/MIND-large/',
-        store_dir='../../data/MIND-large-v2',
+        store_dir='../../data/MIND-large-v3',
     )
 
-    # p.tokenize()
+    p.tokenize()
     p.tokenize_neg()

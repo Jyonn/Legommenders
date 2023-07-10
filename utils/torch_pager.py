@@ -1,3 +1,4 @@
+import warnings
 from typing import Callable
 
 import torch
@@ -21,6 +22,10 @@ class TorchPager:
 
     def push_to_cache(self):
         for feature, value in self.current.items():
+            if feature not in self.caches:
+                warnings.warn(f'Feature {feature} not declared in pager initialization.')
+                self.caches[feature] = []
+                self.features.append(feature)
             self.caches[feature].append(value)
             self.current[feature] = []
         self.current_count = 0
@@ -30,6 +35,8 @@ class TorchPager:
         for index, content in enumerate(tqdm(self.contents)):
             features = self.get_features(content, index=index)
             for feature, value in features.items():
+                if feature not in self.current:
+                    self.current[feature] = []
                 self.current[feature].append(value)
 
             self.current_count += 1

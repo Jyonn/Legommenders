@@ -1,5 +1,5 @@
-name: MIND-large-v2
-base_dir: data/MIND-large-v2
+name: MIND-${version}
+base_dir: data/MIND-${version}
 news:
   filter_cache: true
   depot: ${data.base_dir}/news
@@ -17,11 +17,8 @@ user:
       path: ${data.base_dir}/dev
     test:
       path: ${data.base_dir}/test
-  filters:
-    history:
-      - x
   union:
-    - ${data.base_dir}/user
+    - ${data.base_dir}/user-fill
     - ${data.base_dir}/neg
   candidate_col: nid
   clicks_col: history

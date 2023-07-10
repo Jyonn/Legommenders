@@ -1,11 +1,9 @@
 import random
 
 import torch
-# from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
 
 from loader.global_setting import Setting
-from model.operator.llama_operator import LlamaOperator
 from model.recommenders.base_neg_recommender import BaseNegRecommender
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model.utils.nr_depot import NRDepot
@@ -41,6 +39,7 @@ class Manager:
             self,
             recommender: BaseRecommender,
             doc_nrd: NRDepot,
+            user_nrd: NRDepot,
     ):
         self.status = Status()
 
@@ -49,7 +48,7 @@ class Manager:
         # parameter assignment
         self.recommender = recommender
         self.config = recommender.config  # type: BaseRecommenderConfig
-        self.use_content = self.config.use_news_content
+        self.use_news_content = self.config.use_news_content
 
         self.column_map = recommender.column_map
         self.clicks_col = self.column_map.clicks_col
@@ -66,7 +65,7 @@ class Manager:
         self.doc_cache = None
         self.stacker = Stacker(aggregator=torch.stack)
         # self.stacker = default_collate
-        if self.use_content:
+        if self.use_news_content:
             self.doc_dataset = BaseDataset(nrd=doc_nrd)
             self.doc_inputer = recommender.news_encoder.inputer
             self.doc_cache = self.get_doc_cache()
@@ -82,6 +81,9 @@ class Manager:
         self.use_neg_sampling = recommender.use_neg_sampling
         self.news_size = doc_nrd.depot.get_vocab_size(self.candidate_col)
 
+        # user manager
+        self.user_dataset = BaseDataset(nrd=user_nrd, manager=self)
+
     def get_doc_cache(self):
         doc_cache = []
         for sample in tqdm(self.doc_dataset):
@@ -89,13 +91,16 @@ class Manager:
         return doc_cache
 
     def rebuild_sample(self, sample):
+        self.timer.run('rebuild 1')
         # reform features
         len_clicks = len(sample[self.clicks_col])
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
-        if self.use_content:
+        if self.use_news_content:
             sample[self.clicks_col].extend([0] * (self.max_click_num - len_clicks))
         sample[self.candidate_col] = [sample[self.candidate_col]]
+        self.timer.run('rebuild 1')
 
+        self.timer.run('rebuild 2')
         # negative sampling
         if self.use_neg_sampling:
             assert isinstance(self.recommender, BaseNegRecommender)
@@ -107,9 +112,11 @@ class Manager:
                 neg_samples += [random.randint(0, self.news_size - 1) for _ in range(rand_neg)]
                 sample[self.candidate_col].extend(neg_samples)
         del sample[self.neg_col]
+        self.timer.run('rebuild 2')
 
+        self.timer.run('rebuild 3')
         # content injection and tensorization
-        if self.use_content and not self.recommender.llm_skip and not self.recommender.fast_eval:
+        if self.use_news_content and not self.recommender.llm_skip and not self.recommender.fast_doc_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
                 stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
             else:
@@ -123,10 +130,12 @@ class Manager:
                 self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
         else:
             sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-            if self.recommender.llm_skip or self.recommender.fast_eval:
+            if self.recommender.llm_skip or self.recommender.fast_doc_eval:
                 sample[self.clicks_col] = torch.tensor(sample[self.clicks_col], dtype=torch.long)
             else:
                 sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
 
         sample[self.clicks_mask_col] = torch.tensor(sample[self.clicks_mask_col], dtype=torch.long)
+        self.timer.run('rebuild 3')
+
         return sample

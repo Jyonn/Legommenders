@@ -3,8 +3,8 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: test
 load:
-  save_dir: ../${embed.name}-train_test
-  epochs: "[${epoch}]"
+  save_dir: null
+  epochs: null
   model_only: true
   strict: true
   wait: false

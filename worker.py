@@ -24,7 +24,7 @@ from utils.pagers.llm_split_pager import LLMSplitPager
 from utils.printer import printer, Color, Printer
 from utils.random_seed import seeding
 from utils.structure import Structure
-
+from utils.submission import Submission
 
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -250,25 +250,64 @@ class Worker:
         #     for metric in results:
         #         self.print(f'{metric}: {results[metric]}')
 
+    def mind_large_evaluate(self, loader):
+        self.recommender.eval()
+
+        # group_series = submission.depot.data[self.config_manager.column_map.group_col].tolist()
+        # item_series = submission.depot.data[self.config_manager.column_map.candidate_col].tolist()
+        # score_series = [random.random() for _ in range(len(submission.depot))]
+        item_col, group_col = self.config_manager.column_map.candidate_col, self.config_manager.column_map.group_col
+        score_series, col_series = self.base_evaluate(loader, cols=[item_col, group_col])
+        item_series, group_series = col_series[item_col], col_series[group_col]
+        item_series = [v[0] for v in item_series]
+
+        self.recommender.timer.summarize()
+        self.manager.timer.summarize()
+
+        submission = Submission(
+            depot=self.config_manager.depots[Phases.test],
+            column_map=self.config_manager.column_map,
+        )
+
+        export_dir = submission.run(
+            scores=score_series,
+            groups=group_series,
+            items=item_series,
+            model_name=self.model.name,
+        )
+
+        self.print(f'export to {export_dir}')
+
     def test(self):
         loader = self.config_manager.get_loader(Phases.test).test()
+
+        if self.config.mind_large_submission:
+            return self.mind_large_evaluate(loader)
+
         results = self.evaluate(loader, metrics=self.exp.metrics)
         for metric in results:
             self.print(f'{metric}: {results[metric]:.4f}')
+
+    def base_evaluate(self, loader, cols):
+        score_series = []
+        col_series = {col: [] for col in cols}
+
+        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+            with torch.no_grad():
+                scores = self.recommender(batch=batch).squeeze(1)
+            for col in cols:
+                col_series[col].extend(batch[col].tolist())
+            score_series.extend(scores.cpu().detach().tolist())
+
+        return score_series, col_series
 
     def evaluate(self, loader, metrics):
         pool = MetricPool.parse(metrics)
         self.recommender.eval()
 
-        score_series, label_series, group_series = [], [], []
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            with torch.no_grad():
-                scores = self.recommender(batch=batch).squeeze(1)
-            labels = batch[self.config_manager.column_map.label_col].tolist()
-            groups = batch[self.config_manager.column_map.group_col].tolist()
-            score_series.extend(scores.cpu().detach().tolist())
-            label_series.extend(labels)
-            group_series.extend(groups)
+        label_col, group_col = self.config_manager.column_map.label_col, self.config_manager.column_map.group_col
+        score_series, col_series = self.base_evaluate(loader, cols=[label_col, group_col])
+        label_series, group_series = col_series[label_col], col_series[group_col]
 
         results = pool.calculate(score_series, label_series, group_series)
         return results
@@ -287,6 +326,7 @@ class Worker:
 
     def train_runner(self):
         if self.recommender.config.use_news_content and self.exp.policy.news_lr:
+            self.print('split news encoder parameters')
             news_parameters, rec_parameters = self.recommender.parameter_split()
             self.m_optimizer = torch.optim.Adam(
                 [
@@ -364,6 +404,7 @@ class Worker:
             self.train_runner()
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
+            # self.test()
         elif self.exp.mode == 'test_fake':
             self.iter_runner(self.test_fake)
         elif self.mode == 'train_test':
@@ -387,8 +428,12 @@ if __name__ == '__main__':
             acc_batch=1,
             lora=1,
             lora_r=32,
+            lr=0.0001,
+            news_lr=0.00001,
             mind_large_submission=False,
             hidden_size=64,
+            epoch_batch=0,
+            max_news_batch_size=0,
         ),
         makedirs=[
             'exp.dir',

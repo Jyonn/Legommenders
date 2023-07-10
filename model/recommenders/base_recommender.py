@@ -11,6 +11,7 @@ from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.nr_depot import NRDepot
 from utils.pagers.fast_doc_pager import FastDocPager
+from utils.pagers.fast_user_pager import FastUserPager
 from utils.printer import printer, Color
 from utils.shaper import Shaper
 from utils.timer import Timer
@@ -26,7 +27,7 @@ class BaseRecommenderConfig:
             use_news_content: bool = True,
             max_news_content_batch_size: int = 0,
             same_dim_transform: bool = True,
-            use_fast_eval: bool = False,
+            use_fast_eval: bool = True,
             fast_eval_batch_size: int = 64,
     ):
         self.hidden_size = hidden_size
@@ -65,7 +66,7 @@ class BaseRecommender(nn.Module):
         self.config = config  # type: BaseRecommenderConfig
         self.print = printer[(self.__class__.__name__, '|', Color.MAGENTA)]
 
-        self.timer = Timer(activate=False)
+        self.timer = Timer(activate=True)
 
         self.column_map = column_map  # type: ColumnMap
         self.embedding_manager = embedding_manager
@@ -102,9 +103,12 @@ class BaseRecommender(nn.Module):
         self.user_plugin = user_plugin
         self.shaper = Shaper()
 
-        # fast evaluation by caching news representations
-        self.fast_eval = False
+        # fast evaluation by caching news and user representations
+        self.fast_doc_eval = False
         self.fast_doc_repr = None
+
+        self.fast_user_eval = False
+        self.fast_user_repr = None
 
         # special cases for llama
         self.llm_skip = False
@@ -125,8 +129,8 @@ class BaseRecommender(nn.Module):
         key = list(news_content.keys())[0]
         return news_content[key].shape[0]
 
-    def get_content(self, batch, col):
-        if self.fast_eval:
+    def get_news_content(self, batch, col):
+        if self.fast_doc_eval:
             return self.fast_doc_repr[batch[col]]
 
         if not self.llm_skip:
@@ -157,6 +161,26 @@ class BaseRecommender(nn.Module):
             news_contents = news_contents.view(*_shape, -1)
         return news_contents
 
+    def get_user_content(self, batch):
+        if self.fast_user_eval:
+            return self.fast_user_repr[batch[self.user_col]]
+
+        self.timer.run('news')
+        if self.config.use_news_content:
+            clicks = self.get_news_content(batch, self.clicks_col)
+        else:
+            clicks = self.user_encoder.inputer.get_embeddings(batch[self.clicks_col])
+        self.timer.run('news')
+
+        self.timer.run('user')
+        user_embedding = self.user_encoder(
+            clicks,
+            mask=batch[self.clicks_mask_col].to(Setting.device),
+        )
+        user_embedding = self.fuse_user_plugin(batch, user_embedding)
+        self.timer.run('user')
+        return user_embedding
+
     def fuse_user_plugin(self, batch, user_embedding):
         if self.user_plugin:
             return self.user_plugin(batch[self.user_col], user_embedding)
@@ -164,35 +188,29 @@ class BaseRecommender(nn.Module):
 
     def forward(self, batch):
         if self.config.use_news_content:
-            candidates = self.get_content(batch, self.candidate_col)  # batch_size, candidate_size, embedding_dim
-            clicks = self.get_content(batch, self.clicks_col)  # batch_size, click_size, embedding_dim
+            candidates = self.get_news_content(batch, self.candidate_col)
         else:
             candidates = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Setting.device))
-            clicks = self.user_encoder.inputer.get_embeddings(batch[self.clicks_col])
 
-        user_embedding = self.user_encoder(
-            clicks,
-            mask=batch[self.clicks_mask_col].to(Setting.device),
-        )
+        user_embedding = self.get_user_content(batch)
 
-        self.fuse_user_plugin(batch, user_embedding)
-
+        self.timer.run('predict')
         results = self.predict(user_embedding, candidates, batch)
+        self.timer.run('predict')
         return results
 
     def predict(self, user_embedding, candidates, batch) -> [torch.Tensor, torch.Tensor]:
         raise NotImplementedError
 
-    def start_fast_eval(self, doc_list):
+    def start_caching_doc_repr(self, doc_list):
         if not self.config.use_news_content:
             return
         if not self.config.use_fast_eval:
             return
-        if self.fast_eval:
+        if self.fast_doc_eval:
             return
 
-        self.print("start fast eval")
-        self.fast_eval = True
+        self.print("Start caching doc repr")
 
         pager = FastDocPager(
             inputer=self.news_encoder.inputer,
@@ -206,11 +224,41 @@ class BaseRecommender(nn.Module):
         pager.prepare()
         pager.process()
 
+        self.fast_doc_eval = True
         self.fast_doc_repr = pager.fast_doc_repr
 
-    def end_fast_eval(self):
-        self.fast_eval = False
+    def end_caching_doc_repr(self):
+        self.fast_doc_eval = False
         self.fast_doc_repr = None
+
+    def start_caching_user_repr(self, user_list):
+        if not self.config.use_fast_eval:
+            return
+        if self.fast_user_eval:
+            return
+
+        self.print("Start caching user repr")
+
+        pager = FastUserPager(
+            contents=user_list,
+            model=self.get_user_content,
+            page_size=self.config.fast_eval_batch_size,
+            hidden_size=self.config.hidden_size,
+            features=[
+                self.column_map.clicks_col,
+                self.column_map.clicks_mask_col,
+            ]
+        )
+
+        pager.prepare()
+        pager.process()
+
+        self.fast_user_eval = True
+        self.fast_user_repr = pager.fast_user_repr
+
+    def end_caching_user_repr(self):
+        self.fast_user_eval = False
+        self.fast_user_repr = None
 
     def parameter_split(self):
         news_names, news_parameters = self.news_encoder.get_pretrained_parameters(prefix='news_encoder')

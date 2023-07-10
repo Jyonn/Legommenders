@@ -26,10 +26,13 @@ class Phases:
     train = 'train'
     dev = 'dev'
     test = 'test'
+    fast_eval = 'fast_eval'
 
 
 class Depots:
-    def __init__(self, user_data, modes: set):
+    def __init__(self, user_data, modes: set, column_map: ColumnMap):
+        self.column_map = column_map
+
         self.train_depot = self.dev_depot = self.test_depot = None
         if Phases.train in modes:
             self.train_depot = DepotCache.get(user_data.depots.train.path, filter_cache=user_data.filter_cache)
@@ -38,12 +41,15 @@ class Depots:
         if Phases.test in modes:
             self.test_depot = DepotCache.get(user_data.depots.test.path, filter_cache=user_data.filter_cache)
 
+        self.fast_eval_depot = self.create_fast_eval_depot(user_data.depots.dev.path, column_map=column_map)
+
         self.print = printer[(self.__class__.__name__, '|', Color.BLUE)]
 
         self.depots = {
             Phases.train: self.train_depot,
             Phases.dev: self.dev_depot,
             Phases.test: self.test_depot,
+            Phases.fast_eval: self.fast_eval_depot,
         }  # type: Dict[str, FCUniDep]
 
         if user_data.union:
@@ -66,13 +72,26 @@ class Depots:
             for col in user_data.filters:
                 for filter_str in user_data.filters[col]:
                     filter_func_str = f'lambda x: {filter_str}'
-                    for phase in self.depots:
+                    for phase in [Phases.train, Phases.dev, Phases.test]:
                         depot = self.depots[phase]
                         if not depot:
                             continue
                         sample_num = len(depot)
                         depot.filter(filter_func_str, col=col)
                         self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
+
+    @staticmethod
+    def create_fast_eval_depot(path, column_map: ColumnMap):
+        user_depot = FCUniDep(path)
+        user_num = user_depot.cols[column_map.user_col].voc.size
+        user_depot.reset_data({
+            user_depot.id_col: list(range(user_num)),
+            column_map.candidate_col: [[0] for _ in range(user_num)],
+            column_map.label_col: [[0] for _ in range(user_num)],
+            column_map.user_col: list(range(user_num)),
+            column_map.group_col: list(range(user_num)),
+        })
+        return user_depot
 
     def negative_filter(self, col):
         phases = [Phases.train]
@@ -96,7 +115,9 @@ class Depots:
 
 
 class NRDepots:
-    def __init__(self, depots: Depots, column_map: ColumnMap):
+    def __init__(self, depots: Depots):
+        column_map = depots.column_map
+
         order = [column_map.clicks_col]
         append = [
             column_map.candidate_col,
@@ -115,11 +136,13 @@ class NRDepots:
             self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
         if depots.test_depot:
             self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
+        self.fast_eval_nrd = NRDepot(depot=depots.fast_eval_depot, order=order, append=append)
 
         self.nrds = {
             Phases.train: self.train_nrd,
             Phases.dev: self.dev_nrd,
             Phases.test: self.test_nrd,
+            Phases.fast_eval: self.fast_eval_nrd,
         }
 
     def __getitem__(self, item):
@@ -168,8 +191,8 @@ class ConfigManager:
         self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
         self.print('build news and user depots ...')
-        self.depots = Depots(user_data=self.data.user, modes=self.modes)
-        self.nrds = NRDepots(depots=self.depots, column_map=self.column_map)
+        self.depots = Depots(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
+        self.nrds = NRDepots(depots=self.depots)
         self.doc_nrd = NRDepot(
             depot=self.data.news.depot,
             order=self.data.news.order,
@@ -228,7 +251,11 @@ class ConfigManager:
             news_nrd=self.doc_nrd,
             user_plugin=user_plugin,
         )
-        self.manager = Manager(recommender=self.recommender, doc_nrd=self.doc_nrd)
+        self.manager = Manager(
+            recommender=self.recommender,
+            doc_nrd=self.doc_nrd,
+            user_nrd=self.nrds.fast_eval_nrd,
+        )
 
         if self.recommender_class.use_neg_sampling:
             self.print('neg sample filtering ...')

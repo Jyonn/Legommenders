@@ -16,7 +16,7 @@ store:
 policy:
   epoch_start: 0
   epoch: 50
-  lr: 0.0001
+  lr: ${lr}$
   news_lr: ${news_lr}$
   freeze_emb: false
   pin_memory: false
