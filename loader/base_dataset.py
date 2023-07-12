@@ -1,5 +1,6 @@
 import copy
 
+import torch
 from torch.utils.data import Dataset
 
 from model.utils.nr_depot import NRDepot
@@ -33,6 +34,12 @@ class BaseDataset(Dataset):
 
         self.timer = Timer(activate=True)
 
+        if self.manager:
+            data = self.depot.data[self.manager.column_map.candidate_col]
+            if not isinstance(data, list):
+                data = data.tolist()
+            self.fast_candidate_col = torch.tensor(data).unsqueeze(1)
+
     def append_checker(self):
         for col in self.append:
             if self.depot.is_list_col(col):
@@ -48,16 +55,18 @@ class BaseDataset(Dataset):
 
     def pack_sample(self, index):
         if self.manager and self.manager.recommender.fast_user_eval:
+            self.timer.run('pack_sample')
             index = self.depot._indexes[index]
             cols = [
-                self.manager.column_map.candidate_col,
                 self.manager.column_map.label_col,
                 self.manager.column_map.group_col,
+                self.manager.column_map.user_col,
+                self.manager.column_map.candidate_col,
             ]
-            return {col: self.depot.data[col][index] for col in cols}
-            # sample[self.candidate_col] = torch.tensor([sample[self.candidate_col]], dtype=torch.long)
-            #     # self.timer.run('rebuild 0')
-            #     return sample
+            sample = {col: self.depot.data[col][index] for col in cols}
+            # sample[self.manager.column_map.candidate_col] = self.fast_candidate_col[index]
+            self.timer.run('pack_sample')
+            return sample
         sample = self.depot[index]
         sample = {col: copy.copy(sample[col]) for col in [*self.order, *self.append]}
         if self.manager:

@@ -187,6 +187,9 @@ class BaseRecommender(nn.Module):
         return user_embedding
 
     def forward(self, batch):
+        if isinstance(batch[self.candidate_col], torch.Tensor) and batch[self.candidate_col].dim() == 1:
+            batch[self.candidate_col] = batch[self.candidate_col].unsqueeze(1)
+
         if self.config.use_news_content:
             candidates = self.get_news_content(batch, self.candidate_col)
         else:

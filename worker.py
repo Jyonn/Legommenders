@@ -253,10 +253,6 @@ class Worker:
         #         self.print(f'{metric}: {results[metric]}')
 
     def mind_large_evaluate(self, loader):
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            pass
-        loader.dataset.timer.summarize()
-        exit(0)
         self.recommender.eval()
 
         # group_series = submission.depot.data[self.config_manager.column_map.group_col].tolist()
@@ -265,7 +261,7 @@ class Worker:
         item_col, group_col = self.config_manager.column_map.candidate_col, self.config_manager.column_map.group_col
         score_series, col_series = self.base_evaluate(loader, cols=[item_col, group_col])
         item_series, group_series = col_series[item_col], col_series[group_col]
-        item_series = [v[0] for v in item_series]
+        # item_series = [v[0] for v in item_series]
 
         loader.dataset.timer.summarize()
 
@@ -294,24 +290,31 @@ class Worker:
             self.print(f'{metric}: {results[metric]:.4f}')
 
     def base_evaluate(self, loader, cols):
-        timer = Timer(activate=True)
+        score_series = torch.zeros(len(loader.dataset), dtype=torch.float32)
+        col_series = {col: torch.zeros(len(loader.dataset), dtype=torch.long) for col in cols}
 
-        score_series = []
-        col_series = {col: [] for col in cols}
-
+        index = 0
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            timer.run('score')
+            # timer.run('score')
             with torch.no_grad():
-                scores = self.recommender(batch=batch).squeeze(1)
-            timer.run('score')
+                scores = self.recommender(batch=batch)
+                scores = scores.squeeze(1)
+            # timer.run('score')
 
-            timer.run('extend')
+            batch_size = scores.size(0)
+            # timer.run('extend')
             for col in cols:
-                col_series[col].extend(batch[col].tolist())
-            score_series.extend(scores.cpu().detach().tolist())
-            timer.run('extend')
+                if batch[col].dim() == 2:
+                    col_series[col][index:index + batch_size] = batch[col][:, 0]
+                else:
+                    col_series[col][index:index + batch_size] = batch[col]
+            score_series[index:index + batch_size] = scores.cpu().detach()
+            # score_series.extend(scores.cpu().detach())
+            index += batch_size
+            # timer.run('extend')
 
-        timer.summarize()
+        # timer.summarize()
+        # loader.dataset.timer.summarize()
         return score_series, col_series
 
     def evaluate(self, loader, metrics):
@@ -379,8 +382,11 @@ class Worker:
         self.test()
 
     def iter_runner(self, handler):
-        for path in self.load_path:
-            self.load(path)
+        if self.load_path:
+            for path in self.load_path:
+                self.load(path)
+                handler()
+        else:
             handler()
 
     def test_size(self):
