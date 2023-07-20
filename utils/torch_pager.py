@@ -1,37 +1,26 @@
-import warnings
 from typing import Callable
 
 import torch
 from tqdm import tqdm
 
 from loader.global_setting import Setting
+from utils.structure import Structure
 
 
 class TorchPager:
     def __init__(self, contents: list, model: Callable, page_size: int, features: list, **kwargs):
+        print(f'TorchPager init, with page_size={page_size}')
+
         self.contents = contents
         self.model = model
         self.page_size = page_size
-        self.features = features
-        self.caches = {feature: [] for feature in features}
         self.current = {feature: [] for feature in features}
         self.current_count = self.cache_count = 0
 
     def get_features(self, content, index) -> dict:
         raise NotImplementedError
 
-    def push_to_cache(self):
-        for feature, value in self.current.items():
-            if feature not in self.caches:
-                warnings.warn(f'Feature {feature} not declared in pager initialization.')
-                self.caches[feature] = []
-                self.features.append(feature)
-            self.caches[feature].append(value)
-            self.current[feature] = []
-        self.current_count = 0
-        self.cache_count += 1
-
-    def prepare(self):
+    def run(self):
         for index, content in enumerate(tqdm(self.contents)):
             features = self.get_features(content, index=index)
             for feature, value in features.items():
@@ -42,25 +31,28 @@ class TorchPager:
             self.current_count += 1
 
             if self.current_count == self.page_size:
-                self.push_to_cache()
+                self._process()
 
         if self.current_count:
-            self.push_to_cache()
+            self._process()
 
     def combine(self, slices, features, output):
         raise NotImplementedError
 
-    def stack_features(self, index):
+    def stack_features(self):
         return {
-            feature: torch.stack(self.caches[feature][index]).to(Setting.device)
-            for feature in self.features
+            feature: torch.stack(self.current[feature]).to(Setting.device)
+            for feature in self.current
         }
 
-    def process(self):
-        with torch.no_grad():
-            for i in tqdm(range(self.cache_count)):
-                current_page_size = len(self.caches[self.features[0]][i])
-                features = self.stack_features(i)
-                output = self.model(**features)
-                slices = slice(i * self.page_size, i * self.page_size + current_page_size)
-                self.combine(slices, features, output)
+    def _process(self):
+        features = self.stack_features()
+
+        output = self.model(**features)
+        slices = slice(self.cache_count * self.page_size, self.cache_count * self.page_size + self.current_count)
+        self.combine(slices, features, output)
+
+        self.cache_count += 1
+        self.current_count = 0
+        for feature in self.current:
+            self.current[feature] = []

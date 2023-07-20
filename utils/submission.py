@@ -74,23 +74,34 @@ class Submission:
 
         groups = df.groupby('groups')
 
-        tasks = []
-        pool = Pool(processes=self.group_worker)
-        for g in groups:
-            group = g[1]
-            g_news = group.news.tolist()
-            g_scores = group.scores.tolist()
-            tasks.append(pool.apply_async(self.group_sort, args=(g[0], g_news, g_scores)))
-        pool.close()
-        pool.join()
+        # tasks = []
+        # pool = Pool(processes=self.group_worker)
+        # for g in groups:
+        #     group = g[1]
+        #     g_news = group.news.tolist()
+        #     g_scores = group.scores.tolist()
+        #     tasks.append(pool.apply_async(self.group_sort, args=(g[0], g_news, g_scores)))
+        # pool.close()
+        # pool.join()
 
         export_path = os.path.join(export_dir, 'prediction.txt')
 
+        # with open(export_path, 'w') as f:
+        #     for t in tasks:
+        #         group_id, items = t.get()
+        #         group_str = self.group_vocab.i2o[group_id]
+        #         items_str = ','.join(items)
+        #         f.write(f'{group_str} [{items_str}]\n')
+
         with open(export_path, 'w') as f:
-            for t in tasks:
-                group_id, items = t.get()
+            for g in tqdm(groups):
+                group_id = g[0]
+                group = g[1]
+                g_news = group.news.tolist()
+                g_scores = group.scores.tolist()
+                _, items = self.group_sort(group_id, g_news, g_scores)
                 group_str = self.group_vocab.i2o[group_id]
-                items_str = ','.join(items)
+                items_str = ','.join(map(str, items))
                 f.write(f'{group_str} [{items_str}]\n')
 
         subprocess.run(['zip', '-j', f'{export_dir}.zip', '-r', export_path])

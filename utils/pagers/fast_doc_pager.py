@@ -33,18 +33,18 @@ class FastDocPager(TorchPager):
             mask=self.inputer.get_mask(content),
         )
 
-    def stack_features(self, index):
+    def stack_features(self):
         features = dict()
         if self.llm_skip:
             features['mask'] = None
-        feature_cols = ['embeddings'] if self.llm_skip else self.features
+        feature_cols = ['embeddings'] if self.llm_skip else self.current
 
         for feature in feature_cols:
-            if isinstance(self.caches[feature][index][0], torch.Tensor):
-                features[feature] = torch.stack(self.caches[feature][index]).to(Setting.device)
+            if isinstance(self.current[feature][0], torch.Tensor):
+                features[feature] = torch.stack(self.current[feature]).to(Setting.device)
             else:
-                assert isinstance(self.caches[feature][index][0], dict)
-                features[feature] = self.stacker(self.caches[feature][index], apply=lambda x: x.to(Setting.device))
+                assert isinstance(self.current[feature][0], dict)
+                features[feature] = self.stacker(self.current[feature], apply=lambda x: x.to(Setting.device))
         return features
 
     def combine(self, slices, features, output):

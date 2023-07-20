@@ -224,8 +224,7 @@ class BaseRecommender(nn.Module):
             llm_skip=self.llm_skip,
         )
 
-        pager.prepare()
-        pager.process()
+        pager.run()
 
         self.fast_doc_eval = True
         self.fast_doc_repr = pager.fast_doc_repr
@@ -253,8 +252,7 @@ class BaseRecommender(nn.Module):
             ]
         )
 
-        pager.prepare()
-        pager.process()
+        pager.run()
 
         self.fast_user_eval = True
         self.fast_user_repr = pager.fast_user_repr

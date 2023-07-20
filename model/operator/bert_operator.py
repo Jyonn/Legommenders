@@ -27,19 +27,19 @@ class BertOperator(BaseLLMOperator):
 
     def get_all_hidden_states(
             self,
-            inputs_embeds,
+            hidden_states,
             attention_mask,
     ):
         bert = self.transformer
 
-        input_shape = inputs_embeds.size()[:-1]
-        device = inputs_embeds.device
+        input_shape = hidden_states.size()[:-1]
+        device = hidden_states.device
 
         token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
 
         hidden_states = bert.embeddings(
             token_type_ids=token_type_ids,
-            inputs_embeds=inputs_embeds,
+            inputs_embeds=hidden_states,
         )
 
         return self._layer_forward(

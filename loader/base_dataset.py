@@ -61,10 +61,10 @@ class BaseDataset(Dataset):
                 self.manager.column_map.label_col,
                 self.manager.column_map.group_col,
                 self.manager.column_map.user_col,
-                self.manager.column_map.candidate_col,
+                # self.manager.column_map.candidate_col,
             ]
             sample = {col: self.depot.data[col][index] for col in cols}
-            # sample[self.manager.column_map.candidate_col] = self.fast_candidate_col[index]
+            sample[self.manager.column_map.candidate_col] = self.fast_candidate_col[index]
             self.timer.run('pack_sample')
             return sample
         sample = self.depot[index]
@@ -72,3 +72,7 @@ class BaseDataset(Dataset):
         if self.manager:
             sample = self.manager.rebuild_sample(sample)
         return sample
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]

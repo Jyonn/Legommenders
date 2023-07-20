@@ -105,7 +105,7 @@ class Processor:
             txt_tok = BertTok(name='english', vocab_dir='bert-base-uncased')
 
         return UniTok().add_col(Column(
-            tok=IdTok( vocab=self.nid)
+            tok=IdTok(vocab=self.nid)
         )).add_col(Column(
             name='cat',
             tok=EntTok,

@@ -20,6 +20,7 @@ from model.utils.nr_depot import NRDepot
 from loader.recommenders import Recommenders
 from loader.base_dataset import BaseDataset
 from utils.printer import printer, Color
+from utils.stacker import FastStacker
 
 
 class Phases:
@@ -282,4 +283,6 @@ class ConfigManager:
             shuffle=phase == Phases.train,
             batch_size=self.exp.policy.batch_size,
             pin_memory=self.exp.policy.pin_memory,
+            num_workers=5,
+            # collate_fn=self.stacker,
         )

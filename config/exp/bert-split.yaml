@@ -3,7 +3,7 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: test_llm_layer_split
 store:
-  layers: [11, 10, 9, 7, 3]
+  layers: [11, 10, 9, 7]
   dir: data/${data.name}/bert-${llm_ver}-split
 load:
   save_dir: null
@@ -12,3 +12,4 @@ load:
   wait: false
 policy:
   device: gpu
+  batch_size: 64

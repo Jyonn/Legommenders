@@ -63,14 +63,14 @@ class FastStacker(Stacker):
         super().__init__(aggregator)
         self.prototype = None
 
-    def stack(self, item_list: List[dict]):
+    def stack(self, item_list: List[dict], apply: Callable = None):
         if not self.prototype:
             self.prototype = self._build_prototype(item_list[0])
         prototype = copy.deepcopy(self.prototype)
         for item in item_list:
             self._insert_data(prototype, item)
         if self.aggregator:
-            self._aggregate(prototype)
+            self._aggregate(prototype, apply=apply)
         return prototype
 
 

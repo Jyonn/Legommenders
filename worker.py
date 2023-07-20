@@ -414,8 +414,7 @@ class Worker:
             page_size=self.exp.policy.batch_size,
         )
 
-        pager.prepare()
-        pager.process()
+        pager.run()
         pager.store(self.exp.store.dir)
 
     def run(self):
@@ -453,6 +452,7 @@ if __name__ == '__main__':
             hidden_size=64,
             epoch_batch=0,
             max_news_batch_size=0,
+            fast_eval_batch_size=512,
         ),
         makedirs=[
             'exp.dir',

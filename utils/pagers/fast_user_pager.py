@@ -17,10 +17,10 @@ class FastUserPager(TorchPager):
         self.fast_user_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Setting.device)
         self.stacker = Stacker(aggregator=torch.stack)
 
-    def stack_features(self, index):
+    def stack_features(self):
         stacked = dict()
-        for feature in self.features:
-            target = self.caches[feature][index]
+        for feature in self.current:
+            target = self.current[feature]
             if isinstance(target[0], torch.Tensor):
                 stacked[feature] = torch.stack(target).to(Setting.device)
             else:
