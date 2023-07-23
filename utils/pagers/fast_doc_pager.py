@@ -14,7 +14,7 @@ class FastDocPager(TorchPager):
             llm_skip,
             **kwargs,
     ):
-        super().__init__(features=['embeddings', 'mask'], **kwargs)
+        super().__init__(**kwargs)
 
         self.inputer = inputer
         self.hidden_size = hidden_size

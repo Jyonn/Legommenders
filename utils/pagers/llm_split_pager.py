@@ -15,7 +15,7 @@ class LLMSplitPager(TorchPager):
             hidden_size: int,
             **kwargs
     ):
-        super().__init__(features=['hidden_states', 'attention_mask'], **kwargs)
+        super().__init__(**kwargs)
 
         self.inputer = inputer
         self.layers = layers

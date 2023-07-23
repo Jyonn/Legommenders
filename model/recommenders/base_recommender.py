@@ -28,7 +28,7 @@ class BaseRecommenderConfig:
             max_news_content_batch_size: int = 0,
             same_dim_transform: bool = True,
             use_fast_eval: bool = True,
-            fast_eval_batch_size: int = 64,
+            fast_eval_batch_size: int = 512,
     ):
         self.hidden_size = hidden_size
         self.news_config = news_config
@@ -40,7 +40,7 @@ class BaseRecommenderConfig:
         self.same_dim_transform = same_dim_transform
 
         self.use_fast_eval = use_fast_eval
-        self.fast_eval_batch_size = fast_eval_batch_size
+        self.page_size = fast_eval_batch_size
 
         if self.use_news_content and not self.news_config:
             raise ValueError('news_config is required when use_news_content is True')
@@ -86,7 +86,8 @@ class BaseRecommender(nn.Module):
         self.user_encoder = self.user_encoder_class(
             config=self.user_config,
             nrd=user_nrd,
-            embedding_manager=embedding_manager
+            embedding_manager=embedding_manager,
+            target_user=True,
         )
         if self.config.use_news_content:
             self.news_config = self.news_encoder_class.config_class(
@@ -98,6 +99,7 @@ class BaseRecommender(nn.Module):
                 config=self.news_config,
                 nrd=news_nrd,
                 embedding_manager=embedding_manager,
+                target_user=False,
             )
 
         self.user_plugin = user_plugin
@@ -219,7 +221,7 @@ class BaseRecommender(nn.Module):
             inputer=self.news_encoder.inputer,
             contents=doc_list,
             model=self.news_encoder,
-            page_size=self.config.fast_eval_batch_size,
+            page_size=self.config.page_size,
             hidden_size=self.config.hidden_size,
             llm_skip=self.llm_skip,
         )
@@ -244,12 +246,8 @@ class BaseRecommender(nn.Module):
         pager = FastUserPager(
             contents=user_list,
             model=self.get_user_content,
-            page_size=self.config.fast_eval_batch_size,
+            page_size=self.config.page_size,
             hidden_size=self.config.hidden_size,
-            features=[
-                self.column_map.clicks_col,
-                self.column_map.clicks_mask_col,
-            ]
         )
 
         pager.run()

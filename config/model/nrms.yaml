@@ -2,7 +2,8 @@ name: NRMS
 config:
   use_news_content: true
   use_fast_eval: true
-  hidden_size: 64
+  hidden_size: ${hidden_size}$
+  embed_hidden_size: ${embed_hidden_size}$
   neg_count: 4
   news_config:
     num_attention_heads: 8

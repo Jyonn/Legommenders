@@ -5,7 +5,14 @@ from model.inputer.concat_inputer import ConcatInputer
 
 
 class AdaOperatorConfig(BaseOperatorConfig):
-    pass
+    def __init__(
+            self,
+            additive_hidden_size: int = 256,
+            **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.additive_hidden_size = additive_hidden_size
 
 
 class AdaOperator(BaseOperator):
@@ -16,9 +23,10 @@ class AdaOperator(BaseOperator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         self.additive_attention = AdditiveAttention(
             embed_dim=self.config.hidden_size,
-            hidden_size=self.config.hidden_size,
+            hidden_size=self.config.additive_hidden_size,
         )
 
     def forward(self, embeddings, mask=None, **kwargs):

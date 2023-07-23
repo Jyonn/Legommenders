@@ -26,7 +26,7 @@ class BaseOperator(nn.Module):
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
 
-    def __init__(self, config: BaseOperatorConfig, nrd: NRDepot, embedding_manager: EmbeddingManager):
+    def __init__(self, config: BaseOperatorConfig, nrd: NRDepot, embedding_manager: EmbeddingManager, target_user=False):
         super().__init__()
         self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 
@@ -36,6 +36,8 @@ class BaseOperator(nn.Module):
             embedding_manager=embedding_manager,
             **config.inputer_config,
         )
+
+        self.target_user = target_user
 
     def _get_attr_parameters(self, attr_name):
         names, params = [], []

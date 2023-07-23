@@ -4,17 +4,14 @@ import torch
 from tqdm import tqdm
 
 from loader.global_setting import Setting
-from utils.structure import Structure
 
 
 class TorchPager:
-    def __init__(self, contents: list, model: Callable, page_size: int, features: list, **kwargs):
-        print(f'TorchPager init, with page_size={page_size}')
-
+    def __init__(self, contents: list, model: Callable, page_size: int, **kwargs):
         self.contents = contents
         self.model = model
         self.page_size = page_size
-        self.current = {feature: [] for feature in features}
+        self.current = dict()
         self.current_count = self.cache_count = 0
 
     def get_features(self, content, index) -> dict:
