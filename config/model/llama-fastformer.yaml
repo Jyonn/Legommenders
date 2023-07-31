@@ -1,4 +1,4 @@
-name: LLAMA-NRMS.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+name: LLAMA-Fastformer.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
 config:
   use_news_content: true
   max_news_content_batch_size: 0
@@ -12,7 +12,8 @@ config:
     lora: ${lora}$
     weights_dir: data/${data.name}/llama-${llm_ver}-split
   user_config:
-    num_attention_heads: 8
+    num_attention_heads: 16
+    num_hidden_layers: 1
     inputer_config:
       use_cls_token: false
       use_sep_token: false

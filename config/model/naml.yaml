@@ -1,8 +1,7 @@
 name: NAML
 config:
   use_news_content: true
-  use_fast_eval: true
-  fast_eval_batch_size: ${fast_eval_batch_size}$
+  page_size: ${page_size}$
   hidden_size: ${hidden_size}$
   embed_hidden_size: ${embed_hidden_size}$
   neg_count: 4

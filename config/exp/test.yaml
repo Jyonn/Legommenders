@@ -15,5 +15,6 @@ policy:
 metrics:
   - GAUC
   - MRR
+  - NDCG@1
   - NDCG@5
   - NDCG@10

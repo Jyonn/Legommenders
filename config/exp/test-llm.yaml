@@ -1,12 +1,12 @@
 name: ${exp.mode}
 dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
-mode: train_test
+mode: test
 load:
-  save_dir: null
+  save_dir: ../${embed.name}-train_test
   epochs: null
   model_only: true
-  strict: true
+  strict: false
   wait: false
 store:
   metric: GAUC
@@ -16,8 +16,6 @@ store:
 policy:
   epoch_start: 0
   epoch: 50
-  lr: ${lr}$
-  news_lr: ${news_lr}$
   freeze_emb: false
   pin_memory: false
   epoch_batch: ${epoch_batch}$

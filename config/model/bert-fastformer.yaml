@@ -1,4 +1,4 @@
-name: BERT-NAML.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+name: BERT-Fastformer.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
 config:
   use_news_content: true
   use_fast_eval: ${fast_eval}$
@@ -15,6 +15,8 @@ config:
     lora_r: ${lora_r}$
     weights_dir: data/${data.name}/bert-${llm_ver}-split
   user_config:
+    num_attention_heads: 16
+    num_hidden_layers: 1
     inputer_config:
       use_cls_token: false
       use_sep_token: false

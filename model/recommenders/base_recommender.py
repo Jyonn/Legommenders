@@ -27,8 +27,8 @@ class BaseRecommenderConfig:
             use_news_content: bool = True,
             max_news_content_batch_size: int = 0,
             same_dim_transform: bool = True,
-            use_fast_eval: bool = True,
-            fast_eval_batch_size: int = 512,
+            page_size: int = 512,
+            **kwargs,
     ):
         self.hidden_size = hidden_size
         self.news_config = news_config
@@ -39,8 +39,7 @@ class BaseRecommenderConfig:
         self.max_news_content_batch_size = max_news_content_batch_size
         self.same_dim_transform = same_dim_transform
 
-        self.use_fast_eval = use_fast_eval
-        self.page_size = fast_eval_batch_size
+        self.page_size = page_size
 
         if self.use_news_content and not self.news_config:
             raise ValueError('news_config is required when use_news_content is True')
@@ -78,11 +77,12 @@ class BaseRecommender(nn.Module):
         self.label_col = column_map.label_col
         self.clicks_mask_col = column_map.clicks_mask_col
 
-        self.user_config = self.user_encoder_class.config_class(
+        self.user_config = self.user_encoder_class.config_class(**self.combine_config(
+            config=self.config.user_config,
             hidden_size=config.hidden_size,
             embed_hidden_size=config.embed_hidden_size,
-            **config.user_config
-        )
+        ))
+
         self.user_encoder = self.user_encoder_class(
             config=self.user_config,
             nrd=user_nrd,
@@ -90,11 +90,12 @@ class BaseRecommender(nn.Module):
             target_user=True,
         )
         if self.config.use_news_content:
-            self.news_config = self.news_encoder_class.config_class(
+            self.news_config = self.news_encoder_class.config_class(**self.combine_config(
+                config=self.config.news_config,
                 hidden_size=config.hidden_size,
                 embed_hidden_size=config.embed_hidden_size,
-                **config.news_config
-            )
+            ))
+
             self.news_encoder = self.news_encoder_class(
                 config=self.news_config,
                 nrd=news_nrd,
@@ -108,9 +109,11 @@ class BaseRecommender(nn.Module):
         # fast evaluation by caching news and user representations
         self.fast_doc_eval = False
         self.fast_doc_repr = None
+        self.use_fast_doc_caching = True
 
         self.fast_user_eval = False
         self.fast_user_repr = None
+        self.use_fast_user_caching = True
 
         # special cases for llama
         self.llm_skip = False
@@ -119,6 +122,13 @@ class BaseRecommender(nn.Module):
                 if self.news_encoder.config.layer_split:
                     self.llm_skip = True
                     self.print("LLM SKIP")
+
+    @staticmethod
+    def combine_config(config: dict, **kwargs):
+        for k, v in kwargs.items():
+            if k not in config:
+                config[k] = v
+        return config
 
     def timing(self, activate=True):
         self.timer.activate = activate
@@ -149,7 +159,8 @@ class BaseRecommender(nn.Module):
         allow_batch_size = self.config.max_news_content_batch_size or sample_size
         batch_num = (sample_size + allow_batch_size - 1) // allow_batch_size
 
-        news_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
+        # news_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
+        news_contents = self.news_encoder.get_full_news_placeholder(sample_size).to(Setting.device)
         for i in range(batch_num):
             start = i * allow_batch_size
             end = min((i + 1) * allow_batch_size, sample_size)
@@ -210,7 +221,9 @@ class BaseRecommender(nn.Module):
     def start_caching_doc_repr(self, doc_list):
         if not self.config.use_news_content:
             return
-        if not self.config.use_fast_eval:
+        if not Setting.fast_eval:
+            return
+        if not self.use_fast_doc_caching:
             return
         if self.fast_doc_eval:
             return
@@ -236,7 +249,9 @@ class BaseRecommender(nn.Module):
         self.fast_doc_repr = None
 
     def start_caching_user_repr(self, user_list):
-        if not self.config.use_fast_eval:
+        if not Setting.fast_eval:
+            return
+        if not self.use_fast_user_caching:
             return
         if self.fast_user_eval:
             return

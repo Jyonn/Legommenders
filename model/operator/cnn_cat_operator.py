@@ -14,6 +14,8 @@ class CNNCatOperator(CNNOperator):
     config: CNNCatOperatorConfig
     inputer_class = SimpleInputer
 
+    num_columns: int
+
     def forward(self, embeddings: dict, mask=None, **kwargs):
         output_list = []
         for col in embeddings:
@@ -24,15 +26,12 @@ class CNNCatOperator(CNNOperator):
                 masked_activation = activation * mask[col].unsqueeze(-1).to(Setting.device)
                 dropout = self.dropout(masked_activation)
                 output = self.additive_attention(dropout, mask[col].to(Setting.device))
-                # embedding = self.cnn(embedding.permute(0, 2, 1))
-                # embedding = self.activation(embedding.permute(0, 2, 1))
-                # embedding *= mask[col].unsqueeze(-1).to(Setting.device)
-                # embedding = self.dropout(embedding)
-                # embedding = self.additive_attention(embedding, mask[col].to(Setting.device))
             else:
-                # embedding = embedding.squeeze(1)
                 output = embedding.squeeze(1)
             output_list.append(output)
 
         outputs = torch.cat(output_list, dim=-1).to(Setting.device)
         return outputs
+
+    def get_full_news_placeholder(self, sample_size):
+        return torch.zeros(sample_size, self.config.hidden_size * self.num_columns)

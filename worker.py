@@ -51,6 +51,7 @@ class Worker:
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
         Setting.device = self.get_device()
+        Setting.fast_eval = config.fast_eval
         Setting.simple_dev = self.exp.policy.simple_dev
 
         self.config_manager = ConfigManager(
@@ -452,7 +453,8 @@ if __name__ == '__main__':
             hidden_size=64,
             epoch_batch=0,
             max_news_batch_size=0,
-            fast_eval_batch_size=512,
+            page_size=512,
+            patience=2,
         ),
         makedirs=[
             'exp.dir',

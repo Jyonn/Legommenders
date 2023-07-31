@@ -10,19 +10,26 @@ load:
   wait: false
 store:
   top: 1
-  early_stop: 2
+  early_stop: ${patience}$
+  metric: GAUC
+  maximize: true
 policy:
   epoch_start: 0
-  epoch: 10
-  lr: 0.0005
+  epoch: 50
+  lr: ${lr}$
+  news_lr: ${news_lr}$
   freeze_emb: false
   pin_memory: false
-  batch_size: 5000
+  epoch_batch: ${epoch_batch}$
+  batch_size: ${batch_size}$
+  accumulate_batch: ${acc_batch}$
   device: gpu
-  n_warmup: 0
+  n_warmup: ${warmup}$
   check_interval: -2
+  simple_dev: ${simple_dev}$
 metrics:
   - GAUC
   - MRR
+  - NDCG@1
   - NDCG@5
   - NDCG@10

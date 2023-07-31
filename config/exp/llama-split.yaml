@@ -3,7 +3,9 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: test_llm_layer_split
 store:
-  layers: [35]
+# 7b layers: [31, 30, 29, 27]
+# 13b layers: [39, 38, 37, 35]
+  layers: [39, 38, 37, 35]
   dir: data/${data.name}/llama-${llm_ver}-split
 load:
   save_dir: null

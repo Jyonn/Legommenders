@@ -26,11 +26,13 @@ class TransformerOperator(BaseOperator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # use multi-head attention to capture sequence-level information and
-        # use additive attention to fuse the information
+        if self.target_user:
+            embed_dim = self.config.hidden_size
+        else:
+            embed_dim = self.config.embed_hidden_size
 
         self.transformer = BertModel(BertConfig(
-            hidden_size=self.config.hidden_size,
+            hidden_size=embed_dim,
             num_attention_heads=self.config.num_attention_heads,
             attention_probs_dropout_prob=self.config.attention_dropout,
             num_hidden_layers=self.config.num_hidden_layers,
@@ -39,7 +41,7 @@ class TransformerOperator(BaseOperator):
             type_vocab_size=1,
         ))
 
-        self.linear = nn.Linear(self.config.hidden_size, self.config.hidden_size)
+        self.linear = nn.Linear(embed_dim, self.config.hidden_size)
 
         self.additive_attention = AdditiveAttention(
             embed_dim=self.config.hidden_size,

@@ -1,5 +1,6 @@
 from typing import Type
 
+import torch
 from torch import nn
 
 from model.inputer.base_inputer import BaseInputer
@@ -59,3 +60,6 @@ class BaseOperator(nn.Module):
 
     def forward(self, embeddings, mask=None, **kwargs):
         raise NotImplementedError
+
+    def get_full_news_placeholder(self, sample_size):
+        return torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float)

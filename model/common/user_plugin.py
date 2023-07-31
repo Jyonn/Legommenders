@@ -42,7 +42,7 @@ class UserPlugin(nn.Module):
     def init_projection(self, user_embed_size):
         self.project = nn.Sequential(
             nn.Linear(self.col_count * self.hidden_size + user_embed_size, user_embed_size),
-            nn.ReLU(),
+            # nn.ReLU(),
         )
 
     def start_fast_eval(self):

@@ -47,6 +47,7 @@ class MINERModel(BaseNegRecommender):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.target_aware_attention = TargetAwareAttention(self.config.hidden_size)
+        self.use_fast_user_caching = False
 
     def fuse_user_plugin(self, batch, user_embedding):
         if self.user_plugin:

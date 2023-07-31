@@ -226,7 +226,7 @@ class Processor:
 if __name__ == '__main__':
     p = Processor(
         data_dir='/data1/qijiong/Data/MIND-large/',
-        store_dir='../../data/MIND-large-v3',
+        store_dir='../../data/MIND-small-v2',
     )
 
     p.tokenize()

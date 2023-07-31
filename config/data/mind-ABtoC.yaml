@@ -3,7 +3,7 @@ name: MIND-${version}-ABtoC
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
-  depot: ${data.base_dir}/n
+  depot: ${data.base_dir}/news-ABtoC
   order:
     - newtitle
 #    - abs

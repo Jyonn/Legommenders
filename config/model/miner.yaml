@@ -1,8 +1,8 @@
 name: MINER
 config:
   use_news_content: true
-  use_fast_eval: true
-  hidden_size: 64
+  hidden_size: ${hidden_size}$
+  embed_hidden_size: ${embed_hidden_size}$
   neg_count: 4
   score_type: weighted
   news_config:
