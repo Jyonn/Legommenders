@@ -17,7 +17,9 @@ class DynamicParser:
                 key = arg[2:]
 
         for key, value in kwargs.items():
-            if value.isdigit():
+            if value == 'null':
+                kwargs[key] = None
+            elif value.isdigit():
                 kwargs[key] = int(value)
             elif value.lower() == 'true':
                 kwargs[key] = True

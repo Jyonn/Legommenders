@@ -1,30 +1,29 @@
-name: MIND-${version}-Zip
+name: MIND-${version}-NS-Llama
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
-  depot: ${data.base_dir}/news
+  depot: ${data.base_dir}/news-ns-llama
   order:
-    - title
-    - abs
+    - newtitle
     - cat
-    - subcat
   append:
     - nid
+  lm_col: newtitle
 user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/zip_train
+      path: ${data.base_dir}/train
     dev:
-      path: ${data.base_dir}/zip_dev
+      path: ${data.base_dir}/dev
     test:
-      path: ${data.base_dir}/zip_test
+      path: ${data.base_dir}/test
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/zip_user
-    - ${data.base_dir}/zip_neg
+    - ${data.base_dir}/user
+    - ${data.base_dir}/neg
   candidate_col: nid
   clicks_col: history
   label_col: click
@@ -32,4 +31,3 @@ user:
   group_col: imp
   user_col: uid
   index_col: index
-  fake_col: null

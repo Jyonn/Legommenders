@@ -53,6 +53,7 @@ class Worker:
         Setting.device = self.get_device()
         Setting.fast_eval = config.fast_eval
         Setting.simple_dev = self.exp.policy.simple_dev
+        # Setting.dataset = self.data.dataset
 
         self.config_manager = ConfigManager(
             data=self.data,
@@ -343,37 +344,30 @@ class Worker:
 
     def train_runner(self):
         if self.recommender.config.use_news_content and self.exp.policy.news_lr:
-            self.print('split news encoder parameters')
-            news_parameters, rec_parameters = self.recommender.parameter_split()
-            self.m_optimizer = torch.optim.Adam(
-                [
-                    dict(
-                        params=news_parameters,
-                        lr=self.exp.policy.news_lr,
-                    ), dict(
-                        params=rec_parameters,
-                        lr=self.exp.policy.lr,
-                    )
-                ],
-                lr=self.exp.policy.lr
-            )
+            self.print('split news pretrained encoder parameters')
+            self.print('pretrained lr:', self.exp.policy.news_lr)
+            self.print('other lr:', self.exp.policy.lr)
+            pretrained_parameters, other_parameters = self.recommender.parameter_split()
+            self.m_optimizer = torch.optim.Adam([
+                {'params': pretrained_parameters, 'lr': self.exp.policy.news_lr},
+                {'params': other_parameters, 'lr': self.exp.policy.lr}
+            ])
         else:
+            self.print('use single lr:', self.exp.policy.lr)
             self.m_optimizer = torch.optim.Adam(
                 params=filter(lambda p: p.requires_grad, self.recommender.parameters()),
                 lr=self.exp.policy.lr
             )
+
+            for name, p in self.recommender.named_parameters():  # type: str, torch.Tensor
+                if p.requires_grad:
+                    self.print(name, p.data.shape)
+
         self.m_scheduler = get_linear_schedule_with_warmup(
             self.m_optimizer,
             num_warmup_steps=self.exp.policy.n_warmup,
             num_training_steps=len(self.config_manager.sets.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
         )
-
-        self.print('training params')
-        total_memory = 0
-        for name, p in self.recommender.named_parameters():  # type: str, torch.Tensor
-            total_memory += p.element_size() * p.nelement()
-            if p.requires_grad:
-                self.print(name, p.data.shape)
 
         if self.load_path:
             self.load(self.load_path[0])
@@ -455,6 +449,9 @@ if __name__ == '__main__':
             max_news_batch_size=0,
             page_size=512,
             patience=2,
+            epoch_start=0,
+            frozen=True,
+            load_path=None,
         ),
         makedirs=[
             'exp.dir',

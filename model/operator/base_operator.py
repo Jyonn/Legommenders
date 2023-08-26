@@ -40,23 +40,8 @@ class BaseOperator(nn.Module):
 
         self.target_user = target_user
 
-    def _get_attr_parameters(self, attr_name):
-        names, params = [], []
-
-        for name, param in self.named_parameters():
-            if name.startswith(attr_name + '.') and param.requires_grad:
-                names.append(name)
-                params.append(param)
-
-        return names, params
-
-    def _get_pretrained_parameters(self):
-        return [], []
-
-    def get_pretrained_parameters(self, prefix: str):
-        names, parameters = self._get_pretrained_parameters()
-        names = {f'{prefix}.{name}' for name in names}
-        return names, parameters
+    def get_pretrained_parameter_names(self):
+        return []
 
     def forward(self, embeddings, mask=None, **kwargs):
         raise NotImplementedError

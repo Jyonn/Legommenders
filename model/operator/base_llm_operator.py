@@ -85,8 +85,8 @@ class BaseLLMOperator(BaseOperator):
             )
             self._lora_encoder(peft_config)
 
-    def _get_pretrained_parameters(self):
-        return self._get_attr_parameters('transformer')
+    def get_pretrained_parameter_names(self):
+        return ['transformer']
 
     def get_all_hidden_states(
             self,

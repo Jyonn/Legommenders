@@ -23,6 +23,11 @@ from utils.printer import printer, Color
 from utils.stacker import FastStacker
 
 
+class DatasetType:
+    news = 'news'
+    book = 'book'
+
+
 class Phases:
     train = 'train'
     dev = 'dev'
@@ -187,6 +192,12 @@ class ConfigManager:
         self.modes = self.parse_mode()
 
         self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
+
+        if 'MIND' in self.data.name.upper():
+            Setting.dataset = DatasetType.news
+        else:
+            Setting.dataset = DatasetType.book
+        self.print('dataset type: ', Setting.dataset)
 
         self.print('build column map ...')
         self.column_map = ColumnMap(**Obj.raw(self.data.user))

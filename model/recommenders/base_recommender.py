@@ -275,12 +275,48 @@ class BaseRecommender(nn.Module):
         self.fast_user_repr = None
 
     def parameter_split(self):
-        news_names, news_parameters = self.news_encoder.get_pretrained_parameters(prefix='news_encoder')
-        rec_parameters = self.named_parameters()
-        rec_parameters = filter(lambda p: p[1].requires_grad, rec_parameters)
-        rec_parameters = filter(lambda p: p[0] not in news_names, rec_parameters)
-        rec_parameters = map(lambda p: p[1], rec_parameters)
-        return news_parameters, rec_parameters
+        pretrained_parameters = []
+        other_parameters = []
+        pretrained_signals = self.news_encoder.get_pretrained_parameter_names()
+
+        pretrained_names = []
+        other_names = []
+
+        for name, param in self.named_parameters():
+            if not param.requires_grad:
+                continue
+            is_pretrained = False
+            for pretrained_name in pretrained_signals:
+                if name.startswith(f'news_encoder.{pretrained_name}'):
+                    pretrained_names.append((name, param.data.shape))
+                    pretrained_parameters.append(param)
+                    is_pretrained = True
+                    break
+
+            if not is_pretrained:
+                # self.print(f'[N] {name} {param.data.shape}')
+                other_names.append((name, param.data.shape))
+                other_parameters.append(param)
+
+        for name, shape in pretrained_names:
+            self.print(f'[P] {name} {shape}')
+        for name, shape in other_names:
+            self.print(f'[N] {name} {shape}')
+
+        return pretrained_parameters, other_parameters
+        #
+        # news_names, news_parameters = self.news_encoder.get_pretrained_parameters(prefix='news_encoder')
+        # self.print(f'news pretrained parameters:')
+        # for name, param in zip(news_names, news_parameters):
+        #     self.print(f'\t{name}: {param.data.shape}')
+        # rec_parameters = self.named_parameters()
+        # rec_parameters = filter(lambda p: p[1].requires_grad, rec_parameters)
+        # rec_parameters = filter(lambda p: p[0] not in news_names, rec_parameters)
+        # self.print(f'rec parameters:')
+        # for name, param in rec_parameters:
+        #     self.print(f'\t{name}: {param.data.shape}')
+        # rec_parameters = map(lambda p: p[1], rec_parameters)
+        # return news_parameters, rec_parameters
 
     def __str__(self):
         return self.__class__.__name__

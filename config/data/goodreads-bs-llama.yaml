@@ -1,10 +1,11 @@
-name: Goodreads-Bert
+name: Goodreads-BS-Llama
 base_dir: data/Goodreads
 news:
   filter_cache: true
-  depot: ${data.base_dir}/book-bert
+  depot: ${data.base_dir}/book-desc-llama
   order:
     - title
+    - desc
   append:
     - bid
 user:

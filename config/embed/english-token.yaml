@@ -12,4 +12,4 @@ embeddings:
     vocab_name: english
     vocab_type: numpy
     path: data/bert-token.12L.npy
-    frozen: true
+    frozen: ${frozen}$

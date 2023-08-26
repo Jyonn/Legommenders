@@ -7,3 +7,6 @@ class Setting:
 
     # pad
     UNSET = -1
+
+    # dataset
+    dataset = None
