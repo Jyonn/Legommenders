@@ -1,4 +1,4 @@
-# GNRS: Green News Recommender System
+# OLEO: Only Encode Once
 
 ## Environment
 
@@ -25,13 +25,13 @@ Please refer to `config_v2/data/mind.yaml` for the data configuration.
 
 We support the following models on both MIND small and large datasets:
 
-|            | NAML       | LSTUR       | NRMS       | DCN       | DIN           | BST           |
-|------------|------------|-------------|------------|-----------|---------------|---------------|
-| id-based   | id-NAML    | id-LSTUR    | id-NRMS    | DCN       | DIN           | BST           |
-| text-based | NAML       | LSTUR       | NRMS       | text-DCN  | text-DIN      | text-BST      |
-| PLMNR      | PLMNR-NAML | PLMNR-LSTUR | PLMNR-NRMS | PLMNR-DCN | PLMNR-DIN     | PLMNR-BST     |
-| BERT       | BERT-NAML  | BERT-LSTUR  | BERT-NRMS  | BERT-DCN  | bert-news-DIN | bert-news-BST |
-| MFT        | MFT-NAML   | MFT-LSTUR   | MFT-NRMS   | MFT-DCN   | MFT-DIN       | MFT-BST       |
+|            | NAML       | LSTUR       | NRMS       | DCN       | DIN       | BST       |
+|------------|------------|-------------|------------|-----------|-----------|-----------|
+| ID-based   | ID-NAML    | ID-LSTUR    | ID-NRMS    | DCN       | DIN       | BST       |
+| text-based | NAML       | LSTUR       | NRMS       | text-DCN  | text-DIN  | text-BST  |
+| PLMNR      | PLMNR-NAML | PLMNR-LSTUR | PLMNR-NRMS | PLMNR-DCN | PLMNR-DIN | PLMNR-BST |
+| BERT       | BERT-NAML  | BERT-LSTUR  | BERT-NRMS  | BERT-DCN  | BERT-DIN  | BERT-BST  |
+| MFT        | MFT-NAML   | MFT-LSTUR   | MFT-NRMS   | MFT-DCN   | MFT-DIN   | MFT-BST   |
 
 ## Training and Testing
 
