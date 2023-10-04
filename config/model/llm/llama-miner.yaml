@@ -1,4 +1,8 @@
 name: LLAMA-MINER.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+meta:
+  item: Llama
+  user: PolyAttention
+  predictor: Dot
 config:
   use_news_content: true
   max_news_content_batch_size: ${max_news_batch_size}$

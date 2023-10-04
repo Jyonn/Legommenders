@@ -1,6 +1,11 @@
 name: PLMNR-BST.D${model.config.hidden_size}
+meta:
+  item: Transformer
+  user: Transformer
+  predictor: Dot
 config:
   use_news_content: true
+  use_neg_sampling: true
   hidden_size: 64
   neg_count: 4
   news_config:

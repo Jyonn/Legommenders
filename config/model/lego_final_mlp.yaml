@@ -1,4 +1,8 @@
 name: FinalMLP
+meta:
+  item: Pooling
+  user: Pooling
+  predictor: FinalMLP
 config:
   use_news_content: true
   hidden_size: 64
