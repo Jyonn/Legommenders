@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 from loader.global_setting import Setting
-from model.recommenders.base_neg_recommender import BaseNegRecommender
+# from model.recommenders.base_neg_recommender import BaseNegRecommender
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
 from model.utils.nr_depot import NRDepot
 from loader.base_dataset import BaseDataset
@@ -97,26 +97,31 @@ class Manager:
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
         if self.use_news_content:
             sample[self.clicks_col].extend([0] * (self.max_click_num - len_clicks))
-        sample[self.candidate_col] = [sample[self.candidate_col]]
+        if not isinstance(sample[self.candidate_col], list):
+            sample[self.candidate_col] = [sample[self.candidate_col]]
         # self.timer.run('rebuild 1')
 
         # self.timer.run('rebuild 2')
         # negative sampling
         if self.use_neg_sampling:
-            assert isinstance(self.recommender, BaseNegRecommender)
+            # assert isinstance(self.recommender, BaseNegRecommender)
             # if not self.status.is_testing:
             if self.status.is_training or (self.status.is_evaluating and Setting.simple_dev):
-                true_negs = sample[self.neg_col]
+                if self.neg_col:
+                    true_negs = sample[self.neg_col]
+                else:
+                    true_negs = []
                 rand_neg = max(self.recommender.neg_count - len(true_negs), 0)
                 neg_samples = random.sample(true_negs, k=min(self.recommender.neg_count, len(true_negs)))
                 neg_samples += [random.randint(0, self.news_size - 1) for _ in range(rand_neg)]
                 sample[self.candidate_col].extend(neg_samples)
-        del sample[self.neg_col]
+        if self.neg_col:
+            del sample[self.neg_col]
         # self.timer.run('rebuild 2')
         #
         # self.timer.run('rebuild 3')
         # content injection and tensorization
-        if self.use_news_content and not self.recommender.llm_skip and not self.recommender.fast_doc_eval:
+        if self.use_news_content and not self.recommender.llm_skip and not self.recommender.cacher.fast_doc_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
                 stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
             else:
@@ -130,7 +135,7 @@ class Manager:
                 self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
         else:
             sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-            if self.recommender.llm_skip or self.recommender.fast_doc_eval:
+            if self.recommender.llm_skip or self.recommender.cacher.fast_doc_eval:
                 sample[self.clicks_col] = torch.tensor(sample[self.clicks_col], dtype=torch.long)
             else:
                 sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)

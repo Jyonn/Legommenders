@@ -1,10 +1,13 @@
-name: MIND-${version}-Zip
+key: K${k}_select${select}_alpha${alpha}
+name: MIND-Distillation-${data.key}
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
   depot: ${data.base_dir}/news
   order:
     - title
+    - cat
+    - subcat
     - abs
   append:
     - nid
@@ -12,17 +15,18 @@ user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/zip_train
+      path: ${data.base_dir}/distillation/train_${data.key}
     dev:
-      path: ${data.base_dir}/zip_dev
+      path: ${data.base_dir}/distillation/dev_${data.key}
     test:
-      path: ${data.base_dir}/zip_test
+      path: ${data.base_dir}/test
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/zip_user
-    - ${data.base_dir}/zip_neg
+    - ${data.base_dir}/distillation/user_${data.key}
+    - ${data.base_dir}/distillation/center_${data.key}
+  union_first: true
   candidate_col: nid
   clicks_col: history
   label_col: click

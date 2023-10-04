@@ -13,35 +13,37 @@ class NRDataLoader(DataLoader):
         )
 
         self.manager = manager
+        self.cacher = manager.recommender.cacher
+        self.plugin = manager.recommender.user_plugin
 
     def test(self):
         self.manager.status.test()
-        self.manager.recommender.end_caching_doc_repr()
-        self.manager.recommender.start_caching_doc_repr(self.manager.doc_cache)
-        if self.manager.recommender.user_plugin:
-            self.manager.recommender.user_plugin.end_fast_eval()
-            self.manager.recommender.user_plugin.start_fast_eval()
-        self.manager.recommender.end_caching_user_repr()
-        self.manager.recommender.start_caching_user_repr(self.manager.user_dataset)
+        self.cacher.end_caching_doc_repr()
+        self.cacher.start_caching_doc_repr(self.manager.doc_cache)
+        if self.plugin:
+            self.plugin.end_fast_eval()
+            self.plugin.start_fast_eval()
+        self.cacher.end_caching_user_repr()
+        self.cacher.start_caching_user_repr(self.manager.user_dataset)
         return self
 
     def eval(self):
         self.manager.status.eval()
-        self.manager.recommender.end_caching_doc_repr()
-        self.manager.recommender.start_caching_doc_repr(self.manager.doc_cache)
-        if self.manager.recommender.user_plugin:
-            self.manager.recommender.user_plugin.end_fast_eval()
-            self.manager.recommender.user_plugin.start_fast_eval()
-        self.manager.recommender.end_caching_user_repr()
-        self.manager.recommender.start_caching_user_repr(self.manager.user_dataset)
+        self.cacher.end_caching_doc_repr()
+        self.cacher.start_caching_doc_repr(self.manager.doc_cache)
+        if self.plugin:
+            self.plugin.end_fast_eval()
+            self.plugin.start_fast_eval()
+        self.cacher.end_caching_user_repr()
+        self.cacher.start_caching_user_repr(self.manager.user_dataset)
         return self
 
     def train(self):
         self.manager.status.train()
-        self.manager.recommender.end_caching_doc_repr()
-        if self.manager.recommender.user_plugin:
-            self.manager.recommender.user_plugin.end_fast_eval()
-        self.manager.recommender.end_caching_user_repr()
+        self.cacher.end_caching_doc_repr()
+        if self.plugin:
+            self.plugin.end_fast_eval()
+        self.cacher.end_caching_user_repr()
         return self
 
     # def __iter__(self):

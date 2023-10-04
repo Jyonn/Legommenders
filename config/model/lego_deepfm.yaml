@@ -1,0 +1,20 @@
+name: DeepFM
+meta:
+  item: Pooling
+  user: Pooling
+  predictor: DeepFM
+config:
+  use_neg_sampling: false
+  use_news_content: true
+  hidden_size: 64
+  news_config:
+    flatten: false
+    max_pooling: false
+  user_config:
+    flatten: false
+    max_pooling: false
+  predictor_config:
+    dnn_hidden_units: [ 1000, 1000, 1000 ]
+    dnn_activations: ReLU
+    dnn_dropout: 0.1
+    dnn_batch_norm: false

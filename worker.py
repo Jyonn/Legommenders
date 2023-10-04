@@ -5,6 +5,7 @@ import sys
 import time
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import torch
 from oba import Obj
@@ -13,8 +14,9 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.global_setting import Setting
 from loader.config_manager import ConfigManager, Phases
-from model.operator.base_llm_operator import BaseLLMOperator
+from model.operators.base_llm_operator import BaseLLMOperator
 from utils.config_init import ConfigInit
+from utils.function import seeding
 from utils.gpu import GPU
 from utils.logger import Logger
 from utils.meaner import Meaner
@@ -22,10 +24,8 @@ from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from utils.pagers.llm_split_pager import LLMSplitPager
 from utils.printer import printer, Color, Printer
-from utils.random_seed import seeding
 from utils.structure import Structure
 from utils.submission import Submission
-from utils.timer import Timer
 
 torch.autograd.set_detect_anomaly(True)
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -215,7 +215,7 @@ class Worker:
         score_series, label_series, group_series, fake_series = [], [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
-                scores = self.recommender(batch=batch).squeeze(1)
+                scores = self.recommender(batch=batch)
             labels = batch[self.config_manager.column_map.label_col].tolist()
             groups = batch[self.config_manager.column_map.group_col].tolist()
             fakes = batch[self.config_manager.column_map.fake_col].tolist()
@@ -291,6 +291,22 @@ class Worker:
         for metric in results:
             self.print(f'{metric}: {results[metric]:.4f}')
 
+    def train_get_user_embedding(self):
+        self.config_manager.get_loader(Phases.train).test()
+        assert self.recommender.cacher.fast_user_eval, 'fast eval not enabled'
+        user_embeddings = self.recommender.cacher.fast_user_repr.detach().cpu().numpy()
+        store_path = os.path.join(self.exp.dir, 'user_embeddings.npy')
+        self.print(f'store user embeddings to {store_path}')
+        np.save(store_path, user_embeddings)
+
+    def train_get_item_embedding(self):
+        self.recommender.end_caching_doc_repr()
+        self.recommender.start_caching_doc_repr(self.manager.doc_cache)
+        item_embeddings = self.recommender.fast_doc_repr.detach().cpu().numpy()
+        store_path = os.path.join(self.exp.dir, 'item_embeddings.npy')
+        self.print(f'store item embeddings to {store_path}')
+        np.save(store_path, item_embeddings)
+
     def base_evaluate(self, loader, cols):
         score_series = torch.zeros(len(loader.dataset), dtype=torch.float32)
         col_series = {col: torch.zeros(len(loader.dataset), dtype=torch.long) for col in cols}
@@ -347,7 +363,7 @@ class Worker:
             self.print('split news pretrained encoder parameters')
             self.print('pretrained lr:', self.exp.policy.news_lr)
             self.print('other lr:', self.exp.policy.lr)
-            pretrained_parameters, other_parameters = self.recommender.parameter_split()
+            pretrained_parameters, other_parameters = self.recommender.get_parameters()
             self.m_optimizer = torch.optim.Adam([
                 {'params': pretrained_parameters, 'lr': self.exp.policy.news_lr},
                 {'params': other_parameters, 'lr': self.exp.policy.lr}
@@ -394,7 +410,7 @@ class Worker:
         num_params = sum([p.numel() for (_, p) in named_parameters])
         # to a million
         num_params /= 1e6
-        self.print(f'number of parameters: {num_params:.2f}M')
+        self.print(f'Number of parameters: {num_params:.2f}M')
 
     def test_llm_layer_split(self):
         news_encoder = self.recommender.news_encoder  # type: BaseLLMOperator
@@ -428,6 +444,10 @@ class Worker:
             self.test_size()
         elif self.mode == 'test_llm_layer_split':
             self.test_llm_layer_split()
+        elif self.mode == 'train_get_user_embedding':
+            self.train_get_user_embedding()
+        elif self.mode == 'train_get_item_embedding':
+            self.train_get_item_embedding()
 
 
 if __name__ == '__main__':

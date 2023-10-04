@@ -54,7 +54,7 @@ class BaseDataset(Dataset):
         return mode_range[1] - mode_range[0]
 
     def pack_sample(self, index):
-        if self.manager and self.manager.recommender.fast_user_eval:
+        if self.manager and self.manager.recommender.cacher.fast_user_eval:
             self.timer.run('pack_sample')
             index = self.depot._indexes[index]
             cols = [

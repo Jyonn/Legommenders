@@ -9,10 +9,10 @@ load:
   strict: true
   wait: false
 store:
+  metric: NDCG@5
+  maximize: true
   top: 1
   early_stop: ${patience}$
-  metric: GAUC
-  maximize: true
 policy:
   epoch_start: ${epoch_start}$
   epoch: 50
@@ -26,10 +26,13 @@ policy:
   device: gpu
   n_warmup: ${warmup}$
   check_interval: -2
-  simple_dev: ${simple_dev}$
+  simple_dev: true
 metrics:
   - GAUC
   - MRR
   - NDCG@1
   - NDCG@5
   - NDCG@10
+  - Recall@1
+  - Recall@5
+  - Recall@10

@@ -5,7 +5,7 @@ from oba import Obj
 from refconfig import RefConfig
 from smartdict import DictCompiler
 
-from utils.dynamic_parser import DynamicParser
+from utils.function import argparse
 from utils.rand import Rand
 from utils.timing import Timing
 
@@ -32,7 +32,7 @@ class ConfigInit:
         self.makedirs = makedirs
 
     def parse(self):
-        kwargs = DynamicParser.parse()
+        kwargs = argparse()
 
         for arg in self.required_args:
             if arg not in kwargs:

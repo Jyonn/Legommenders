@@ -1,0 +1,23 @@
+name: LLAMA-Fastformer.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+meta:
+  item: Llama
+  user: Fastformer
+  predictor: Dot
+config:
+  use_news_content: true
+  max_news_content_batch_size: 0
+  same_dim_transform: false
+  embed_hidden_size: ${embed_hidden_size}$
+  hidden_size: ${hidden_size}$
+  neg_count: 4
+  news_config:
+    llm_dir: /home/data1/qijiong/llama-${llm_ver}
+    layer_split: ${layer}$
+    lora: ${lora}$
+    weights_dir: data/${data.name}/llama-${llm_ver}-split
+  user_config:
+    num_attention_heads: 16
+    num_hidden_layers: 1
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

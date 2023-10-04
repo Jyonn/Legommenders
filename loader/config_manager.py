@@ -11,16 +11,16 @@ from loader.global_setting import Setting
 from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
-from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
+from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig, RecommenderMeta
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.manager import Manager
 from model.utils.nr_dataloader import NRDataLoader
 from model.utils.nr_depot import NRDepot
-from loader.recommenders import Recommenders
+# from loader.recommenders import Recommenders
 from loader.base_dataset import BaseDataset
+from utils.auto_import import ClassSet
 from utils.printer import printer, Color
-from utils.stacker import FastStacker
 
 
 class DatasetType:
@@ -90,7 +90,7 @@ class Depots:
     def create_fast_eval_depot(path, column_map: ColumnMap):
         user_depot = FCUniDep(path)
         user_num = user_depot.cols[column_map.user_col].voc.size
-        user_depot.reset_data({
+        user_depot.reset({
             user_depot.id_col: list(range(user_num)),
             column_map.candidate_col: [[0] for _ in range(user_num)],
             column_map.label_col: [[0] for _ in range(user_num)],
@@ -128,12 +128,13 @@ class NRDepots:
         append = [
             column_map.candidate_col,
             column_map.label_col,
-            column_map.neg_col,
             column_map.group_col,
             column_map.user_col,
         ]
         if column_map.fake_col:
             append.append(column_map.fake_col)
+        if column_map.neg_col:
+            append.append(column_map.neg_col)
 
         self.train_nrd = self.dev_nrd = self.test_nrd = None
         if depots.train_depot:
@@ -211,14 +212,41 @@ class ConfigManager:
             append=self.data.news.append,
         )
         self.print('doc nrd size: ', len(self.doc_nrd.depot))
+        if self.data.news.union:
+            for depot in self.data.news.union:
+                self.doc_nrd.depot.union(DepotCache.get(depot))
 
         # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
         self.model_name = self.model.name.split('.')[0].replace('-', '')
-        self.recommender_class = Recommenders()(self.model_name)  # type: Type[BaseRecommender]
-        self.print(f'selected recommender: {str(self.recommender_class.__name__)}')
-        self.recommender_config = self.recommender_class.config_class(
-            **Obj.raw(self.model.config),
-        )  # type: BaseRecommenderConfig
+        # self.recommender_class = Recommenders()(self.model_name)  # type: Type[BaseRecommender]
+
+        # recommender_set = ClassSet.recommenders()
+        operator_set = ClassSet.operators()
+        predictor_set = ClassSet.predictors()
+
+        self.item_operator_class = None
+        if self.model.meta.item:
+            self.item_operator_class = operator_set(self.model.meta.item)
+        self.user_operator_class = operator_set(self.model.meta.user)
+        self.predictor_class = predictor_set(self.model.meta.predictor)
+        self.recommender_meta = RecommenderMeta(
+            item_encoder_class=self.item_operator_class,
+            user_encoder_class=self.user_operator_class,
+            predictor_class=self.predictor_class,
+        )
+
+        # self.recommender_class = ClassSet.recommenders()(self.model_name)  # type: Type[BaseRecommender]
+        # self.print(f'selected recommender: {str(self.recommender_class.__name__)}')
+        self.print(f'Selected Item Encoder: {str(self.item_operator_class.__name__) if self.item_operator_class else "null"}')
+        self.print(f'Selected User Encoder: {str(self.user_operator_class.__name__)}')
+        self.print(f'Selected Predictor: {str(self.predictor_class.__name__)}')
+        self.print(f'Use Negative Sampling: {self.model.config.use_neg_sampling}')
+        self.print(f'Use Item Content: {self.model.config.use_news_content}')
+
+        # self.recommender_config = self.recommender_class.config_class(
+        #     **Obj.raw(self.model.config),
+        # )  # type: BaseRecommenderConfig
+        self.recommender_config = BaseRecommenderConfig(**Obj.raw(self.model.config))
 
         self.print('build embedding manager ...')
         skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_news_content else []
@@ -255,7 +283,9 @@ class ConfigManager:
             )
 
         self.print('build recommender model and manager ...')
-        self.recommender = self.recommender_class(
+        # self.recommender = self.recommender_class(
+        self.recommender = BaseRecommender(
+            meta=self.recommender_meta,
             config=self.recommender_config,
             column_map=self.column_map,
             embedding_manager=self.embedding_manager,
@@ -269,7 +299,7 @@ class ConfigManager:
             user_nrd=self.nrds.fast_eval_nrd,
         )
 
-        if self.recommender_class.use_neg_sampling:
+        if self.recommender_config.use_neg_sampling:
             self.print('neg sample filtering ...')
             self.depots.negative_filter(self.column_map.label_col)
 

@@ -1,28 +1,28 @@
-name: MIND-${version}-Zip
+name: MIND-Distillation-News-Random
 base_dir: data/MIND-${version}
 news:
   filter_cache: true
-  depot: ${data.base_dir}/news
+  depot: ${data.base_dir}/distillation/news-random
   order:
     - title
-    - abs
+    - cat
   append:
     - nid
 user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/zip_train
+      path: ${data.base_dir}/train
     dev:
-      path: ${data.base_dir}/zip_dev
+      path: ${data.base_dir}/dev
     test:
-      path: ${data.base_dir}/zip_test
+      path: ${data.base_dir}/test
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/zip_user
-    - ${data.base_dir}/zip_neg
+    - ${data.base_dir}/user-grp
+    - ${data.base_dir}/rd-neg
   candidate_col: nid
   clicks_col: history
   label_col: click
@@ -30,4 +30,4 @@ user:
   group_col: imp
   user_col: uid
   index_col: index
-  fake_col: null
+  fake_col: fake

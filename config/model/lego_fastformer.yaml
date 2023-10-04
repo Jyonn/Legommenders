@@ -1,0 +1,23 @@
+name: Fastformer
+meta:
+  item: Fastformer
+  user: Fastformer
+  predictor: Dot
+config:
+  use_neg_sampling: true
+  use_news_content: true
+  hidden_size: ${hidden_size}$
+  embed_hidden_size: ${embed_hidden_size}$
+  neg_count: 4
+  news_config:
+    num_attention_heads: 16
+    num_hidden_layers: 1
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
+  user_config:
+    num_attention_heads: 16
+    num_hidden_layers: 1
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
