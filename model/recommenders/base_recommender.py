@@ -11,7 +11,7 @@ from model.predictors.base_predictor import BasePredictor
 from model.utils.cacher import Cacher
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 from utils.function import combine_config
 from utils.printer import printer, Color
 from utils.shaper import Shaper
@@ -37,56 +37,49 @@ class BaseRecommenderConfig:
             use_neg_sampling: bool = True,
             neg_count: int = 4,
             embed_hidden_size=None,
-            news_config=None,
+            item_config=None,
             predictor_config=None,
-            use_news_content: bool = True,
-            max_news_content_batch_size: int = 0,
+            use_item_content: bool = True,
+            max_item_content_batch_size: int = 0,
             same_dim_transform: bool = True,
             page_size: int = 512,
             **kwargs,
     ):
         self.hidden_size = hidden_size
-        self.news_config = news_config
+        self.item_config = item_config
         self.user_config = user_config
         self.predictor_config = predictor_config or {}
 
         self.use_neg_sampling = use_neg_sampling
         self.neg_count = neg_count
-        self.use_news_content = use_news_content
+        self.use_item_content = use_item_content
         self.embed_hidden_size = embed_hidden_size or hidden_size
 
-        self.max_news_content_batch_size = max_news_content_batch_size
+        self.max_item_content_batch_size = max_item_content_batch_size
         self.same_dim_transform = same_dim_transform
 
         self.page_size = page_size
 
-        if self.use_news_content and not self.news_config:
-            raise ValueError('news_config is required when use_news_content is True')
+        if self.use_item_content and not self.item_config:
+            raise ValueError('item_config is required when use_item_content is True')
 
 
 class BaseRecommender(nn.Module):
-    config_class = BaseRecommenderConfig
-    # news_encoder_class = None  # type: Type[BaseOperator]
-    # user_encoder_class = None  # type: Type[BaseOperator]
-    # predictor_class = None  # type: Type[BasePredictor]
-
-    # use_neg_sampling = True
-
     def __init__(
             self,
             meta: RecommenderMeta,
             config: BaseRecommenderConfig,
             column_map: ColumnMap,
             embedding_manager: EmbeddingManager,
-            user_nrd: NRDepot,
-            news_nrd: NRDepot,
+            user_hub: DataHub,
+            item_hub: DataHub,
             user_plugin: UserPlugin = None,
     ):
         super().__init__()
 
         """initializing basic attributes"""
         self.meta = meta
-        self.news_encoder_class = meta.item_encoder_class
+        self.item_encoder_class = meta.item_encoder_class
         self.user_encoder_class = meta.user_encoder_class
         self.predictor_class = meta.predictor_class
 
@@ -99,8 +92,8 @@ class BaseRecommender(nn.Module):
         self.embedding_manager = embedding_manager
         self.embedding_table = embedding_manager.get_table()
 
-        self.user_nrd = user_nrd
-        self.news_nrd = news_nrd
+        self.user_nrd = user_hub
+        self.item_nrd = item_hub
 
         self.column_map = column_map  # type: ColumnMap
         self.user_col = column_map.user_col
@@ -111,9 +104,9 @@ class BaseRecommender(nn.Module):
 
         """initializing core components"""
         self.user_encoder = self.prepare_user_module()
-        self.news_encoder = None
-        if self.config.use_news_content:
-            self.news_encoder = self.prepare_item_module()
+        self.item_encoder = None
+        if self.config.use_item_content:
+            self.item_encoder = self.prepare_item_module()
         self.predictor = self.prepare_predictor()
 
         """initializing extra components"""
@@ -122,9 +115,9 @@ class BaseRecommender(nn.Module):
         """initializing utils"""
         # special cases for llama
         self.llm_skip = False
-        if self.config.use_news_content:
-            if isinstance(self.news_encoder, BaseLLMOperator):
-                if self.news_encoder.config.layer_split:
+        if self.config.use_item_content:
+            if isinstance(self.item_encoder, BaseLLMOperator):
+                if self.item_encoder.config.layer_split:
                     self.llm_skip = True
                     self.print("LLM SKIP")
 
@@ -134,52 +127,52 @@ class BaseRecommender(nn.Module):
         self.loss_func = nn.CrossEntropyLoss() if self.use_neg_sampling else nn.BCEWithLogitsLoss()
 
     @staticmethod
-    def get_sample_size(news_content):
-        if isinstance(news_content, torch.Tensor):
-            return news_content.shape[0]
-        assert isinstance(news_content, dict)
-        key = list(news_content.keys())[0]
-        return news_content[key].shape[0]
+    def get_sample_size(item_content):
+        if isinstance(item_content, torch.Tensor):
+            return item_content.shape[0]
+        assert isinstance(item_content, dict)
+        key = list(item_content.keys())[0]
+        return item_content[key].shape[0]
 
-    def get_news_content(self, batch, col):
+    def get_item_content(self, batch, col):
         if self.cacher.fast_doc_eval:
             return self.cacher.fast_doc_repr[batch[col]]
 
         if not self.llm_skip:
             _shape = None
-            news_content = self.shaper.transform(batch[col])  # batch_size, click_size, max_seq_len
-            attention_mask = self.news_encoder.inputer.get_mask(news_content)
-            news_content = self.news_encoder.inputer.get_embeddings(news_content)
+            item_content = self.shaper.transform(batch[col])  # batch_size, click_size, max_seq_len
+            attention_mask = self.item_encoder.inputer.get_mask(item_content)
+            item_content = self.item_encoder.inputer.get_embeddings(item_content)
         else:
             _shape = batch[col].shape
-            news_content = batch[col].reshape(-1)
+            item_content = batch[col].reshape(-1)
             attention_mask = None
 
-        sample_size = self.get_sample_size(news_content)
-        allow_batch_size = self.config.max_news_content_batch_size or sample_size
+        sample_size = self.get_sample_size(item_content)
+        allow_batch_size = self.config.max_item_content_batch_size or sample_size
         batch_num = (sample_size + allow_batch_size - 1) // allow_batch_size
 
-        # news_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
-        news_contents = self.news_encoder.get_full_news_placeholder(sample_size).to(Setting.device)
+        # item_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
+        item_contents = self.item_encoder.get_full_item_placeholder(sample_size).to(Setting.device)
         for i in range(batch_num):
             start = i * allow_batch_size
             end = min((i + 1) * allow_batch_size, sample_size)
             mask = None if attention_mask is None else attention_mask[start:end]
-            content = self.news_encoder(news_content[start:end], mask=mask)
-            news_contents[start:end] = content
+            content = self.item_encoder(item_content[start:end], mask=mask)
+            item_contents[start:end] = content
 
         if not self.llm_skip:
-            news_contents = self.shaper.recover(news_contents)
+            item_contents = self.shaper.recover(item_contents)
         else:
-            news_contents = news_contents.view(*_shape, -1)
-        return news_contents
+            item_contents = item_contents.view(*_shape, -1)
+        return item_contents
 
     def get_user_content(self, batch):
         if self.cacher.fast_user_eval:
             return self.cacher.fast_user_repr[batch[self.user_col]]
 
-        if self.config.use_news_content:
-            clicks = self.get_news_content(batch, self.clicks_col)
+        if self.config.use_item_content:
+            clicks = self.get_item_content(batch, self.clicks_col)
         else:
             clicks = self.user_encoder.inputer.get_embeddings(batch[self.clicks_col])
 
@@ -199,8 +192,8 @@ class BaseRecommender(nn.Module):
         if isinstance(batch[self.candidate_col], torch.Tensor) and batch[self.candidate_col].dim() == 1:
             batch[self.candidate_col] = batch[self.candidate_col].unsqueeze(1)
 
-        if self.config.use_news_content:
-            item_embeddings = self.get_news_content(batch, self.candidate_col)
+        if self.config.use_item_content:
+            item_embeddings = self.get_item_content(batch, self.candidate_col)
         else:
             item_embeddings = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Setting.device))
 
@@ -265,16 +258,16 @@ class BaseRecommender(nn.Module):
         )
 
     def prepare_item_module(self):
-        item_config = self.news_encoder_class.config_class(**combine_config(
-            config=self.config.news_config,
+        item_config = self.item_encoder_class.config_class(**combine_config(
+            config=self.config.item_config,
             hidden_size=self.config.hidden_size,
             embed_hidden_size=self.config.embed_hidden_size,
             input_dim=self.config.embed_hidden_size,
         ))
 
-        return self.news_encoder_class(
+        return self.item_encoder_class(
             config=item_config,
-            nrd=self.news_nrd,
+            nrd=self.item_nrd,
             embedding_manager=self.embedding_manager,
             target_user=False,
         )
@@ -297,7 +290,7 @@ class BaseRecommender(nn.Module):
     def get_parameters(self):
         pretrained_parameters = []
         other_parameters = []
-        pretrained_signals = self.news_encoder.get_pretrained_parameter_names()
+        pretrained_signals = self.item_encoder.get_pretrained_parameter_names()
 
         pretrained_names = []
         other_names = []
@@ -307,7 +300,7 @@ class BaseRecommender(nn.Module):
                 continue
             is_pretrained = False
             for pretrained_name in pretrained_signals:
-                if name.startswith(f'news_encoder.{pretrained_name}'):
+                if name.startswith(f'item_encoder.{pretrained_name}'):
                     pretrained_names.append((name, param.data.shape))
                     pretrained_parameters.append(param)
                     is_pretrained = True

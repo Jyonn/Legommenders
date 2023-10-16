@@ -19,7 +19,7 @@ class NRDataLoader(DataLoader):
     def test(self):
         self.manager.status.test()
         self.cacher.end_caching_doc_repr()
-        self.cacher.start_caching_doc_repr(self.manager.doc_cache)
+        self.cacher.start_caching_doc_repr(self.manager.item_cache)
         if self.plugin:
             self.plugin.end_fast_eval()
             self.plugin.start_fast_eval()
@@ -30,7 +30,7 @@ class NRDataLoader(DataLoader):
     def eval(self):
         self.manager.status.eval()
         self.cacher.end_caching_doc_repr()
-        self.cacher.start_caching_doc_repr(self.manager.doc_cache)
+        self.cacher.start_caching_doc_repr(self.manager.item_cache)
         if self.plugin:
             self.plugin.end_fast_eval()
             self.plugin.start_fast_eval()

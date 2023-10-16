@@ -1,0 +1,31 @@
+name: Goodreads-Distillation-Majority-${k}
+base_dir: data/Goodreads
+news:
+  filter_cache: true
+  depot: ${data.base_dir}/distillation/book-random
+  order:
+    - title
+  append:
+    - bid
+  lm_col: title
+user:
+  filter_cache: true
+  depots:
+    train:
+      path: ${data.base_dir}/majority_user/train_${k}_v2
+    dev:
+      path: ${data.base_dir}/majority_user/dev_${k}_v2
+    test:
+      path: ${data.base_dir}/test
+  union:
+    - ${data.base_dir}/user
+    - ${data.base_dir}/neg
+  union_first: true
+  candidate_col: bid
+  clicks_col: history
+  label_col: click
+  neg_col: neg
+  group_col: uid
+  user_col: uid
+  index_col: index
+  fake_col: null

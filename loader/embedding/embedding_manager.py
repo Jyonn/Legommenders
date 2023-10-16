@@ -5,7 +5,7 @@ from UniTok import Vocab
 from torch import nn
 
 from loader.embedding.embedding_loader import EmbeddingInfo
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 from utils.printer import printer, Color
 
 
@@ -120,7 +120,7 @@ class EmbeddingManager:
         self._vocab_to_size[vocab_name] = vocab_size
         self.build_vocab_embedding(vocab_name, vocab_size)
 
-    def register_depot(self, nrd: NRDepot, skip_cols=None):
+    def register_depot(self, nrd: DataHub, skip_cols=None):
         depot, order = nrd.depot, nrd.order
         skip_cols = skip_cols or []
         skip_vocabs = [depot.get_vocab(col) for col in skip_cols]

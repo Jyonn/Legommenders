@@ -136,6 +136,9 @@ class Processor:
         df['mid'] = df['mid'].apply(lambda x: str(x))
         mids = df['mid'].tolist()
         self.item_voc.extend(mids)
+        # split name into name and year
+        df['year'] = df['name'].apply(lambda x: x[-5:-1])
+        df['name'] = df['name'].apply(lambda x: x[:-7])
         return df
 
     def get_inter_tok(self):
@@ -172,12 +175,16 @@ class Processor:
         ))
 
     def get_item_tok(self):
+        bert_tok = BertTok(name='bert', vocab_dir='bert-base-uncased')
         return UniTok().add_col(
             col='mid',
             tok=IdTok(vocab=self.item_voc),
         ).add_col(
             col='name',
-            tok=BertTok(name='bert', vocab_dir='bert-base-uncased'),
+            tok=bert_tok,
+        ).add_col(
+            col='year',
+            tok=bert_tok,
         )
 
     def analyse(self):
@@ -190,6 +197,7 @@ class Processor:
 
         self.get_history_tok().read(self.history_df).tokenize().store(os.path.join(self.store_dir, 'user'))
 
+    def tokenize_item(self):
         self.get_item_tok().read(self.item_df).tokenize().store(os.path.join(self.store_dir, 'item'))
 
     def neg_sample(self):
@@ -217,5 +225,6 @@ if __name__ == '__main__':
         data_dir='/data1/qijiong/Data/MovieLens/ml-100k',
         store_dir='../../data/MovieLens-100k',
     )
-    processor.tokenize()
-    processor.neg_sample()
+    # processor.tokenize()
+    # processor.neg_sample()
+    processor.tokenize_item()

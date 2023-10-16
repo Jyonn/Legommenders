@@ -5,6 +5,7 @@ news:
   depot: ${data.base_dir}/distillation/movie-random
   order:
     - name
+#    - year
   append:
     - mid
   lm_col: name

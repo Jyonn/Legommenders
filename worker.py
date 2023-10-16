@@ -301,7 +301,7 @@ class Worker:
 
     def train_get_item_embedding(self):
         self.recommender.end_caching_doc_repr()
-        self.recommender.start_caching_doc_repr(self.manager.doc_cache)
+        self.recommender.start_caching_doc_repr(self.manager.item_cache)
         item_embeddings = self.recommender.fast_doc_repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'item_embeddings.npy')
         self.print(f'store item embeddings to {store_path}')
@@ -359,13 +359,13 @@ class Worker:
         return dict(loss=total_loss), total_loss
 
     def train_runner(self):
-        if self.recommender.config.use_news_content and self.exp.policy.news_lr:
-            self.print('split news pretrained encoder parameters')
-            self.print('pretrained lr:', self.exp.policy.news_lr)
+        if self.recommender.config.use_item_content and self.exp.policy.item_lr:
+            self.print('split item pretrained encoder parameters')
+            self.print('pretrained lr:', self.exp.policy.item_lr)
             self.print('other lr:', self.exp.policy.lr)
             pretrained_parameters, other_parameters = self.recommender.get_parameters()
             self.m_optimizer = torch.optim.Adam([
-                {'params': pretrained_parameters, 'lr': self.exp.policy.news_lr},
+                {'params': pretrained_parameters, 'lr': self.exp.policy.item_lr},
                 {'params': other_parameters, 'lr': self.exp.policy.lr}
             ])
         else:
@@ -413,15 +413,15 @@ class Worker:
         self.print(f'Number of parameters: {num_params:.2f}M')
 
     def test_llm_layer_split(self):
-        news_encoder = self.recommender.news_encoder  # type: BaseLLMOperator
-        assert isinstance(news_encoder, BaseLLMOperator), 'llama operator not found'
+        item_encoder = self.recommender.item_encoder  # type: BaseLLMOperator
+        assert isinstance(item_encoder, BaseLLMOperator), 'llama operator not found'
 
         pager = LLMSplitPager(
-            inputer=news_encoder.inputer,
+            inputer=item_encoder.inputer,
             layers=Obj.raw(self.exp.store.layers),
-            hidden_size=news_encoder.config.embed_hidden_size,
-            contents=self.manager.doc_cache,
-            model=news_encoder.get_all_hidden_states,
+            hidden_size=item_encoder.config.embed_hidden_size,
+            contents=self.manager.item_cache,
+            model=item_encoder.get_all_hidden_states,
             page_size=self.exp.policy.batch_size,
         )
 
@@ -445,8 +445,10 @@ class Worker:
         elif self.mode == 'test_llm_layer_split':
             self.test_llm_layer_split()
         elif self.mode == 'train_get_user_embedding':
+            self.load(self.load_path[0])
             self.train_get_user_embedding()
         elif self.mode == 'train_get_item_embedding':
+            self.load(self.load_path[0])
             self.train_get_item_embedding()
 
 
@@ -462,11 +464,11 @@ if __name__ == '__main__':
             lora=1,
             lora_r=32,
             lr=0.0001,
-            news_lr=0.00001,
+            item_lr=0.00001,
             mind_large_submission=False,
             hidden_size=64,
             epoch_batch=0,
-            max_news_batch_size=0,
+            max_item_batch_size=0,
             page_size=512,
             patience=2,
             epoch_start=0,

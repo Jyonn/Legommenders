@@ -1,12 +1,13 @@
 import random
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
 from loader.global_setting import Setting
 # from model.recommenders.base_neg_recommender import BaseNegRecommender
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 from loader.base_dataset import BaseDataset
 from utils.stacker import Stacker
 from utils.timer import Timer
@@ -38,8 +39,8 @@ class Manager:
     def __init__(
             self,
             recommender: BaseRecommender,
-            doc_nrd: NRDepot,
-            user_nrd: NRDepot,
+            doc_nrd: DataHub,
+            user_nrd: DataHub,
     ):
         self.status = Status()
 
@@ -48,7 +49,7 @@ class Manager:
         # parameter assignment
         self.recommender = recommender
         self.config = recommender.config  # type: BaseRecommenderConfig
-        self.use_news_content = self.config.use_news_content
+        self.use_news_content = self.config.use_item_content
 
         self.column_map = recommender.column_map
         self.clicks_col = self.column_map.clicks_col
@@ -60,15 +61,15 @@ class Manager:
         self.clicks_mask_col = self.column_map.clicks_mask_col
 
         # document manager and cache
-        self.doc_dataset = None
-        self.doc_inputer = None
-        self.doc_cache = None
+        self.item_dataset = None
+        self.item_inputer = None
+        self.item_cache = None
         self.stacker = Stacker(aggregator=torch.stack)
         # self.stacker = default_collate
         if self.use_news_content:
-            self.doc_dataset = BaseDataset(nrd=doc_nrd)
-            self.doc_inputer = recommender.news_encoder.inputer
-            self.doc_cache = self.get_doc_cache()
+            self.item_dataset = BaseDataset(nrd=doc_nrd)
+            self.item_inputer = recommender.item_encoder.inputer
+            self.item_cache = self.get_doc_cache()
 
         self.user_cache = dict()
         self.candidate_cache = dict()
@@ -86,13 +87,15 @@ class Manager:
 
     def get_doc_cache(self):
         doc_cache = []
-        for sample in tqdm(self.doc_dataset):
-            doc_cache.append(self.doc_inputer.sample_rebuilder(sample))
+        for sample in tqdm(self.item_dataset):
+            doc_cache.append(self.item_inputer.sample_rebuilder(sample))
         return doc_cache
 
     def rebuild_sample(self, sample):
         # self.timer.run('rebuild 1')
         # reform features
+        if isinstance(sample[self.clicks_col], np.ndarray):
+            sample[self.clicks_col] = sample[self.clicks_col].tolist()
         len_clicks = len(sample[self.clicks_col])
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
         if self.use_news_content:
@@ -123,7 +126,7 @@ class Manager:
         # content injection and tensorization
         if self.use_news_content and not self.recommender.llm_skip and not self.recommender.cacher.fast_doc_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
-                stacked_doc = self.stacker([self.doc_cache[nid] for nid in sample[self.candidate_col]])
+                stacked_doc = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
             else:
                 stacked_doc = self.candidate_cache[sample[self.candidate_col][0]]
             sample[self.candidate_col] = stacked_doc
@@ -131,7 +134,7 @@ class Manager:
             if sample[self.user_col] in self.user_cache:
                 sample[self.clicks_col] = self.user_cache[sample[self.user_col]]
             else:
-                sample[self.clicks_col] = self.stacker([self.doc_cache[nid] for nid in sample[self.clicks_col]])
+                sample[self.clicks_col] = self.stacker([self.item_cache[nid] for nid in sample[self.clicks_col]])
                 self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
         else:
             sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)

@@ -7,8 +7,8 @@ from utils.printer import printer, Color
 class Cacher:
     def __init__(self, recommender):
         self.recommender = recommender
-        self.use_news_content = self.recommender.config.use_news_content
-        self.news_encoder = self.recommender.news_encoder
+        self.use_news_content = self.recommender.config.use_item_content
+        self.news_encoder = self.recommender.item_encoder
         self.user_encoder = self.recommender.user_encoder
         self.llm_skip = self.recommender.llm_skip
 

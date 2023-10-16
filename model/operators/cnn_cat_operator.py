@@ -33,5 +33,5 @@ class CNNCatOperator(CNNOperator):
         outputs = torch.cat(output_list, dim=-1).to(Setting.device)
         return outputs
 
-    def get_full_news_placeholder(self, sample_size):
+    def get_full_item_placeholder(self, sample_size):
         return torch.zeros(sample_size, self.config.hidden_size * self.num_columns)

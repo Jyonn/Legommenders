@@ -1,11 +1,11 @@
-name: MovieLens-Distillation-Item
+key: K${k}_select${select}_alpha${alpha}
+name: MovieLens-Distillation-Both-Keep-${data.key}
 base_dir: data/MovieLens-100k
 news:
   filter_cache: true
   depot: ${data.base_dir}/movie-sum
   order:
     - sum
-#    - year
   append:
     - mid
   lm_col: sum
@@ -13,17 +13,15 @@ user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/train
+      path: ${data.base_dir}/distillation/train_${data.key}
     dev:
-      path: ${data.base_dir}/dev
+      path: ${data.base_dir}/distillation/dev_${data.key}
     test:
       path: ${data.base_dir}/test
-  filters:
-    history:
-      - x
   union:
-    - ${data.base_dir}/user-fill
+    - ${data.base_dir}/distillation/user_keep_${data.key}
     - ${data.base_dir}/neg
+  union_first: true
   candidate_col: mid
   clicks_col: history
   label_col: click
@@ -31,3 +29,4 @@ user:
   group_col: uid
   user_col: uid
   index_col: index
+  fake_col: null

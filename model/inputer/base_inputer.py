@@ -4,7 +4,7 @@ import torch
 from UniTok import Vocab, UniDep
 
 from loader.embedding.embedding_manager import EmbeddingManager
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 
 
 class BaseInputer:
@@ -15,7 +15,7 @@ class BaseInputer:
     3. user clicks (news ids) -> 20 x 64
     4. user clicks (title, category) -> 20 x 64 -> 64
     """
-    def __init__(self, nrd: NRDepot, embedding_manager: EmbeddingManager, **kwargs):
+    def __init__(self, nrd: DataHub, embedding_manager: EmbeddingManager, **kwargs):
         self.depot = nrd.depot  # type: UniDep
         self.order = nrd.order  # type: list
         self.embedding_manager = embedding_manager  # type: EmbeddingManager

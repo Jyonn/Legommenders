@@ -6,7 +6,7 @@ from oba import Obj
 from loader.depot.depot_cache import DepotCache
 
 
-class NRDepot:
+class DataHub:
     def __init__(
             self,
             depot: Union[UniDep, str],

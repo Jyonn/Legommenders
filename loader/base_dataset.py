@@ -3,7 +3,7 @@ import copy
 import torch
 from torch.utils.data import Dataset
 
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 from utils.printer import printer, Color
 from utils.timer import Timer
 
@@ -11,7 +11,7 @@ from utils.timer import Timer
 class BaseDataset(Dataset):
     def __init__(
             self,
-            nrd: NRDepot,
+            nrd: DataHub,
             manager=None,
     ):
         """

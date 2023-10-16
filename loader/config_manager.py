@@ -16,7 +16,7 @@ from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.manager import Manager
 from model.utils.nr_dataloader import NRDataLoader
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 # from loader.recommenders import Recommenders
 from loader.base_dataset import BaseDataset
 from utils.auto_import import ClassSet
@@ -138,12 +138,12 @@ class NRDepots:
 
         self.train_nrd = self.dev_nrd = self.test_nrd = None
         if depots.train_depot:
-            self.train_nrd = NRDepot(depot=depots.train_depot, order=order, append=append)
+            self.train_nrd = DataHub(depot=depots.train_depot, order=order, append=append)
         if depots.dev_depot:
-            self.dev_nrd = NRDepot(depot=depots.dev_depot, order=order, append=append)
+            self.dev_nrd = DataHub(depot=depots.dev_depot, order=order, append=append)
         if depots.test_depot:
-            self.test_nrd = NRDepot(depot=depots.test_depot, order=order, append=append)
-        self.fast_eval_nrd = NRDepot(depot=depots.fast_eval_depot, order=order, append=append)
+            self.test_nrd = DataHub(depot=depots.test_depot, order=order, append=append)
+        self.fast_eval_nrd = DataHub(depot=depots.fast_eval_depot, order=order, append=append)
 
         self.nrds = {
             Phases.train: self.train_nrd,
@@ -206,7 +206,7 @@ class ConfigManager:
         self.print('build news and user depots ...')
         self.depots = Depots(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
         self.nrds = NRDepots(depots=self.depots)
-        self.doc_nrd = NRDepot(
+        self.doc_nrd = DataHub(
             depot=self.data.news.depot,
             order=self.data.news.order,
             append=self.data.news.append,
@@ -241,7 +241,7 @@ class ConfigManager:
         self.print(f'Selected User Encoder: {str(self.user_operator_class.__name__)}')
         self.print(f'Selected Predictor: {str(self.predictor_class.__name__)}')
         self.print(f'Use Negative Sampling: {self.model.config.use_neg_sampling}')
-        self.print(f'Use Item Content: {self.model.config.use_news_content}')
+        self.print(f'Use Item Content: {self.model.config.use_item_content}')
 
         # self.recommender_config = self.recommender_class.config_class(
         #     **Obj.raw(self.model.config),
@@ -249,7 +249,7 @@ class ConfigManager:
         self.recommender_config = BaseRecommenderConfig(**Obj.raw(self.model.config))
 
         self.print('build embedding manager ...')
-        skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_news_content else []
+        skip_cols = [self.column_map.candidate_col] if self.recommender_config.use_item_content else []
         self.embedding_manager = EmbeddingManager(
             hidden_size=self.recommender_config.embed_hidden_size,
             same_dim_transform=self.model.config.same_dim_transform,
@@ -262,7 +262,7 @@ class ConfigManager:
         self.print('register embeddings ...')
         self.embedding_manager.register_depot(self.nrds.a_nrd(), skip_cols=skip_cols)
         self.embedding_manager.register_vocab(ConcatInputer.vocab)
-        if self.model.config.use_news_content:
+        if self.model.config.use_item_content:
             self.embedding_manager.register_depot(self.doc_nrd)
             self.embedding_manager.clone_vocab(
                 col_name=NaturalConcatInputer.special_col,
@@ -289,8 +289,8 @@ class ConfigManager:
             config=self.recommender_config,
             column_map=self.column_map,
             embedding_manager=self.embedding_manager,
-            user_nrd=self.nrds.a_nrd(),
-            news_nrd=self.doc_nrd,
+            user_hub=self.nrds.a_nrd(),
+            item_hub=self.doc_nrd,
             user_plugin=user_plugin,
         )
         self.manager = Manager(

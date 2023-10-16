@@ -1,14 +1,10 @@
-name: MovieLens-Distillation-All
+name: MovieLens-Distillation-Majority-${k}
 base_dir: data/MovieLens-100k
 news:
   filter_cache: true
-  depot: ${data.base_dir}/item
-  union:
-    - ${data.base_dir}/movie-desc
+  depot: ${data.base_dir}/distillation/movie-random
   order:
     - name
-    - desc
-#    - year
   append:
     - mid
   lm_col: name
@@ -16,17 +12,15 @@ user:
   filter_cache: true
   depots:
     train:
-      path: ${data.base_dir}/train
+      path: ${data.base_dir}/majority_user/train_${k}
     dev:
-      path: ${data.base_dir}/dev
+      path: ${data.base_dir}/majority_user/dev_${k}
     test:
       path: ${data.base_dir}/test
-  filters:
-    history:
-      - x
   union:
     - ${data.base_dir}/user-fill
     - ${data.base_dir}/neg
+  union_first: true
   candidate_col: mid
   clicks_col: history
   label_col: click
@@ -34,3 +28,4 @@ user:
   group_col: uid
   user_col: uid
   index_col: index
+  fake_col: null

@@ -5,7 +5,7 @@ from torch import nn
 
 from model.inputer.base_inputer import BaseInputer
 from loader.embedding.embedding_manager import EmbeddingManager
-from model.utils.nr_depot import NRDepot
+from model.utils.nr_depot import DataHub
 from utils.printer import printer, Color
 
 
@@ -29,7 +29,7 @@ class BaseOperator(nn.Module):
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
 
-    def __init__(self, config: BaseOperatorConfig, nrd: NRDepot, embedding_manager: EmbeddingManager, target_user=False):
+    def __init__(self, config: BaseOperatorConfig, nrd: DataHub, embedding_manager: EmbeddingManager, target_user=False):
         super().__init__()
         self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 
@@ -48,5 +48,5 @@ class BaseOperator(nn.Module):
     def forward(self, embeddings, mask=None, **kwargs):
         raise NotImplementedError
 
-    def get_full_news_placeholder(self, sample_size):
+    def get_full_item_placeholder(self, sample_size):
         return torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float)
