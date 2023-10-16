@@ -5,11 +5,11 @@ meta:
   predictor: Dot
 config:
   use_neg_sampling: true
-  use_news_content: true
+  use_item_content: true
   hidden_size: ${hidden_size}$
   embed_hidden_size: ${embed_hidden_size}$
   neg_count: 4
-  news_config:
+  item_config:
     num_attention_heads: 8
     inputer_config:
       use_cls_token: false

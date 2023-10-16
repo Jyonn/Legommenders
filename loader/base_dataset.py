@@ -11,7 +11,7 @@ from utils.timer import Timer
 class BaseDataset(Dataset):
     def __init__(
             self,
-            nrd: DataHub,
+            hub: DataHub,
             manager=None,
     ):
         """
@@ -20,10 +20,10 @@ class BaseDataset(Dataset):
         """
         self.print = printer[(self.__class__.__name__, '·', Color.GREEN)]
 
-        self.nrd = nrd
-        self.depot = nrd.depot
-        self.order = nrd.order
-        self.append = nrd.append
+        self.nrd = hub
+        self.depot = hub.depot
+        self.order = hub.order
+        self.append = hub.append
         self.append_checker()
 
         self.sample_size = self.depot.sample_size

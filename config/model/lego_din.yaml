@@ -5,9 +5,9 @@ meta:
   predictor: DIN
 config:
   use_neg_sampling: false
-  use_news_content: true
+  use_item_content: true
   hidden_size: 64
-  news_config:
+  item_config:
     flatten: false
     max_pooling: false
   user_config:

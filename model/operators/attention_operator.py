@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 
 from loader.global_setting import Setting

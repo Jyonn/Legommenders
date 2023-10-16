@@ -1,10 +1,10 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader as BaseDataLoader
 
 from model.utils.manager import Manager
 from loader.base_dataset import BaseDataset
 
 
-class NRDataLoader(DataLoader):
+class DataLoader(BaseDataLoader):
     dataset: BaseDataset
 
     def __init__(self, manager: Manager, **kwargs):

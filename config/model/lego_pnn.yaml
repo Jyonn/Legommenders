@@ -4,10 +4,10 @@ meta:
   user: Pooling
   predictor: PNN
 config:
-  use_news_content: true
+  use_item_content: true
   use_neg_sampling: false
   hidden_size: ${hidden_size}$
-  news_config:
+  item_config:
     flatten: false
     max_pooling: false
   user_config:

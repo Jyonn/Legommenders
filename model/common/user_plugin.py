@@ -2,8 +2,6 @@ import torch
 from UniTok import UniDep
 from torch import nn
 
-from loader.global_setting import Setting
-
 
 class UserPlugin(nn.Module):
     attr_embeds: nn.ModuleDict

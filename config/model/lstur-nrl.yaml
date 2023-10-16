@@ -1,11 +1,11 @@
 name: LSTUR.NRL
 config:
-  use_news_content: false
+  use_item_content: false
   hidden_size: 64
   neg_count: 4
   user_config:
-    columns: ${data.news.order}$
-    use_news_content: ${model.config.use_news_content}$
+    columns: ${data.item.order}$
+    use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

@@ -29,13 +29,13 @@ class BaseOperator(nn.Module):
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
 
-    def __init__(self, config: BaseOperatorConfig, nrd: DataHub, embedding_manager: EmbeddingManager, target_user=False):
+    def __init__(self, config: BaseOperatorConfig, hub: DataHub, embedding_manager: EmbeddingManager, target_user=False):
         super().__init__()
         self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 
         self.config = config
         self.inputer = self.inputer_class(
-            nrd=nrd,
+            hub=hub,
             embedding_manager=embedding_manager,
             **config.inputer_config,
         )

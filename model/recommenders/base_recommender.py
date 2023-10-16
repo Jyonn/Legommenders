@@ -92,8 +92,8 @@ class BaseRecommender(nn.Module):
         self.embedding_manager = embedding_manager
         self.embedding_table = embedding_manager.get_table()
 
-        self.user_nrd = user_hub
-        self.item_nrd = item_hub
+        self.user_hub = user_hub
+        self.item_hub = item_hub
 
         self.column_map = column_map  # type: ColumnMap
         self.user_col = column_map.user_col
@@ -252,7 +252,7 @@ class BaseRecommender(nn.Module):
 
         return self.user_encoder_class(
             config=user_config,
-            nrd=self.user_nrd,
+            hub=self.user_hub,
             embedding_manager=self.embedding_manager,
             target_user=True,
         )
@@ -267,7 +267,7 @@ class BaseRecommender(nn.Module):
 
         return self.item_encoder_class(
             config=item_config,
-            nrd=self.item_nrd,
+            hub=self.item_hub,
             embedding_manager=self.embedding_manager,
             target_user=False,
         )

@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Type
+from typing import Dict
 
 import torch
 from oba import Obj
@@ -15,9 +15,8 @@ from model.recommenders.base_recommender import BaseRecommender, BaseRecommender
 from model.utils.column_map import ColumnMap
 from loader.embedding.embedding_manager import EmbeddingManager
 from model.utils.manager import Manager
-from model.utils.nr_dataloader import NRDataLoader
-from model.utils.nr_depot import DataHub
-# from loader.recommenders import Recommenders
+from model.utils.data_loader import DataLoader
+from model.utils.data_hub import DataHub
 from loader.base_dataset import BaseDataset
 from utils.auto_import import ClassSet
 from utils.printer import printer, Color
@@ -120,7 +119,7 @@ class Depots:
         return self.train_depot or self.dev_depot or self.test_depot
 
 
-class NRDepots:
+class DataHubs:
     def __init__(self, depots: Depots):
         column_map = depots.column_map
 
@@ -136,40 +135,40 @@ class NRDepots:
         if column_map.neg_col:
             append.append(column_map.neg_col)
 
-        self.train_nrd = self.dev_nrd = self.test_nrd = None
+        self.train_hub = self.dev_hub = self.test_hub = None
         if depots.train_depot:
-            self.train_nrd = DataHub(depot=depots.train_depot, order=order, append=append)
+            self.train_hub = DataHub(depot=depots.train_depot, order=order, append=append)
         if depots.dev_depot:
-            self.dev_nrd = DataHub(depot=depots.dev_depot, order=order, append=append)
+            self.dev_hub = DataHub(depot=depots.dev_depot, order=order, append=append)
         if depots.test_depot:
-            self.test_nrd = DataHub(depot=depots.test_depot, order=order, append=append)
-        self.fast_eval_nrd = DataHub(depot=depots.fast_eval_depot, order=order, append=append)
+            self.test_hub = DataHub(depot=depots.test_depot, order=order, append=append)
+        self.fast_eval_hub = DataHub(depot=depots.fast_eval_depot, order=order, append=append)
 
-        self.nrds = {
-            Phases.train: self.train_nrd,
-            Phases.dev: self.dev_nrd,
-            Phases.test: self.test_nrd,
-            Phases.fast_eval: self.fast_eval_nrd,
+        self.hubs = {
+            Phases.train: self.train_hub,
+            Phases.dev: self.dev_hub,
+            Phases.test: self.test_hub,
+            Phases.fast_eval: self.fast_eval_hub,
         }
 
     def __getitem__(self, item):
-        return self.nrds[item]
+        return self.hubs[item]
 
-    def a_nrd(self):
-        return self.train_nrd or self.dev_nrd or self.test_nrd
+    def a_hub(self):
+        return self.train_hub or self.dev_hub or self.test_hub
 
 
 class Datasets:
-    def __init__(self, nrds: NRDepots, manager: Manager):
-        self.nrds = nrds
+    def __init__(self, hubs: DataHubs, manager: Manager):
+        self.hubs = hubs
 
         self.train_set = self.dev_set = self.test_set = None
-        if nrds.train_nrd:
-            self.train_set = BaseDataset(nrd=self.nrds.train_nrd, manager=manager)
-        if nrds.dev_nrd:
-            self.dev_set = BaseDataset(nrd=self.nrds.dev_nrd, manager=manager)
-        if nrds.test_nrd:
-            self.test_set = BaseDataset(nrd=self.nrds.test_nrd, manager=manager)
+        if hubs.train_hub:
+            self.train_set = BaseDataset(hub=self.hubs.train_hub, manager=manager)
+        if hubs.dev_hub:
+            self.dev_set = BaseDataset(hub=self.hubs.dev_hub, manager=manager)
+        if hubs.test_hub:
+            self.test_set = BaseDataset(hub=self.hubs.test_hub, manager=manager)
 
         self.sets = {
             Phases.train: self.train_set,
@@ -203,18 +202,18 @@ class ConfigManager:
         self.print('build column map ...')
         self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
-        self.print('build news and user depots ...')
+        self.print('build item and user depots ...')
         self.depots = Depots(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
-        self.nrds = NRDepots(depots=self.depots)
-        self.doc_nrd = DataHub(
-            depot=self.data.news.depot,
-            order=self.data.news.order,
-            append=self.data.news.append,
+        self.hubs = DataHubs(depots=self.depots)
+        self.item_hub = DataHub(
+            depot=self.data.item.depot,
+            order=self.data.item.order,
+            append=self.data.item.append,
         )
-        self.print('doc nrd size: ', len(self.doc_nrd.depot))
-        if self.data.news.union:
-            for depot in self.data.news.union:
-                self.doc_nrd.depot.union(DepotCache.get(depot))
+        self.print('item hub size: ', len(self.item_hub.depot))
+        if self.data.item.union:
+            for depot in self.data.item.union:
+                self.item_hub.depot.union(DepotCache.get(depot))
 
         # for example, PLMNR-NRMS.NRL is a variant of PLMNRNRMS
         self.model_name = self.model.name.split('.')[0].replace('-', '')
@@ -260,13 +259,13 @@ class ConfigManager:
             self.embedding_manager.load_pretrained_embedding(**Obj.raw(embedding_info))
 
         self.print('register embeddings ...')
-        self.embedding_manager.register_depot(self.nrds.a_nrd(), skip_cols=skip_cols)
+        self.embedding_manager.register_depot(self.hubs.a_hub(), skip_cols=skip_cols)
         self.embedding_manager.register_vocab(ConcatInputer.vocab)
         if self.model.config.use_item_content:
-            self.embedding_manager.register_depot(self.doc_nrd)
+            self.embedding_manager.register_depot(self.item_hub)
             self.embedding_manager.clone_vocab(
                 col_name=NaturalConcatInputer.special_col,
-                clone_col_name=self.data.news.lm_col or 'title'
+                clone_col_name=self.data.item.lm_col or 'title'
             )
 
         self.print('set <pad> embedding to zeros ...')
@@ -289,14 +288,14 @@ class ConfigManager:
             config=self.recommender_config,
             column_map=self.column_map,
             embedding_manager=self.embedding_manager,
-            user_hub=self.nrds.a_nrd(),
-            item_hub=self.doc_nrd,
+            user_hub=self.hubs.a_hub(),
+            item_hub=self.item_hub,
             user_plugin=user_plugin,
         )
         self.manager = Manager(
             recommender=self.recommender,
-            doc_nrd=self.doc_nrd,
-            user_nrd=self.nrds.fast_eval_nrd,
+            item_hub=self.item_hub,
+            user_hub=self.hubs.fast_eval_hub,
         )
 
         if self.recommender_config.use_neg_sampling:
@@ -309,7 +308,7 @@ class ConfigManager:
                 depot.start_caching()
 
         self.print('build datasets ...')
-        self.sets = Datasets(nrds=self.nrds, manager=self.manager)
+        self.sets = Datasets(hubs=self.hubs, manager=self.manager)
 
     def parse_mode(self):
         modes = set(self.exp.mode.lower().split('_'))
@@ -318,7 +317,7 @@ class ConfigManager:
         return modes
 
     def get_loader(self, phase):
-        return NRDataLoader(
+        return DataLoader(
             manager=self.manager,
             dataset=self.sets[phase],
             shuffle=phase == Phases.train,

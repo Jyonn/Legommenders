@@ -1,6 +1,6 @@
 name: DIN.NRL
 config:
-  use_news_content: false
+  use_item_content: false
   hidden_size: 64
   dnn_hidden_units: [1000, 1000, 1000]
   dnn_activations: ReLU

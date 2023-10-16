@@ -1,6 +1,6 @@
 name: NAML.NRL
 config:
-  use_news_content: false
+  use_item_content: false
   hidden_size: 64
   neg_count: 4
   user_config:

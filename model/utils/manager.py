@@ -7,7 +7,7 @@ from tqdm import tqdm
 from loader.global_setting import Setting
 # from model.recommenders.base_neg_recommender import BaseNegRecommender
 from model.recommenders.base_recommender import BaseRecommender, BaseRecommenderConfig
-from model.utils.nr_depot import DataHub
+from model.utils.data_hub import DataHub
 from loader.base_dataset import BaseDataset
 from utils.stacker import Stacker
 from utils.timer import Timer
@@ -39,8 +39,8 @@ class Manager:
     def __init__(
             self,
             recommender: BaseRecommender,
-            doc_nrd: DataHub,
-            user_nrd: DataHub,
+            item_hub: DataHub,
+            user_hub: DataHub,
     ):
         self.status = Status()
 
@@ -49,7 +49,7 @@ class Manager:
         # parameter assignment
         self.recommender = recommender
         self.config = recommender.config  # type: BaseRecommenderConfig
-        self.use_news_content = self.config.use_item_content
+        self.use_item_content = self.config.use_item_content
 
         self.column_map = recommender.column_map
         self.clicks_col = self.column_map.clicks_col
@@ -66,8 +66,8 @@ class Manager:
         self.item_cache = None
         self.stacker = Stacker(aggregator=torch.stack)
         # self.stacker = default_collate
-        if self.use_news_content:
-            self.item_dataset = BaseDataset(nrd=doc_nrd)
+        if self.use_item_content:
+            self.item_dataset = BaseDataset(hub=item_hub)
             self.item_inputer = recommender.item_encoder.inputer
             self.item_cache = self.get_doc_cache()
 
@@ -80,10 +80,10 @@ class Manager:
 
         # negative sampling
         self.use_neg_sampling = recommender.use_neg_sampling
-        self.news_size = doc_nrd.depot.get_vocab_size(self.candidate_col)
+        self.item_size = item_hub.depot.get_vocab_size(self.candidate_col)
 
         # user manager
-        self.user_dataset = BaseDataset(nrd=user_nrd, manager=self)
+        self.user_dataset = BaseDataset(hub=user_hub, manager=self)
 
     def get_doc_cache(self):
         doc_cache = []
@@ -98,7 +98,7 @@ class Manager:
             sample[self.clicks_col] = sample[self.clicks_col].tolist()
         len_clicks = len(sample[self.clicks_col])
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
-        if self.use_news_content:
+        if self.use_item_content:
             sample[self.clicks_col].extend([0] * (self.max_click_num - len_clicks))
         if not isinstance(sample[self.candidate_col], list):
             sample[self.candidate_col] = [sample[self.candidate_col]]
@@ -116,7 +116,7 @@ class Manager:
                     true_negs = []
                 rand_neg = max(self.recommender.neg_count - len(true_negs), 0)
                 neg_samples = random.sample(true_negs, k=min(self.recommender.neg_count, len(true_negs)))
-                neg_samples += [random.randint(0, self.news_size - 1) for _ in range(rand_neg)]
+                neg_samples += [random.randint(0, self.item_size - 1) for _ in range(rand_neg)]
                 sample[self.candidate_col].extend(neg_samples)
         if self.neg_col:
             del sample[self.neg_col]
@@ -124,7 +124,7 @@ class Manager:
         #
         # self.timer.run('rebuild 3')
         # content injection and tensorization
-        if self.use_news_content and not self.recommender.llm_skip and not self.recommender.cacher.fast_doc_eval:
+        if self.use_item_content and not self.recommender.llm_skip and not self.recommender.cacher.fast_doc_eval:
             if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
                 stacked_doc = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
             else:
