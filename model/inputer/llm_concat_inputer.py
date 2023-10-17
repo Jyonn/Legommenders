@@ -1,15 +1,15 @@
-from loader.config_manager import DatasetType
-from loader.global_setting import Setting
+from loader.meta import DatasetType
+from loader.meta import Meta
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
 
 
 class LlamaConcatInputer(NaturalConcatInputer):
     @staticmethod
     def get_start_prompt():
-        if Setting.dataset == DatasetType.news:
+        if Meta.data_type == DatasetType.news:
             return [10130, 4274, 29901]  # news article:
         else:
-            assert Setting.dataset == DatasetType.book
+            assert Meta.data_type == DatasetType.book
             return [2909, 29901]  # book:
 
     @staticmethod
@@ -27,10 +27,10 @@ class LlamaConcatInputer(NaturalConcatInputer):
 class BertConcatInputer(NaturalConcatInputer):
     @staticmethod
     def get_start_prompt():
-        if Setting.dataset == DatasetType.news:
+        if Meta.data_type == DatasetType.news:
             return [2739, 3720, 1024]
         else:
-            assert Setting.dataset == DatasetType.book
+            assert Meta.data_type == DatasetType.book
             return [2338, 1024]
 
     @staticmethod

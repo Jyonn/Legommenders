@@ -1,6 +1,6 @@
 from torch import nn
 
-from model.utils.activation import get_activation
+from model.common.activation import get_activation
 
 
 class MLPLayer(nn.Module):

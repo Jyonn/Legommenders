@@ -4,7 +4,7 @@ from typing import Optional, List, Dict
 import torch
 from UniTok import Vocab
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.inputer.base_inputer import BaseInputer
 from utils.slice_dict import SliceOrderedDict, SliceDict
 
@@ -16,7 +16,7 @@ class SimpleInputer(BaseInputer):
     @classmethod
     def pad(cls, l: list, max_len: int):
         # return padded list and mask
-        return l + [Setting.UNSET] * (max_len - len(l)), [1] * len(l) + [0] * (max_len - len(l))
+        return l + [Meta.UNSET] * (max_len - len(l)), [1] * len(l) + [0] * (max_len - len(l))
 
     def sample_rebuilder(self, sample: dict):
         input_ids = dict()
@@ -51,9 +51,9 @@ class SimpleInputer(BaseInputer):
         for col in input_ids:
             col_input = input_ids[col]  # batch_size, content_len
 
-            seq = col_input.to(Setting.device)  # type: torch.Tensor
+            seq = col_input.to(Meta.device)  # type: torch.Tensor
             # mask = (seq > Setting.UNSET).long()  # type: torch.Tensor
-            mask = attention_mask[col].to(Setting.device)
+            mask = attention_mask[col].to(Meta.device)
             seq *= mask
 
             embedding = self.embedding_manager(col)(seq)  # batch_size, content_len, embedding_dim

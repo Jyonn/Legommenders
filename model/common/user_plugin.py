@@ -34,8 +34,8 @@ class UserPlugin(nn.Module):
         self.init_projection(hidden_size)
         self._device = None
 
-        self.fast_eval = False
-        self.fast_user_repr = None
+        self.activate = False
+        self.repr = None
 
     def init_projection(self, user_embed_size):
         self.project = nn.Sequential(
@@ -43,13 +43,13 @@ class UserPlugin(nn.Module):
             # nn.ReLU(),
         )
 
-    def start_fast_eval(self):
-        self.fast_eval = True
-        self.fast_user_repr = dict()
+    def cache(self):
+        self.activate = True
+        self.repr = dict()
 
-    def end_fast_eval(self):
-        self.fast_eval = False
-        self.fast_user_repr = None
+    def clean(self):
+        self.activate = False
+        self.repr = None
 
     @property
     def device(self):
@@ -59,8 +59,8 @@ class UserPlugin(nn.Module):
         return self._device
 
     def get_user_embedding(self, uid):
-        if self.fast_eval and uid in self.fast_user_repr:
-            return self.fast_user_repr[uid]
+        if self.activate and uid in self.repr:
+            return self.repr[uid]
 
         attrs = self.depot[uid]
         values = []
@@ -76,8 +76,8 @@ class UserPlugin(nn.Module):
             values.append(value)
         # return torch.stack(values).mean(dim=0)
         user_embedding = torch.cat(values, dim=0)
-        if self.fast_eval:
-            self.fast_user_repr[uid] = user_embedding
+        if self.activate:
+            self.repr[uid] = user_embedding
         return user_embedding
 
     def forward(self, uids: torch.Tensor, user_embedding):

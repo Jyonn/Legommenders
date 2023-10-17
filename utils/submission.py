@@ -1,12 +1,11 @@
 import os
 import subprocess
-from multiprocessing import Pool
 
 import pandas as pd
 from UniTok import UniDep
 from tqdm import tqdm
 
-from model.utils.column_map import ColumnMap
+from loader.column_map import ColumnMap
 from utils.timing import Timing
 
 

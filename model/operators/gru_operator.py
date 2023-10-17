@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-from loader.global_setting import Setting
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.concat_inputer import ConcatInputer
 

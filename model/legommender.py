@@ -3,21 +3,22 @@ from typing import Type
 import torch
 from torch import nn
 
-from loader.global_setting import Setting
+from loader.meta import Meta
+from loader.status import Status
 from model.common.user_plugin import UserPlugin
 from model.operators.base_llm_operator import BaseLLMOperator
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
-from model.utils.cacher import Cacher
-from model.utils.column_map import ColumnMap
-from loader.embedding.embedding_manager import EmbeddingManager
-from model.utils.nr_depot import DataHub
+from loader.cacher.repr_cacher import ReprCacher
+from loader.column_map import ColumnMap
+from loader.embedding.embedding_hub import EmbeddingHub
+from loader.data_hub import DataHub
 from utils.function import combine_config
 from utils.printer import printer, Color
 from utils.shaper import Shaper
 
 
-class RecommenderMeta:
+class LegommenderMeta:
     def __init__(
             self,
             item_encoder_class: Type[BaseOperator],
@@ -29,7 +30,7 @@ class RecommenderMeta:
         self.predictor_class = predictor_class
 
 
-class BaseRecommenderConfig:
+class LegommenderConfig:
     def __init__(
             self,
             hidden_size,
@@ -64,13 +65,14 @@ class BaseRecommenderConfig:
             raise ValueError('item_config is required when use_item_content is True')
 
 
-class BaseRecommender(nn.Module):
+class Legommender(nn.Module):
     def __init__(
             self,
-            meta: RecommenderMeta,
-            config: BaseRecommenderConfig,
+            meta: LegommenderMeta,
+            status: Status,
+            config: LegommenderConfig,
             column_map: ColumnMap,
-            embedding_manager: EmbeddingManager,
+            embedding_manager: EmbeddingHub,
             user_hub: DataHub,
             item_hub: DataHub,
             user_plugin: UserPlugin = None,
@@ -79,6 +81,7 @@ class BaseRecommender(nn.Module):
 
         """initializing basic attributes"""
         self.meta = meta
+        self.status = status
         self.item_encoder_class = meta.item_encoder_class
         self.user_encoder_class = meta.user_encoder_class
         self.predictor_class = meta.predictor_class
@@ -86,7 +89,7 @@ class BaseRecommender(nn.Module):
         self.use_neg_sampling = config.use_neg_sampling
         self.neg_count = config.neg_count
 
-        self.config = config  # type: BaseRecommenderConfig
+        self.config = config  # type: LegommenderConfig
         self.print = printer[(self.__class__.__name__, '|', Color.MAGENTA)]
 
         self.embedding_manager = embedding_manager
@@ -122,7 +125,7 @@ class BaseRecommender(nn.Module):
                     self.print("LLM SKIP")
 
         self.shaper = Shaper()
-        self.cacher = Cacher(self)
+        self.cacher = ReprCacher(self)
 
         self.loss_func = nn.CrossEntropyLoss() if self.use_neg_sampling else nn.BCEWithLogitsLoss()
 
@@ -135,8 +138,14 @@ class BaseRecommender(nn.Module):
         return item_content[key].shape[0]
 
     def get_item_content(self, batch, col):
-        if self.cacher.fast_doc_eval:
-            return self.cacher.fast_doc_repr[batch[col]]
+        if self.cacher.item.cached:
+            indices = batch[col]
+            shape = indices.shape
+            indices = indices.reshape(-1)
+            item_repr = self.cacher.item.repr[indices]
+            item_repr = item_repr.reshape(*shape, -1)
+            # return self.cacher.item.repr[batch[col]]
+            return item_repr
 
         if not self.llm_skip:
             _shape = None
@@ -153,7 +162,7 @@ class BaseRecommender(nn.Module):
         batch_num = (sample_size + allow_batch_size - 1) // allow_batch_size
 
         # item_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
-        item_contents = self.item_encoder.get_full_item_placeholder(sample_size).to(Setting.device)
+        item_contents = self.item_encoder.get_full_item_placeholder(sample_size).to(Meta.device)
         for i in range(batch_num):
             start = i * allow_batch_size
             end = min((i + 1) * allow_batch_size, sample_size)
@@ -168,8 +177,8 @@ class BaseRecommender(nn.Module):
         return item_contents
 
     def get_user_content(self, batch):
-        if self.cacher.fast_user_eval:
-            return self.cacher.fast_user_repr[batch[self.user_col]]
+        if self.cacher.user.cached:
+            return self.cacher.user.repr[batch[self.user_col]]
 
         if self.config.use_item_content:
             clicks = self.get_item_content(batch, self.clicks_col)
@@ -178,7 +187,7 @@ class BaseRecommender(nn.Module):
 
         user_embedding = self.user_encoder(
             clicks,
-            mask=batch[self.clicks_mask_col].to(Setting.device),
+            mask=batch[self.clicks_mask_col].to(Meta.device),
         )
         user_embedding = self.fuse_user_plugin(batch, user_embedding)
         return user_embedding
@@ -195,29 +204,20 @@ class BaseRecommender(nn.Module):
         if self.config.use_item_content:
             item_embeddings = self.get_item_content(batch, self.candidate_col)
         else:
-            item_embeddings = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Setting.device))
+            item_embeddings = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Meta.device))
 
         user_embeddings = self.get_user_content(batch)
 
-        # if self.use_neg_sampling:
-        #     batch_size, candidate_size, _ = item_embeddings.shape
-        #     user_embeddings = user_embeddings.unsqueeze(1).repeat(1, candidate_size, 1)  # B, K+1, D
-        #     labels = torch.zeros(batch_size, dtype=torch.long, device=Setting.device)
-        #     loss_func = nn.CrossEntropyLoss()
-        # else:
-        #     item_embeddings = item_embeddings.squeeze(1)
-        #     labels = batch[self.label_col].float().to(Setting.device)
-        #     loss_func = nn.BCEWithLogitsLoss()
-        # scores = self.predictor(user_embeddings, item_embeddings)
         if self.use_neg_sampling:
             scores = self.predict_for_neg_sampling(item_embeddings, user_embeddings)
-            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=Setting.device)
+            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=Meta.device)
         else:
             scores = self.predict_for_ranking(item_embeddings, user_embeddings)
-            labels = batch[self.label_col].float().to(Setting.device)
+            labels = batch[self.label_col].float().to(Meta.device)
 
-        if Setting.status.is_testing or (Setting.status.is_evaluating and not Setting.simple_dev):
+        if self.status.is_testing or (self.status.is_evaluating and not Meta.simple_dev):
             return scores
+
         return self.loss_func(scores, labels)
 
     def predict_for_neg_sampling(self, item_embeddings, user_embeddings):

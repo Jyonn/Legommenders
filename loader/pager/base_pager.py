@@ -3,10 +3,10 @@ from typing import Callable
 import torch
 from tqdm import tqdm
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 
 
-class TorchPager:
+class BasePager:
     def __init__(self, contents: list, model: Callable, page_size: int, **kwargs):
         self.contents = contents
         self.model = model
@@ -38,7 +38,7 @@ class TorchPager:
 
     def stack_features(self):
         return {
-            feature: torch.stack(self.current[feature]).to(Setting.device)
+            feature: torch.stack(self.current[feature]).to(Meta.device)
             for feature in self.current
         }
 

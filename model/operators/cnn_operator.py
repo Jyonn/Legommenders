@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.common.attention import AdditiveAttention
 from model.inputer.simple_inputer import SimpleInputer
 from model.operators.base_operator import BaseOperatorConfig, BaseOperator
@@ -53,7 +53,7 @@ class CNNOperator(BaseOperator):
             if embedding.size()[1] > 1:
                 embedding = self.cnn(embedding.permute(0, 2, 1))
                 activation = self.activation(embedding.permute(0, 2, 1))
-                masked_activation = activation * mask[col].unsqueeze(-1).to(Setting.device)
+                masked_activation = activation * mask[col].unsqueeze(-1).to(Meta.device)
                 output = self.dropout(masked_activation)
             else:
                 # output = embedding
@@ -61,7 +61,7 @@ class CNNOperator(BaseOperator):
             output_list.append(output)
             output_mask.append(mask[col])
 
-        outputs = torch.cat(output_list, dim=1).to(Setting.device)
-        mask = torch.cat(output_mask, dim=1).to(Setting.device)
+        outputs = torch.cat(output_list, dim=1).to(Meta.device)
+        mask = torch.cat(output_mask, dim=1).to(Meta.device)
         outputs = self.additive_attention(outputs, mask)
         return outputs

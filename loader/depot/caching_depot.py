@@ -8,7 +8,7 @@ from utils.printer import printer, Color
 from utils.rand import Rand
 
 
-class FCUniDep(UniDep):
+class CachingDep(UniDep):
     """
     A UniDep with filter cache. The filter cache is used to speed up the filtering process.
     """
@@ -75,11 +75,6 @@ class FCUniDep(UniDep):
         return True
 
     def store_cache(self):
-        # self.cached_filters = self.load_cache()
-        # for cached_filter in self.cached_filters:
-        #     if self.is_same_filter(cached_filter):
-        #         return
-
         self.print(f'store filter cache on {str(self)}')
 
         filter_name = f'{Rand()[6]}.json'

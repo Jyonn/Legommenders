@@ -4,8 +4,8 @@ import torch
 from UniTok import Vocab
 from torch import nn
 
-from loader.embedding.embedding_loader import EmbeddingInfo
-from model.utils.nr_depot import DataHub
+from loader.embedding.embedding_loader import EmbeddingLoader
+from loader.data_hub import DataHub
 from utils.printer import printer, Color
 
 
@@ -40,7 +40,7 @@ class TransformMultiEmbedding(nn.Module):
         return self.dropout(self.linear(self.embedding(indexes)))
 
 
-class EmbeddingManager:
+class EmbeddingHub:
     def __init__(self, hidden_size, same_dim_transform):
         self._col_to_vocab = dict()
         self._vocab_to_size = dict()
@@ -48,7 +48,7 @@ class EmbeddingManager:
 
         self.hidden_size = hidden_size
         self.same_dim_transform = same_dim_transform
-        self._pretrained = dict()  # type: Dict[str, EmbeddingInfo]
+        self._pretrained = dict()  # type: Dict[str, EmbeddingLoader]
 
         self.print = printer[(self.__class__.__name__, '|', Color.YELLOW)]
 
@@ -63,7 +63,7 @@ class EmbeddingManager:
         return self.get(col, as_vocab)
 
     def load_pretrained_embedding(self, vocab_name, **kwargs):
-        self._pretrained[vocab_name] = EmbeddingInfo(**kwargs).load()
+        self._pretrained[vocab_name] = EmbeddingLoader(**kwargs).load()
         self.print(f'load pretrained embedding {vocab_name} of {self._pretrained[vocab_name].embedding.shape}')
 
     def build_vocab_embedding(self, vocab_name, vocab_size):

@@ -3,27 +3,22 @@ import importlib
 
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
-from model.recommenders.base_recommender import BaseRecommender
 
 
-class ClassSet:
-    @staticmethod
-    def recommenders():
-        return ClassSet(BaseRecommender, 'model/recommenders', 'Model')
-
+class ClassHub:
     @staticmethod
     def operators():
-        return ClassSet(BaseOperator, 'model/operators', 'Operator')
+        return ClassHub(BaseOperator, 'model/operators', 'Operator')
 
     @staticmethod
     def predictors():
-        return ClassSet(BasePredictor, 'model/predictors', 'Predictor')
+        return ClassHub(BasePredictor, 'model/predictors', 'Predictor')
 
     def __init__(self, base_class, module_dir: str, module_type: str):
         """
-        @param base_class: e.g., BaseRecommender, BaseOperator, BasePredictor
-        @param module_dir: e.g., model/recommenders, model/operators, model/predictors
-        @param module_type: e.g., Model, Operator, Predictor
+        @param base_class: e.g., BaseOperator, BasePredictor
+        @param module_dir: e.g., model/operators, model/predictors
+        @param module_type: e.g., Operator, Predictor
         """
 
         self.base_class = base_class

@@ -12,8 +12,8 @@ from oba import Obj
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
-from loader.global_setting import Setting
-from loader.config_manager import ConfigManager, Phases
+from loader.meta import Meta, Phases
+from loader.controller import Controller
 from model.operators.base_llm_operator import BaseLLMOperator
 from utils.config_init import ConfigInit
 from utils.function import seeding
@@ -22,7 +22,7 @@ from utils.logger import Logger
 from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
-from utils.pagers.llm_split_pager import LLMSplitPager
+from loader.pager.llm_split_pager import LLMSplitPager
 from utils.printer import printer, Color, Printer
 from utils.structure import Structure
 from utils.submission import Submission
@@ -50,26 +50,24 @@ class Worker:
         self.print(' '.join(sys.argv))
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
-        Setting.device = self.get_device()
-        Setting.fast_eval = config.fast_eval
-        Setting.simple_dev = self.exp.policy.simple_dev
+        Meta.device = self.get_device()
+        Meta.fast_eval = config.fast_eval
+        Meta.simple_dev = self.exp.policy.simple_dev
         # Setting.dataset = self.data.dataset
 
-        self.config_manager = ConfigManager(
+        self.controller = Controller(
             data=self.data,
             embed=self.embed,
             model=self.model,
             exp=self.exp,
         )
 
-        self.recommender = self.config_manager.recommender.to(Setting.device)
-        self.manager = self.config_manager.manager
+        self.legommender = self.controller.legommender.to(Meta.device)
+        self.resampler = self.controller.resampler
         self.load_path = self.parse_load_path()
 
-        Setting.status = self.manager.status
-
-        self.print(self.config_manager.depots.a_depot()[0])
-        self.print(Structure().analyse_and_stringify(self.config_manager.sets.a_set()[0]))
+        self.print(self.controller.depots.a_depot()[0])
+        self.print(Structure().analyse_and_stringify(self.controller.sets.a_set()[0]))
 
         self.m_optimizer: Optional[torch.optim.Optimizer] = None
         self.m_scheduler = None
@@ -78,7 +76,7 @@ class Worker:
         while True:
             self.print(f"load model from exp {path}")
             try:
-                state_dict = torch.load(path, map_location=Setting.device)
+                state_dict = torch.load(path, map_location=Meta.device)
                 break
             except Exception as e:
                 if not self.exp.load.wait_load:
@@ -90,7 +88,7 @@ class Worker:
         for key, value in state_dict['model'].items():
             model_ckpt[key.replace('operator.', '')] = value
 
-        self.recommender.load_state_dict(model_ckpt, strict=self.exp.load.strict)
+        self.legommender.load_state_dict(model_ckpt, strict=self.exp.load.strict)
         if not self.exp.load.model_only:
             self.m_optimizer.load_state_dict(state_dict['optimizer'])
             self.m_scheduler.load_state_dict(state_dict['scheduler'])
@@ -130,7 +128,7 @@ class Worker:
         monitor_kwargs = Obj.raw(self.exp.store)
 
         dev_func = self.dev
-        if Setting.simple_dev:
+        if Meta.simple_dev:
             monitor_kwargs['maximize'] = False
             dev_func = self.simple_evaluate
             self.print('activate simple dev mode')
@@ -140,20 +138,20 @@ class Worker:
             **monitor_kwargs,
         )
 
-        train_steps = len(self.config_manager.sets.train_set) // self.exp.policy.batch_size
+        train_steps = len(self.controller.sets.train_set) // self.exp.policy.batch_size
         accumulate_step = 0
         accumulate_batch = self.exp.policy.accumulate_batch or 1
 
-        loader = self.config_manager.get_loader(Phases.train).train()
+        loader = self.controller.get_loader(Phases.train).train()
         self.m_optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
-            self.recommender.train()
+            self.legommender.train()
             loader.train()
             for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
                 # if step >= 1000:
                 #     break
-                loss = self.recommender(batch=batch)
+                loss = self.legommender(batch=batch)
                 loss.backward()
 
                 accumulate_step += 1
@@ -183,7 +181,7 @@ class Worker:
             self.log_epoch(epoch, dev_results)
 
             state_dict = dict(
-                model=self.recommender.state_dict(),
+                model=self.legommender.state_dict(),
                 optimizer=self.m_optimizer.state_dict(),
                 scheduler=self.m_scheduler.state_dict(),
             )
@@ -202,23 +200,23 @@ class Worker:
 
     def dev(self):
         assert self.exp.store.metric
-        loader = self.config_manager.get_loader(Phases.dev).eval()
+        loader = self.controller.get_loader(Phases.dev).eval()
 
         results = self.evaluate(loader, metrics=[self.exp.store.metric])
         return results, results[self.exp.store.metric]
 
     def test_fake(self):
-        self.recommender.eval()
-        loader = self.config_manager.get_loader(Phases.test).test()
+        self.legommender.eval()
+        loader = self.controller.get_loader(Phases.test).test()
         loader.dataset.timer.clear()
 
         score_series, label_series, group_series, fake_series = [], [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
-                scores = self.recommender(batch=batch)
-            labels = batch[self.config_manager.column_map.label_col].tolist()
-            groups = batch[self.config_manager.column_map.group_col].tolist()
-            fakes = batch[self.config_manager.column_map.fake_col].tolist()
+                scores = self.legommender(batch=batch)
+            labels = batch[self.controller.column_map.label_col].tolist()
+            groups = batch[self.controller.column_map.group_col].tolist()
+            fakes = batch[self.controller.column_map.fake_col].tolist()
             score_series.extend(scores.cpu().detach().tolist())
             label_series.extend(labels)
             group_series.extend(groups)
@@ -255,12 +253,12 @@ class Worker:
         #         self.print(f'{metric}: {results[metric]}')
 
     def mind_large_evaluate(self, loader):
-        self.recommender.eval()
+        self.legommender.eval()
 
         # group_series = submission.depot.data[self.config_manager.column_map.group_col].tolist()
         # item_series = submission.depot.data[self.config_manager.column_map.candidate_col].tolist()
         # score_series = [random.random() for _ in range(len(submission.depot))]
-        item_col, group_col = self.config_manager.column_map.candidate_col, self.config_manager.column_map.group_col
+        item_col, group_col = self.controller.column_map.candidate_col, self.controller.column_map.group_col
         score_series, col_series = self.base_evaluate(loader, cols=[item_col, group_col])
         item_series, group_series = col_series[item_col], col_series[group_col]
         # item_series = [v[0] for v in item_series]
@@ -268,8 +266,8 @@ class Worker:
         loader.dataset.timer.summarize()
 
         submission = Submission(
-            depot=self.config_manager.depots[Phases.test],
-            column_map=self.config_manager.column_map,
+            depot=self.controller.depots[Phases.test],
+            column_map=self.controller.column_map,
         )
 
         export_dir = submission.run(
@@ -282,7 +280,7 @@ class Worker:
         self.print(f'export to {export_dir}')
 
     def test(self):
-        loader = self.config_manager.get_loader(Phases.test).test()
+        loader = self.controller.get_loader(Phases.test).test()
 
         if self.config.mind_large_submission:
             return self.mind_large_evaluate(loader)
@@ -292,17 +290,16 @@ class Worker:
             self.print(f'{metric}: {results[metric]:.4f}')
 
     def train_get_user_embedding(self):
-        self.config_manager.get_loader(Phases.train).test()
-        assert self.recommender.cacher.fast_user_eval, 'fast eval not enabled'
-        user_embeddings = self.recommender.cacher.fast_user_repr.detach().cpu().numpy()
+        self.controller.get_loader(Phases.train).test()
+        assert self.legommender.cacher.user.cached, 'fast eval not enabled'
+        user_embeddings = self.legommender.cacher.user.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'user_embeddings.npy')
         self.print(f'store user embeddings to {store_path}')
         np.save(store_path, user_embeddings)
 
     def train_get_item_embedding(self):
-        self.recommender.end_caching_doc_repr()
-        self.recommender.start_caching_doc_repr(self.manager.item_cache)
-        item_embeddings = self.recommender.fast_doc_repr.detach().cpu().numpy()
+        self.legommender.cacher.item.cache(self.resampler.item_cache)
+        item_embeddings = self.legommender.cacher.item.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'item_embeddings.npy')
         self.print(f'store item embeddings to {store_path}')
         np.save(store_path, item_embeddings)
@@ -315,7 +312,7 @@ class Worker:
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             # timer.run('score')
             with torch.no_grad():
-                scores = self.recommender(batch=batch)
+                scores = self.legommender(batch=batch)
                 scores = scores.squeeze(1)
             # timer.run('score')
 
@@ -337,9 +334,9 @@ class Worker:
 
     def evaluate(self, loader, metrics):
         pool = MetricPool.parse(metrics)
-        self.recommender.eval()
+        self.legommender.eval()
 
-        label_col, group_col = self.config_manager.column_map.label_col, self.config_manager.column_map.group_col
+        label_col, group_col = self.controller.column_map.label_col, self.controller.column_map.group_col
         score_series, col_series = self.base_evaluate(loader, cols=[label_col, group_col])
         label_series, group_series = col_series[label_col], col_series[group_col]
 
@@ -347,23 +344,23 @@ class Worker:
         return results
 
     def simple_evaluate(self, **kwargs):
-        loader = self.config_manager.get_loader(Phases.dev).eval()
+        loader = self.controller.get_loader(Phases.dev).eval()
         total_loss = Meaner()
 
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
-                loss = self.recommender(batch=batch)
+                loss = self.legommender(batch=batch)
             total_loss.add(loss.item())
 
         total_loss = total_loss.mean()
         return dict(loss=total_loss), total_loss
 
     def train_runner(self):
-        if self.recommender.config.use_item_content and self.exp.policy.item_lr:
+        if self.legommender.config.use_item_content and self.exp.policy.item_lr:
             self.print('split item pretrained encoder parameters')
             self.print('pretrained lr:', self.exp.policy.item_lr)
             self.print('other lr:', self.exp.policy.lr)
-            pretrained_parameters, other_parameters = self.recommender.get_parameters()
+            pretrained_parameters, other_parameters = self.legommender.get_parameters()
             self.m_optimizer = torch.optim.Adam([
                 {'params': pretrained_parameters, 'lr': self.exp.policy.item_lr},
                 {'params': other_parameters, 'lr': self.exp.policy.lr}
@@ -371,18 +368,18 @@ class Worker:
         else:
             self.print('use single lr:', self.exp.policy.lr)
             self.m_optimizer = torch.optim.Adam(
-                params=filter(lambda p: p.requires_grad, self.recommender.parameters()),
+                params=filter(lambda p: p.requires_grad, self.legommender.parameters()),
                 lr=self.exp.policy.lr
             )
 
-            for name, p in self.recommender.named_parameters():  # type: str, torch.Tensor
+            for name, p in self.legommender.named_parameters():  # type: str, torch.Tensor
                 if p.requires_grad:
                     self.print(name, p.data.shape)
 
         self.m_scheduler = get_linear_schedule_with_warmup(
             self.m_optimizer,
             num_warmup_steps=self.exp.policy.n_warmup,
-            num_training_steps=len(self.config_manager.sets.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
+            num_training_steps=len(self.controller.sets.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
         )
 
         if self.load_path:
@@ -401,7 +398,7 @@ class Worker:
             handler()
 
     def test_size(self):
-        named_parameters = list(self.recommender.named_parameters())
+        named_parameters = list(self.legommender.named_parameters())
         # filter out the parameters that don't require a gradient
         named_parameters = [(name, p) for (name, p) in named_parameters if p.requires_grad]
         # list of (name, parameter) pairs
@@ -413,14 +410,14 @@ class Worker:
         self.print(f'Number of parameters: {num_params:.2f}M')
 
     def test_llm_layer_split(self):
-        item_encoder = self.recommender.item_encoder  # type: BaseLLMOperator
+        item_encoder = self.legommender.item_encoder  # type: BaseLLMOperator
         assert isinstance(item_encoder, BaseLLMOperator), 'llama operator not found'
 
         pager = LLMSplitPager(
             inputer=item_encoder.inputer,
             layers=Obj.raw(self.exp.store.layers),
             hidden_size=item_encoder.config.embed_hidden_size,
-            contents=self.manager.item_cache,
+            contents=self.resampler.item_cache,
             model=item_encoder.get_all_hidden_states,
             page_size=self.exp.policy.batch_size,
         )
@@ -454,8 +451,9 @@ class Worker:
 
 if __name__ == '__main__':
     configuration = ConfigInit(
-        required_args=['data', 'model', 'exp', 'embed'],
+        required_args=['data', 'model', 'exp'],
         default_args=dict(
+            embed='config/embed/null.yaml',
             warmup=0,
             fast_eval=True,
             simple_dev=False,

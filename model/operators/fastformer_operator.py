@@ -1,6 +1,6 @@
 from torch import nn
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.common.fastformer import FastformerModel, FastformerConfig
 from model.operators.attention_operator import AttentionOperatorConfig
 from model.operators.base_operator import BaseOperator
@@ -47,7 +47,7 @@ class FastformerOperator(BaseOperator):
         # )
 
     def forward(self, embeddings, mask=None, **kwargs):
-        mask = mask.to(Setting.device)
+        mask = mask.to(Meta.device)
 
         fastformer_output = self.fastformer(
             inputs_embeds=embeddings,

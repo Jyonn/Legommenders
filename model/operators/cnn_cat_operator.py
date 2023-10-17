@@ -1,6 +1,6 @@
 import torch
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.inputer.simple_inputer import SimpleInputer
 from model.operators.cnn_operator import CNNOperatorConfig, CNNOperator
 
@@ -23,14 +23,14 @@ class CNNCatOperator(CNNOperator):
             if embedding.size()[1] > 1:
                 embedding = self.cnn(embedding.permute(0, 2, 1))
                 activation = self.activation(embedding.permute(0, 2, 1))
-                masked_activation = activation * mask[col].unsqueeze(-1).to(Setting.device)
+                masked_activation = activation * mask[col].unsqueeze(-1).to(Meta.device)
                 dropout = self.dropout(masked_activation)
-                output = self.additive_attention(dropout, mask[col].to(Setting.device))
+                output = self.additive_attention(dropout, mask[col].to(Meta.device))
             else:
                 output = embedding.squeeze(1)
             output_list.append(output)
 
-        outputs = torch.cat(output_list, dim=-1).to(Setting.device)
+        outputs = torch.cat(output_list, dim=-1).to(Meta.device)
         return outputs
 
     def get_full_item_placeholder(self, sample_size):

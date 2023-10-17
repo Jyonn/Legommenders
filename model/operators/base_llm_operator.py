@@ -7,7 +7,7 @@ from peft import get_peft_model, LoraConfig
 from torch import nn
 from transformers import PreTrainedModel
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.common.attention import AdditiveAttention
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
 from model.operators.attention_operator import AttentionOperatorConfig
@@ -69,9 +69,9 @@ class BaseLLMOperator(BaseOperator):
             self._slice_transformer_layers()
             # self.transformer.layers = self.transformer.layers[self.config.layer_split+1:]
             hidden_weights = np.load(os.path.join(self.config.weights_dir, f'layer_{self.config.layer_split}.npy'))
-            self.hidden_weights = torch.from_numpy(hidden_weights).to(Setting.device)
+            self.hidden_weights = torch.from_numpy(hidden_weights).to(Meta.device)
             attention_mask = np.load(os.path.join(self.config.weights_dir, 'mask.npy'))
-            self.attention_mask = torch.from_numpy(attention_mask).to(Setting.device)
+            self.attention_mask = torch.from_numpy(attention_mask).to(Meta.device)
             self.hidden_weights = self.hidden_weights.view(*self.attention_mask.shape[:2], self.hidden_weights.shape[-1])
             self.print(f'hidden_weights.shape: {self.hidden_weights.shape}')
             self.print(f'attention_mask.shape: {self.attention_mask.shape}')
@@ -97,7 +97,7 @@ class BaseLLMOperator(BaseOperator):
 
     def forward(self, embeddings, mask=None, **kwargs):
         if not self.config.layer_split:
-            mask = mask.to(Setting.device)
+            mask = mask.to(Meta.device)
 
             llm_output = self.transformer(
                 inputs_embeds=embeddings,

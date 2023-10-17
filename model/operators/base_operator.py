@@ -4,8 +4,8 @@ import torch
 from torch import nn
 
 from model.inputer.base_inputer import BaseInputer
-from loader.embedding.embedding_manager import EmbeddingManager
-from model.utils.nr_depot import DataHub
+from loader.embedding.embedding_hub import EmbeddingHub
+from loader.data_hub import DataHub
 from utils.printer import printer, Color
 
 
@@ -29,7 +29,7 @@ class BaseOperator(nn.Module):
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
 
-    def __init__(self, config: BaseOperatorConfig, hub: DataHub, embedding_manager: EmbeddingManager, target_user=False):
+    def __init__(self, config: BaseOperatorConfig, hub: DataHub, embedding_manager: EmbeddingHub, target_user=False):
         super().__init__()
         self.print = printer[(self.__class__.__name__, '|', Color.GREEN)]
 

@@ -8,7 +8,7 @@
 
 ### Oct. 16, 2023
 
-- We clean the code and convert item-side parameters. 
+- We clean the code and convert names of the item-side parameters. 
 
 ### Oct. 5, 2023
 

@@ -1,7 +1,7 @@
 key: K${k}_select${select}_alpha${alpha}
 name: MovieLens-Distillation-Both-Keep-${data.key}
 base_dir: data/MovieLens-100k
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/movie-sum
   order:

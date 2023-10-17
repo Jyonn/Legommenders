@@ -4,7 +4,7 @@ from typing import Optional, Dict, List
 import torch
 from UniTok import Vocab
 
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.inputer.base_inputer import BaseInputer
 
 
@@ -46,7 +46,7 @@ class ConcatInputer(BaseInputer):
         return [self.vocab]
 
     def get_empty_input(self):
-        return torch.ones(self.max_sequence_len, dtype=torch.long) * Setting.UNSET
+        return torch.ones(self.max_sequence_len, dtype=torch.long) * Meta.UNSET
 
     def sample_rebuilder(self, sample: OrderedDict):
         pointer = Pointer()
@@ -92,11 +92,11 @@ class ConcatInputer(BaseInputer):
             *shape,
             self.embedding_manager.hidden_size,
             dtype=torch.float
-        ).to(Setting.device)
+        ).to(Meta.device)
 
         for col in input_ids:
-            seq = input_ids[col].to(Setting.device)  # type: torch.Tensor # [B, L]
-            mask = (seq > Setting.UNSET).long().to(Setting.device)  # type: torch.Tensor  # [B, L]
+            seq = input_ids[col].to(Meta.device)  # type: torch.Tensor # [B, L]
+            mask = (seq > Meta.UNSET).long().to(Meta.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
 
             embedding = self.embedding_manager(col)(seq)

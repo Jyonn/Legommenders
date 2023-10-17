@@ -10,11 +10,6 @@ from utils.rand import Rand
 from utils.timing import Timing
 
 
-# makedirs = [
-#     'data.store.save_dir',
-# ]
-
-
 class PathSearcher(DictCompiler):
     compiler = DictCompiler({})
 

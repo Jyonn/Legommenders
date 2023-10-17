@@ -4,10 +4,10 @@ import numpy as np
 import torch
 
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
-from utils.torch_pager import TorchPager
+from loader.pager.base_pager import BasePager
 
 
-class LLMSplitPager(TorchPager):
+class LLMSplitPager(BasePager):
     def __init__(
             self,
             inputer: NaturalConcatInputer,

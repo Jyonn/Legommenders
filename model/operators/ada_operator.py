@@ -1,4 +1,4 @@
-from loader.global_setting import Setting
+from loader.meta import Meta
 from model.common.attention import AdditiveAttention
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.concat_inputer import ConcatInputer
@@ -30,6 +30,6 @@ class AdaOperator(BaseOperator):
         )
 
     def forward(self, embeddings, mask=None, **kwargs):
-        mask = mask.to(Setting.device)
+        mask = mask.to(Meta.device)
         outputs = self.additive_attention(embeddings, mask)  # [B, D]
         return outputs

@@ -6,7 +6,7 @@ import torch
 from transformers import AutoModelForMaskedLM, BertForMaskedLM, BertConfig, BertModel, load_tf_weights_in_bert
 
 
-class EmbeddingInfo:
+class EmbeddingLoader:
     def __init__(self, vocab_type, path, frozen):
         self.type = vocab_type
         self.path = path
