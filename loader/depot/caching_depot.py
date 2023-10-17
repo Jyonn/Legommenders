@@ -3,8 +3,8 @@ import os.path
 
 import numpy as np
 from UniTok import UniDep
+from pigmento import pnt
 
-from utils.printer import printer, Color
 from utils.rand import Rand
 
 
@@ -17,7 +17,6 @@ class CachingDep(UniDep):
         super().__init__(store_dir, **kwargs)
 
         self.filter_cache = filter_cache
-        self.print = printer[(self.__class__.__name__, '|', Color.RED)]
 
         # current status
         self.global_filters = list()
@@ -42,7 +41,7 @@ class CachingDep(UniDep):
                     self.filters_base_path, cached_filter['path'].replace('.json', '.npy')), numpy_data)
                 os.remove(os.path.join(self.filters_base_path, cached_filter['path']))
                 cached_filter['path'] = cached_filter['path'].replace('.json', '.npy')
-                self.print(f'update filter cache {cached_filter["path"]} on {str(self)} to npy format')
+                pnt(f'update filter cache {cached_filter["path"]} on {str(self)} to npy format')
                 flag = True
         if flag:
             json.dump(self.cached_filters, open(self.cached_filters_path, 'w'))
@@ -75,7 +74,7 @@ class CachingDep(UniDep):
         return True
 
     def store_cache(self):
-        self.print(f'store filter cache on {str(self)}')
+        pnt(f'store filter cache on {str(self)}')
 
         filter_name = f'{Rand()[6]}.json'
         filter_path = os.path.join(self.filters_base_path, filter_name)
@@ -95,7 +94,7 @@ class CachingDep(UniDep):
             return
         if os.path.exists(self.cached_filters_path):
             self.cached_filters = json.load(open(self.cached_filters_path))
-        self.print(f'load {len(self.cached_filters)} filter caches on {str(self)}')
+        pnt(f'load {len(self.cached_filters)} filter caches on {str(self)}')
 
     def filter(self, filter_func: str, col=None):
         if self.filter_cache:

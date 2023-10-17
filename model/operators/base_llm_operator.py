@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 import torch
 from peft import get_peft_model, LoraConfig
+from pigmento import pnt
 from torch import nn
 from transformers import PreTrainedModel
 
@@ -73,8 +74,8 @@ class BaseLLMOperator(BaseOperator):
             attention_mask = np.load(os.path.join(self.config.weights_dir, 'mask.npy'))
             self.attention_mask = torch.from_numpy(attention_mask).to(Meta.device)
             self.hidden_weights = self.hidden_weights.view(*self.attention_mask.shape[:2], self.hidden_weights.shape[-1])
-            self.print(f'hidden_weights.shape: {self.hidden_weights.shape}')
-            self.print(f'attention_mask.shape: {self.attention_mask.shape}')
+            pnt(f'hidden_weights.shape: {self.hidden_weights.shape}')
+            pnt(f'attention_mask.shape: {self.attention_mask.shape}')
 
         if self.config.layer_split < num_hidden_layers - 1 and self.config.lora:
             peft_config = LoraConfig(

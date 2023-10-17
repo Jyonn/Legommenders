@@ -1,6 +1,6 @@
 import time
 
-from utils.printer import printer, Color
+from pigmento import pnt
 
 
 class StatusTimer:
@@ -35,7 +35,6 @@ class StatusTimer:
 class Timer:
     def __init__(self, activate=True):
         self.status_dict = dict()  # type: dict[str, StatusTimer]
-        self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
         self.activate = activate
 
     def run(self, status: str):
@@ -54,5 +53,6 @@ class Timer:
 
     def summarize(self):
         for status in self.status_dict:
-            self.print[status](f'avg time: {self.status_dict[status].avgms():.4f}ms, '
-                               f'total time: {self.status_dict[status].total_time:.4f}s')
+            pnt(f'status: {status}, '
+                f'avg time: {self.status_dict[status].avgms():.4f}ms, '
+                f'total time: {self.status_dict[status].total_time:.4f}s')

@@ -3,7 +3,6 @@ import copy
 from torch.utils.data import Dataset as BaseDataset
 
 from loader.data_hub import DataHub
-from utils.printer import printer, Color
 from utils.timer import Timer
 
 
@@ -13,8 +12,6 @@ class DataSet(BaseDataset):
             hub: DataHub,
             resampler=None,
     ):
-        self.print = printer[(self.__class__.__name__, '·', Color.GREEN)]
-
         self.hub = hub
         self.depot = hub.depot
         self.order = hub.order

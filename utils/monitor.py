@@ -2,8 +2,7 @@ import json
 import os
 
 import torch
-
-from utils.printer import printer
+from pigmento import pnt
 
 
 class Monitor:
@@ -27,7 +26,6 @@ class Monitor:
         self.early_stop = early_stop
         self.debug = debug
         self.maximize = maximize
-        self.print = printer.MONITOR
 
     def remove_checkpoint(self, epoch):
         if self.debug:
@@ -88,7 +86,7 @@ class Monitor:
                 for i in range(len(self.candidates))[::-1]:
                     if stay[i]:
                         if epoch - self.candidates[i][0] >= self.early_stop:
-                            self.print('Early Stop')
+                            pnt('Early Stop')
                             return -1
                         return 0
             return 0

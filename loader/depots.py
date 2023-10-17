@@ -1,11 +1,12 @@
 import json
 from typing import Dict
 
+from pigmento import pnt
+
 from loader.column_map import ColumnMap
 from loader.depot.caching_depot import CachingDep
 from loader.depot.depot_hub import DepotHub
 from loader.meta import Phases, Meta
-from utils.printer import printer, Color
 
 
 class Depots:
@@ -21,8 +22,6 @@ class Depots:
             self.test_depot = DepotHub.get(user_data.depots.test.path, filter_cache=user_data.filter_cache)
 
         self.fast_eval_depot = self.create_fast_eval_depot(user_data.depots.dev.path, column_map=column_map)
-
-        self.print = printer[(self.__class__.__name__, '|', Color.BLUE)]
 
         self.depots = {
             Phases.train: self.train_depot,
@@ -45,7 +44,7 @@ class Depots:
                     continue
                 sample_num = len(depot)
                 super(CachingDep, depot).filter(lambda x: x in allowed_list, col=depot.id_col)
-                self.print(f'Filter {phase} phase with allowed list, sample num: {sample_num} -> {len(depot)}')
+                pnt(f'Filter {phase} phase with allowed list, sample num: {sample_num} -> {len(depot)}')
 
         if user_data.filters:
             for col in user_data.filters:
@@ -57,7 +56,7 @@ class Depots:
                             continue
                         sample_num = len(depot)
                         depot.filter(filter_func_str, col=col)
-                        self.print(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
+                        pnt(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     @staticmethod
     def create_fast_eval_depot(path, column_map: ColumnMap):
@@ -84,7 +83,7 @@ class Depots:
 
             sample_num = len(depot)
             depot.filter('lambda x: x == 1', col=col)
-            self.print(f'Filter {col} with x==1 in {phase} phase, sample num: {sample_num} -> {len(depot)}')
+            pnt(f'Filter {col} with x==1 in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
     def __getitem__(self, item):
         return self.depots[item]

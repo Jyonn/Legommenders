@@ -7,7 +7,9 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+import pigmento
 import torch
+from pigmento import pnt
 from oba import Obj
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
@@ -18,12 +20,10 @@ from model.operators.base_llm_operator import BaseLLMOperator
 from utils.config_init import ConfigInit
 from utils.function import seeding
 from utils.gpu import GPU
-from utils.logger import Logger
 from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from loader.pager.llm_split_pager import LLMSplitPager
-from utils.printer import printer, Color, Printer
 from utils.structure import Structure
 from utils.submission import Submission
 
@@ -43,12 +43,12 @@ class Worker:
         config.seed = int(config.seed or 2023)
         seeding(config.seed)
 
-        self.print = printer[('MAIN', '·', Color.CYAN)]
-        Printer.logger = Logger(self.exp.log)
-        self.print('START TIME:', datetime.datetime.now())
+        self.init_pigmento()
+
+        pnt('START TIME:', datetime.datetime.now())
         # print command line arguments
-        self.print(' '.join(sys.argv))
-        self.print(json.dumps(Obj.raw(self.config), indent=4))
+        pnt(' '.join(sys.argv))
+        pnt(json.dumps(Obj.raw(self.config), indent=4))
 
         Meta.device = self.get_device()
         Meta.simple_dev = self.exp.policy.simple_dev
@@ -67,15 +67,24 @@ class Worker:
         self.cacher.activate(config.fast_eval)
         self.load_path = self.parse_load_path()
 
-        self.print(self.controller.depots.a_depot()[0])
-        self.print(Structure().analyse_and_stringify(self.controller.sets.a_set()[0]))
+        pnt(self.controller.depots.a_depot()[0])
+        pnt(Structure().analyse_and_stringify(self.controller.sets.a_set()[0]))
 
         self.m_optimizer: Optional[torch.optim.Optimizer] = None
         self.m_scheduler = None
 
+    def init_pigmento(self):
+        pigmento.add_time_prefix()
+        pigmento.add_log_plugin(self.exp.log)
+        pigmento.add_dynamic_color_plugin()
+        pnt.set_display_mode(
+            display_method_name=False,
+            display_class_name=True,
+        )
+
     def load(self, path):
         while True:
-            self.print(f"load model from exp {path}")
+            pnt(f"load model from exp {path}")
             try:
                 state_dict = torch.load(path, map_location=Meta.device)
                 break
@@ -111,19 +120,21 @@ class Worker:
     def get_device(self):
         cuda = self.config.cuda
         if cuda in ['-1', -1] or cuda is False:
-            self.print('choose cpu')
+            pnt('choose cpu')
             return 'cpu'
         if isinstance(cuda, int) or isinstance(cuda, str):
-            self.print(f'User select cuda {cuda}')
+            pnt(f'User select cuda {cuda}')
             return f"cuda:{cuda}"
         return GPU.auto_choose(torch_format=True)
 
-    def log_interval(self, epoch, step, loss):
-        self.print[f'epoch {epoch}'](f'step {step}, loss {loss:.4f}')
+    @staticmethod
+    def log_interval(epoch, step, loss):
+        pnt(f'[epoch {epoch}] step {step}, loss {loss:.4f}')
 
-    def log_epoch(self, epoch, results):
+    @staticmethod
+    def log_epoch(epoch, results):
         line = ', '.join([f'{metric} {results[metric]:.4f}' for metric in results])
-        self.print[f'epoch {epoch}'](line)
+        pnt(f'[epoch {epoch}] {line}')
 
     def train(self) -> int:
         monitor_kwargs = Obj.raw(self.exp.store)
@@ -132,7 +143,7 @@ class Worker:
         if Meta.simple_dev:
             monitor_kwargs['maximize'] = False
             dev_func = self.simple_evaluate
-            self.print('activate simple dev mode')
+            pnt('activate simple dev mode')
 
         monitor = Monitor(
             save_dir=self.exp.dir,
@@ -194,7 +205,7 @@ class Worker:
             if early_stop == -1:
                 return monitor.get_best_epoch()
 
-        self.print('Training Ended')
+        pnt('Training Ended')
         monitor.export()
 
         return monitor.get_best_epoch()
@@ -230,14 +241,14 @@ class Worker:
             fake=fake_series,
         ))
         groups = df.groupby('fake')
-        self.print('group by fake done')
+        pnt('group by fake done')
 
         for fake, group in groups:
-            self.print('inactive users' if fake else 'active users')
+            pnt('inactive users' if fake else 'active users')
             pool = MetricPool.parse(self.exp.metrics)
             results = pool.calculate(group['score'].tolist(), group['label'].tolist(), group['group'].tolist())
             for metric in results:
-                self.print(f'{metric}: {results[metric]:.4f}')
+                pnt(f'{metric}: {results[metric]:.4f}')
         #
         # meta_groups = [dict(), dict()]
         # for i, (score, label, group, fake) in enumerate(zip(score_series, label_series, group_series, fake_series)):
@@ -249,9 +260,9 @@ class Worker:
         # for fake, meta_group in enumerate(meta_groups):
         #     pool = MetricPool.parse(self.exp.metrics)
         #     results = pool.calculate(meta_group['score'], meta_group['label'], meta_group['group'])
-        #     self.print('inactive users' if fake else 'active users')
+        #     pnt('inactive users' if fake else 'active users')
         #     for metric in results:
-        #         self.print(f'{metric}: {results[metric]}')
+        #         pnt(f'{metric}: {results[metric]}')
 
     def mind_large_evaluate(self, loader):
         self.legommender.eval()
@@ -278,7 +289,7 @@ class Worker:
             model_name=self.model.name,
         )
 
-        self.print(f'export to {export_dir}')
+        pnt(f'export to {export_dir}')
 
     def test(self):
         loader = self.controller.get_loader(Phases.test).test()
@@ -288,21 +299,21 @@ class Worker:
 
         results = self.evaluate(loader, metrics=self.exp.metrics)
         for metric in results:
-            self.print(f'{metric}: {results[metric]:.4f}')
+            pnt(f'{metric}: {results[metric]:.4f}')
 
     def train_get_user_embedding(self):
         self.controller.get_loader(Phases.train).test()
         assert self.cacher.user.cached, 'fast eval not enabled'
         user_embeddings = self.cacher.user.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'user_embeddings.npy')
-        self.print(f'store user embeddings to {store_path}')
+        pnt(f'store user embeddings to {store_path}')
         np.save(store_path, user_embeddings)
 
     def train_get_item_embedding(self):
         self.cacher.item.cache(self.resampler.item_cache)
         item_embeddings = self.cacher.item.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'item_embeddings.npy')
-        self.print(f'store item embeddings to {store_path}')
+        pnt(f'store item embeddings to {store_path}')
         np.save(store_path, item_embeddings)
 
     def base_evaluate(self, loader, cols):
@@ -358,16 +369,16 @@ class Worker:
 
     def train_runner(self):
         if self.legommender.config.use_item_content and self.exp.policy.item_lr:
-            self.print('split item pretrained encoder parameters')
-            self.print('pretrained lr:', self.exp.policy.item_lr)
-            self.print('other lr:', self.exp.policy.lr)
+            pnt('split item pretrained encoder parameters')
+            pnt('pretrained lr:', self.exp.policy.item_lr)
+            pnt('other lr:', self.exp.policy.lr)
             pretrained_parameters, other_parameters = self.legommender.get_parameters()
             self.m_optimizer = torch.optim.Adam([
                 {'params': pretrained_parameters, 'lr': self.exp.policy.item_lr},
                 {'params': other_parameters, 'lr': self.exp.policy.lr}
             ])
         else:
-            self.print('use single lr:', self.exp.policy.lr)
+            pnt('use single lr:', self.exp.policy.lr)
             self.m_optimizer = torch.optim.Adam(
                 params=filter(lambda p: p.requires_grad, self.legommender.parameters()),
                 lr=self.exp.policy.lr
@@ -375,7 +386,7 @@ class Worker:
 
             for name, p in self.legommender.named_parameters():  # type: str, torch.Tensor
                 if p.requires_grad:
-                    self.print(name, p.data.shape)
+                    pnt(name, p.data.shape)
 
         self.m_scheduler = get_linear_schedule_with_warmup(
             self.m_optimizer,
@@ -404,11 +415,11 @@ class Worker:
         named_parameters = [(name, p) for (name, p) in named_parameters if p.requires_grad]
         # list of (name, parameter) pairs
         for (name, p) in named_parameters:
-            self.print(name, p.data.shape)
+            pnt(name, p.data.shape)
         num_params = sum([p.numel() for (_, p) in named_parameters])
         # to a million
         num_params /= 1e6
-        self.print(f'Number of parameters: {num_params:.2f}M')
+        pnt(f'Number of parameters: {num_params:.2f}M')
 
     def test_llm_layer_split(self):
         item_encoder = self.legommender.item_encoder  # type: BaseLLMOperator

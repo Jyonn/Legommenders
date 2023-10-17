@@ -1,6 +1,7 @@
 from typing import Type
 
 import torch
+from pigmento import pnt
 from torch import nn
 
 from loader.meta import Meta
@@ -14,7 +15,6 @@ from loader.column_map import ColumnMap
 from loader.embedding.embedding_hub import EmbeddingHub
 from loader.data_hub import DataHub
 from utils.function import combine_config
-from utils.printer import printer, Color
 from utils.shaper import Shaper
 
 
@@ -90,7 +90,6 @@ class Legommender(nn.Module):
         self.neg_count = config.neg_count
 
         self.config = config  # type: LegommenderConfig
-        self.print = printer[(self.__class__.__name__, '|', Color.MAGENTA)]
 
         self.embedding_manager = embedding_manager
         self.embedding_table = embedding_manager.get_table()
@@ -122,7 +121,7 @@ class Legommender(nn.Module):
             if isinstance(self.item_encoder, BaseLLMOperator):
                 if self.item_encoder.config.layer_split:
                     self.llm_skip = True
-                    self.print("LLM SKIP")
+                    pnt("LLM SKIP")
 
         self.shaper = Shaper()
         self.cacher = ReprCacher(self)
@@ -307,13 +306,13 @@ class Legommender(nn.Module):
                     break
 
             if not is_pretrained:
-                # self.print(f'[N] {name} {param.data.shape}')
+                # pnt(f'[N] {name} {param.data.shape}')
                 other_names.append((name, param.data.shape))
                 other_parameters.append(param)
 
         for name, shape in pretrained_names:
-            self.print(f'[P] {name} {shape}')
+            pnt(f'[P] {name} {shape}')
         for name, shape in other_names:
-            self.print(f'[N] {name} {shape}')
+            pnt(f'[N] {name} {shape}')
 
         return pretrained_parameters, other_parameters

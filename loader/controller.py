@@ -1,5 +1,6 @@
 import torch
 from oba import Obj
+from pigmento import pnt
 from torch import nn
 
 from loader.data_hubs import DataHubs
@@ -18,7 +19,6 @@ from loader.resampler import Resampler
 from loader.data_loader import DataLoader
 from loader.data_hub import DataHub
 from loader.class_hub import ClassHub
-from utils.printer import printer, Color
 
 
 class Controller:
@@ -29,17 +29,15 @@ class Controller:
         self.exp = exp
         self.modes = self.parse_mode()
 
-        self.print = printer[(self.__class__.__name__, '|', Color.CYAN)]
-
         self.status = Status()
 
         if 'MIND' in self.data.name.upper():
             Meta.data_type = DatasetType.news
         else:
             Meta.data_type = DatasetType.book
-        self.print('dataset type: ', Meta.data_type)
+        pnt('dataset type: ', Meta.data_type)
 
-        self.print('build column map ...')
+        pnt('build column map ...')
         self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
         """depots and data hubs initialization"""
@@ -69,11 +67,11 @@ class Controller:
             predictor_class=self.predictor_class,
         )
 
-        self.print(f'Selected Item Encoder: {str(self.item_operator_class.__name__) if self.item_operator_class else "null"}')
-        self.print(f'Selected User Encoder: {str(self.user_operator_class.__name__)}')
-        self.print(f'Selected Predictor: {str(self.predictor_class.__name__)}')
-        self.print(f'Use Negative Sampling: {self.model.config.use_neg_sampling}')
-        self.print(f'Use Item Content: {self.model.config.use_item_content}')
+        pnt(f'Selected Item Encoder: {str(self.item_operator_class.__name__) if self.item_operator_class else "null"}')
+        pnt(f'Selected User Encoder: {str(self.user_operator_class.__name__)}')
+        pnt(f'Selected Predictor: {str(self.predictor_class.__name__)}')
+        pnt(f'Use Negative Sampling: {self.model.config.use_neg_sampling}')
+        pnt(f'Use Item Content: {self.model.config.use_item_content}')
 
         self.legommender_config = LegommenderConfig(**Obj.raw(self.model.config))
 
