@@ -14,7 +14,6 @@ class Meta:
     # device
     device = None
     simple_dev = False
-    fast_eval = False
 
     # pad
     UNSET = -1

@@ -1,6 +1,3 @@
-from loader.meta import Meta
-
-
 class BaseCacher:
     def __init__(self, operator, page_size, hidden_size):
         self.operator = operator
@@ -20,8 +17,6 @@ class BaseCacher:
     def cache(self, contents):
         self.clean()
 
-        if not Meta.fast_eval:
-            return
         if not self._activate:
             return
 

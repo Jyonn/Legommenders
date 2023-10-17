@@ -16,3 +16,5 @@ class DataHub:
         self.depot = depot if isinstance(depot, UniDep) else DepotHub.get(depot)
         self.order = Obj.raw(order)
         self.append = Obj.raw(append) or []
+
+        # self.depot.select_cols(self.order + self.append)

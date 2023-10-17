@@ -51,7 +51,6 @@ class Worker:
         self.print(json.dumps(Obj.raw(self.config), indent=4))
 
         Meta.device = self.get_device()
-        Meta.fast_eval = config.fast_eval
         Meta.simple_dev = self.exp.policy.simple_dev
         # Setting.dataset = self.data.dataset
 
@@ -64,6 +63,8 @@ class Worker:
 
         self.legommender = self.controller.legommender.to(Meta.device)
         self.resampler = self.controller.resampler
+        self.cacher = self.legommender.cacher
+        self.cacher.activate(config.fast_eval)
         self.load_path = self.parse_load_path()
 
         self.print(self.controller.depots.a_depot()[0])
@@ -291,15 +292,15 @@ class Worker:
 
     def train_get_user_embedding(self):
         self.controller.get_loader(Phases.train).test()
-        assert self.legommender.cacher.user.cached, 'fast eval not enabled'
-        user_embeddings = self.legommender.cacher.user.repr.detach().cpu().numpy()
+        assert self.cacher.user.cached, 'fast eval not enabled'
+        user_embeddings = self.cacher.user.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'user_embeddings.npy')
         self.print(f'store user embeddings to {store_path}')
         np.save(store_path, user_embeddings)
 
     def train_get_item_embedding(self):
-        self.legommender.cacher.item.cache(self.resampler.item_cache)
-        item_embeddings = self.legommender.cacher.item.repr.detach().cpu().numpy()
+        self.cacher.item.cache(self.resampler.item_cache)
+        item_embeddings = self.cacher.item.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'item_embeddings.npy')
         self.print(f'store item embeddings to {store_path}')
         np.save(store_path, item_embeddings)
