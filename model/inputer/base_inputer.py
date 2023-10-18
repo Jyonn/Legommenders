@@ -8,6 +8,8 @@ from loader.data_hub import DataHub
 
 
 class BaseInputer:
+    output_single_sequence = True
+
     """
     four cases:
     1. candidate item content (title, category) -> 5 x 64

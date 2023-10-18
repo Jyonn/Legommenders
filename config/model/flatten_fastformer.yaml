@@ -1,0 +1,23 @@
+name: FlattenFastformer
+meta:
+  item: Fastformer
+  user: FlattenFastformer
+  predictor: Dot
+config:
+  use_neg_sampling: true
+  use_item_content: true
+  hidden_size: ${hidden_size}$
+  embed_hidden_size: ${embed_hidden_size}$
+  neg_count: 4
+  item_config:
+    num_hidden_layers: 3
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
+  user_config:
+    num_hidden_layers: 3
+    inputer_config:
+      use_cls_token: true
+      use_sep_token: true
+      use_attr_sep_token: true
+

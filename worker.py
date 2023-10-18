@@ -16,6 +16,7 @@ from transformers import get_linear_schedule_with_warmup
 
 from loader.meta import Meta, Phases
 from loader.controller import Controller
+# from loader.mode_hub import ModeHub
 from model.operators.base_llm_operator import BaseLLMOperator
 from utils.config_init import ConfigInit
 from utils.function import seeding
@@ -47,7 +48,7 @@ class Worker:
 
         pnt('START TIME:', datetime.datetime.now())
         # print command line arguments
-        pnt(' '.join(sys.argv))
+        pnt('python ', ' '.join(sys.argv))
         pnt(json.dumps(Obj.raw(self.config), indent=4))
 
         Meta.device = self.get_device()
@@ -70,8 +71,10 @@ class Worker:
         pnt(self.controller.depots.a_depot()[0])
         pnt(Structure().analyse_and_stringify(self.controller.sets.a_set()[0]))
 
-        self.m_optimizer: Optional[torch.optim.Optimizer] = None
-        self.m_scheduler = None
+        self.optimizer: Optional[torch.optim.Optimizer] = None
+        self.scheduler = None
+
+        # self.mode_hub = ModeHub(controller=self.controller)
 
     def init_pigmento(self):
         pigmento.add_time_prefix()
@@ -100,8 +103,8 @@ class Worker:
 
         self.legommender.load_state_dict(model_ckpt, strict=self.exp.load.strict)
         if not self.exp.load.model_only:
-            self.m_optimizer.load_state_dict(state_dict['optimizer'])
-            self.m_scheduler.load_state_dict(state_dict['scheduler'])
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+            self.scheduler.load_state_dict(state_dict['scheduler'])
 
     def parse_load_path(self):
         if not self.exp.load.save_dir:
@@ -155,7 +158,7 @@ class Worker:
         accumulate_batch = self.exp.policy.accumulate_batch or 1
 
         loader = self.controller.get_loader(Phases.train).train()
-        self.m_optimizer.zero_grad()
+        self.optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.legommender.train()
@@ -168,9 +171,9 @@ class Worker:
 
                 accumulate_step += 1
                 if accumulate_step == accumulate_batch:
-                    self.m_optimizer.step()
-                    self.m_scheduler.step()
-                    self.m_optimizer.zero_grad()
+                    self.optimizer.step()
+                    self.scheduler.step()
+                    self.optimizer.zero_grad()
                     accumulate_step = 0
 
                 if self.exp.policy.check_interval:
@@ -194,8 +197,8 @@ class Worker:
 
             state_dict = dict(
                 model=self.legommender.state_dict(),
-                optimizer=self.m_optimizer.state_dict(),
-                scheduler=self.m_scheduler.state_dict(),
+                optimizer=self.optimizer.state_dict(),
+                scheduler=self.scheduler.state_dict(),
             )
             early_stop = monitor.push(
                 epoch=epoch,
@@ -249,20 +252,6 @@ class Worker:
             results = pool.calculate(group['score'].tolist(), group['label'].tolist(), group['group'].tolist())
             for metric in results:
                 pnt(f'{metric}: {results[metric]:.4f}')
-        #
-        # meta_groups = [dict(), dict()]
-        # for i, (score, label, group, fake) in enumerate(zip(score_series, label_series, group_series, fake_series)):
-        #     meta_groups[fake] = meta_groups[fake] or dict()
-        #     meta_groups[fake]['group'] = meta_groups[fake].get('group', []) + [group]
-        #     meta_groups[fake]['score'] = meta_groups[fake].get('score', []) + [score]
-        #     meta_groups[fake]['label'] = meta_groups[fake].get('label', []) + [label]
-        #
-        # for fake, meta_group in enumerate(meta_groups):
-        #     pool = MetricPool.parse(self.exp.metrics)
-        #     results = pool.calculate(meta_group['score'], meta_group['label'], meta_group['group'])
-        #     pnt('inactive users' if fake else 'active users')
-        #     for metric in results:
-        #         pnt(f'{metric}: {results[metric]}')
 
     def mind_large_evaluate(self, loader):
         self.legommender.eval()
@@ -322,26 +311,19 @@ class Worker:
 
         index = 0
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            # timer.run('score')
             with torch.no_grad():
                 scores = self.legommender(batch=batch)
                 scores = scores.squeeze(1)
-            # timer.run('score')
 
             batch_size = scores.size(0)
-            # timer.run('extend')
             for col in cols:
                 if batch[col].dim() == 2:
                     col_series[col][index:index + batch_size] = batch[col][:, 0]
                 else:
                     col_series[col][index:index + batch_size] = batch[col]
             score_series[index:index + batch_size] = scores.cpu().detach()
-            # score_series.extend(scores.cpu().detach())
             index += batch_size
-            # timer.run('extend')
 
-        # timer.summarize()
-        # loader.dataset.timer.summarize()
         return score_series, col_series
 
     def evaluate(self, loader, metrics):
@@ -355,7 +337,7 @@ class Worker:
         results = pool.calculate(score_series, label_series, group_series)
         return results
 
-    def simple_evaluate(self, **kwargs):
+    def simple_evaluate(self):
         loader = self.controller.get_loader(Phases.dev).eval()
         total_loss = Meaner()
 
@@ -373,13 +355,13 @@ class Worker:
             pnt('pretrained lr:', self.exp.policy.item_lr)
             pnt('other lr:', self.exp.policy.lr)
             pretrained_parameters, other_parameters = self.legommender.get_parameters()
-            self.m_optimizer = torch.optim.Adam([
+            self.optimizer = torch.optim.Adam([
                 {'params': pretrained_parameters, 'lr': self.exp.policy.item_lr},
                 {'params': other_parameters, 'lr': self.exp.policy.lr}
             ])
         else:
             pnt('use single lr:', self.exp.policy.lr)
-            self.m_optimizer = torch.optim.Adam(
+            self.optimizer = torch.optim.Adam(
                 params=filter(lambda p: p.requires_grad, self.legommender.parameters()),
                 lr=self.exp.policy.lr
             )
@@ -388,8 +370,8 @@ class Worker:
                 if p.requires_grad:
                     pnt(name, p.data.shape)
 
-        self.m_scheduler = get_linear_schedule_with_warmup(
-            self.m_optimizer,
+        self.scheduler = get_linear_schedule_with_warmup(
+            self.optimizer,
             num_warmup_steps=self.exp.policy.n_warmup,
             num_training_steps=len(self.controller.sets.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
         )
@@ -431,13 +413,20 @@ class Worker:
             hidden_size=item_encoder.config.embed_hidden_size,
             contents=self.resampler.item_cache,
             model=item_encoder.get_all_hidden_states,
-            page_size=self.exp.policy.batch_size,
+            page_size=self.config.page_size,
         )
 
         pager.run()
         pager.store(self.exp.store.dir)
 
     def run(self):
+        # params = Obj.raw(self.exp.params)
+        # if not isinstance(params, dict):
+        #     params = dict()
+        #
+        # mode_worker = self.mode_hub(self.mode)
+        # if mode_worker.load_model:
+
         if self.mode == 'train':
             self.train_runner()
         elif self.exp.mode == 'test':
@@ -459,6 +448,8 @@ class Worker:
         elif self.mode == 'train_get_item_embedding':
             self.load(self.load_path[0])
             self.train_get_item_embedding()
+
+        # self.mode_hub(self.mode)()
 
 
 if __name__ == '__main__':

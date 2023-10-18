@@ -1,11 +1,16 @@
 import glob
 import importlib
 
+# from loader.mode.base_mode import BaseMode
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
 
 
 class ClassHub:
+    # @staticmethod
+    # def modes():
+    #     return ClassHub(BaseMode, 'loader/modes', 'Mode')
+
     @staticmethod
     def operators():
         return ClassHub(BaseOperator, 'model/operators', 'Operator')
@@ -16,9 +21,9 @@ class ClassHub:
 
     def __init__(self, base_class, module_dir: str, module_type: str):
         """
-        @param base_class: e.g., BaseOperator, BasePredictor
-        @param module_dir: e.g., model/operators, model/predictors
-        @param module_type: e.g., Operator, Predictor
+        @param base_class: e.g., BaseOperator, BasePredictor, BaseMode
+        @param module_dir: e.g., model/operators, model/predictors, loader/modes
+        @param module_type: e.g., Operator, Predictor, Mode
         """
 
         self.base_class = base_class
@@ -39,7 +44,6 @@ class ClassHub:
         class_list = []
         for file_path in file_paths:
             file_name = file_path.split('/')[-1].split('.')[0]
-            # module = importlib.import_module(f'model.recommenders.{file_name}')
             module = importlib.import_module(f'{self.module_dir.replace("/", ".")}.{file_name}')
 
             for name, obj in module.__dict__.items():

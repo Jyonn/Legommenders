@@ -8,6 +8,7 @@ class UserCacher(BaseCacher):
             contents=contents,
             model=self.operator,
             page_size=self.page_size,
+            # page_size=2,
             hidden_size=self.hidden_size,
         )
         pager.run()

@@ -65,70 +65,109 @@ class Resampler:
             item_cache.append(self.item_inputer.sample_rebuilder(sample))
         return item_cache
 
-    def rebuild_for_user_cached(self, sample):
-        if not self.use_neg_sampling:
-            return sample
-        if self.status.is_training or (self.status.is_evaluating and Meta.simple_dev):
-            if isinstance(sample[self.candidate_col], np.ndarray):
-                sample[self.candidate_col] = sample[self.candidate_col].tolist()
-            if not isinstance(sample[self.candidate_col], list):
-                sample[self.candidate_col] = [sample[self.candidate_col]]
+    @staticmethod
+    def pack_tensor(array):
+        return torch.tensor(array, dtype=torch.long)
 
-            rand_neg = self.legommender.neg_count
-            neg_samples = [random.randint(0, self.item_size - 1) for _ in range(rand_neg)]
-            sample[self.candidate_col].extend(neg_samples)
-            sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-        return sample
-
-    def rebuild(self, sample):
-        # if self.legommender.cacher.user.cached:
-        #     return self.rebuild_for_user_cached(sample)
-
+    def rebuild_candidates(self, sample):
+        # convert candidate to list
         if not isinstance(sample[self.candidate_col], list):
             sample[self.candidate_col] = [sample[self.candidate_col]]
 
+        # negative sampling
         if self.use_neg_sampling:
             if self.status.is_training or (self.status.is_evaluating and Meta.simple_dev):
-                if self.neg_col:
-                    true_negs = sample[self.neg_col]
-                else:
-                    true_negs = []
-                rand_neg = max(self.legommender.neg_count - len(true_negs), 0)
+                # During testing or non-simple-dev evaluation,
+                # the legommender will directly calculate the scores.
+                # Therefore, we don't need to do negative sampling for cross-entropy loss.
+                true_negs = sample[self.neg_col] if self.neg_col else []
+                rand_count = max(self.legommender.neg_count - len(true_negs), 0)
+
                 neg_samples = random.sample(true_negs, k=min(self.legommender.neg_count, len(true_negs)))
-                neg_samples += [random.randint(0, self.item_size - 1) for _ in range(rand_neg)]
+                neg_samples += [random.randint(0, self.item_size - 1) for _ in range(rand_count)]
                 sample[self.candidate_col].extend(neg_samples)
         if self.neg_col:
             del sample[self.neg_col]
 
+        if not self.use_item_content:
+            # if not using item content, we don't need to rebuild candidate contents
+            sample[self.candidate_col] = self.pack_tensor(sample[self.candidate_col])
+            return
+
+        if self.legommender.llm_skip:
+            # if llm_skip, we don't need to rebuild candidate contents,
+            # as llm cache has stored their content knowledge
+            sample[self.candidate_col] = self.pack_tensor(sample[self.candidate_col])
+            return
+        if self.legommender.cacher.item.cached:
+            # if item cached, we don't need to rebuild candidate contents,
+            # as item cache has stored their content knowledge
+            sample[self.candidate_col] = self.pack_tensor(sample[self.candidate_col])
+            return
+
+        # start to inject content knowledge
+        if self.use_neg_sampling:
+            # when using negative sampling, we need to rebuild candidate contents
+            sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
+            return
+
+        # when not using negative sampling, we can use cache to speed up
+        if sample[self.candidate_col][0] not in self.candidate_cache:
+            sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
+            self.candidate_cache[sample[self.candidate_col][0]] = sample[self.candidate_col]
+        else:
+            sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
+
+    def rebuild_clicks(self, sample):
+        if self.legommender.cacher.user.cached:
+            # if user cached, we don't need to rebuild clicks,
+            # as user cache has stored their click knowledge
+            del sample[self.clicks_col]
+            return
+
+        # convert clicks to list
         if isinstance(sample[self.clicks_col], np.ndarray):
             sample[self.clicks_col] = sample[self.clicks_col].tolist()
         len_clicks = len(sample[self.clicks_col])
+        # padding clicks
         sample[self.clicks_mask_col] = [1] * len_clicks + [0] * (self.max_click_num - len_clicks)
+        sample[self.clicks_mask_col] = torch.tensor(sample[self.clicks_mask_col], dtype=torch.long)
         if self.use_item_content:
             sample[self.clicks_col].extend([0] * (self.max_click_num - len_clicks))
 
-        # content injection and tensorization
-        if self.use_item_content and not self.legommender.llm_skip and not self.legommender.cacher.item.cached:
-            if self.use_neg_sampling or sample[self.candidate_col][0] not in self.candidate_cache:
-                stacked_doc = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
-            else:
-                stacked_doc = self.candidate_cache[sample[self.candidate_col][0]]
-            sample[self.candidate_col] = stacked_doc
+        if not self.use_item_content:
+            # if not using item content, we use vanilla inputer provided by user operator to rebuild clicks
+            sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
+            return
+        if self.legommender.flatten_mode:
+            # in flatten mode, click contents will be rebuilt by user inputer
+            sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
+            sample[self.clicks_mask_col] = self.user_inputer.get_mask(sample[self.clicks_col])
+            return
 
-            if sample[self.user_col] in self.user_cache:
-                sample[self.clicks_col] = self.user_cache[sample[self.user_col]]
-            else:
-                sample[self.clicks_col] = self.stacker([self.item_cache[nid] for nid in sample[self.clicks_col]])
-                self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
+        if self.legommender.llm_skip:
+            # if llm_skip, we don't need to rebuild click contents,
+            # as llm cache has stored their content knowledge
+            sample[self.clicks_col] = self.pack_tensor(sample[self.clicks_col])
+            return
+        if self.legommender.cacher.item.cached:
+            # if item cached, we don't need to rebuild candidate contents,
+            # as item cache has stored their content knowledge
+            sample[self.clicks_col] = self.pack_tensor(sample[self.clicks_col])
+            return
+
+        # we can cache click content knowledge to speed up
+        if sample[self.user_col] in self.user_cache:
+            sample[self.clicks_col] = self.user_cache[sample[self.user_col]]
         else:
-            sample[self.candidate_col] = torch.tensor(sample[self.candidate_col], dtype=torch.long)
-            if self.legommender.llm_skip or self.legommender.cacher.item.cached:
-                sample[self.clicks_col] = torch.tensor(sample[self.clicks_col], dtype=torch.long)
-            else:
-                sample[self.clicks_col] = self.user_inputer.sample_rebuilder(sample)
+            sample[self.clicks_col] = self.stacker([self.item_cache[nid] for nid in sample[self.clicks_col]])
+            self.user_cache[sample[self.user_col]] = sample[self.clicks_col]
 
-        sample[self.clicks_mask_col] = torch.tensor(sample[self.clicks_mask_col], dtype=torch.long)
+    def rebuild(self, sample):
+        """transform sample to tensor-based dict"""
 
+        self.rebuild_candidates(sample)
+        self.rebuild_clicks(sample)
         return sample
 
     def __call__(self, sample):

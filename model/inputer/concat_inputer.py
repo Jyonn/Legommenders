@@ -22,6 +22,8 @@ class Pointer:
 
 
 class ConcatInputer(BaseInputer):
+    output_single_sequence = True
+
     vocab = Vocab(name='__cat_inputer_special_ids')
     PAD = vocab.append('[PAD]')
     CLS = vocab.append('[CLS]')
@@ -34,13 +36,16 @@ class ConcatInputer(BaseInputer):
         self.use_sep_token = use_sep_token
 
         self.max_content_len = self.get_max_content_len()
-        self.max_sequence_len = self.max_content_len + int(self.use_cls_token) + int(self.use_sep_token) * len(self.order)
+        self.max_sequence_len = self.get_max_sequence_len()
 
     def get_max_content_len(self):
         length = 0
         for col in self.order:
             length += self.depot.cols[col].max_length or 1
         return length
+
+    def get_max_sequence_len(self):
+        return self.max_content_len + int(self.use_cls_token) + int(self.use_sep_token) * len(self.order)
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
         return [self.vocab]

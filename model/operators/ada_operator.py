@@ -16,7 +16,6 @@ class AdaOperatorConfig(BaseOperatorConfig):
 
 
 class AdaOperator(BaseOperator):
-
     config_class = AdaOperatorConfig
     inputer_class = ConcatInputer
     config: AdaOperatorConfig

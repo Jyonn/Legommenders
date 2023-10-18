@@ -10,6 +10,8 @@ from utils.slice_dict import SliceOrderedDict, SliceDict
 
 
 class SimpleInputer(BaseInputer):
+    output_single_sequence = False
+
     def get_vocabs(self) -> Optional[List[Vocab]]:
         return []
 

@@ -34,6 +34,7 @@ class TransformerOperator(BaseOperator):
             intermediate_size=self.config.hidden_size * 4,
             vocab_size=1,
             type_vocab_size=1,
+            max_position_embeddings=1024,
         ))
 
         self.linear = nn.Linear(self.config.input_dim, self.config.hidden_size)

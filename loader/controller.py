@@ -11,6 +11,7 @@ from loader.meta import Meta, Phases, DatasetType
 from loader.status import Status
 from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
+from model.inputer.flatten_seq_inputer import FlattenSeqInputer
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
 from model.legommender import Legommender, LegommenderConfig, LegommenderMeta
 from loader.column_map import ColumnMap
@@ -40,7 +41,7 @@ class Controller:
         pnt('build column map ...')
         self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
-        """depots and data hubs initialization"""
+        # depots and data hubs initialization
         self.depots = Depots(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
         self.hubs = DataHubs(depots=self.depots)
         self.item_hub = DataHub(
@@ -52,7 +53,7 @@ class Controller:
             for depot in self.data.item.union:
                 self.item_hub.depot.union(DepotHub.get(depot))
 
-        """legommender components initialization"""
+        # legommender components initialization
         operator_set = ClassHub.operators()
         predictor_set = ClassHub.predictors()
 
@@ -75,26 +76,27 @@ class Controller:
 
         self.legommender_config = LegommenderConfig(**Obj.raw(self.model.config))
 
-        """embedding initialization"""
+        # embedding initialization
         skip_cols = [self.column_map.candidate_col] if self.legommender_config.use_item_content else []
-        self.embedding_manager = EmbeddingHub(
+        self.embedding_hub = EmbeddingHub(
             hidden_size=self.legommender_config.embed_hidden_size,
             same_dim_transform=self.model.config.same_dim_transform,
         )
         for embedding_info in self.embed.embeddings:
-            self.embedding_manager.load_pretrained_embedding(**Obj.raw(embedding_info))
-        self.embedding_manager.register_depot(self.hubs.a_hub(), skip_cols=skip_cols)
-        self.embedding_manager.register_vocab(ConcatInputer.vocab)
+            self.embedding_hub.load_pretrained_embedding(**Obj.raw(embedding_info))
+        self.embedding_hub.register_depot(self.hubs.a_hub(), skip_cols=skip_cols)
+        self.embedding_hub.register_vocab(ConcatInputer.vocab)
+        self.embedding_hub.register_vocab(FlattenSeqInputer.vocab)
         if self.model.config.use_item_content:
-            self.embedding_manager.register_depot(self.item_hub)
-            self.embedding_manager.clone_vocab(
+            self.embedding_hub.register_depot(self.item_hub)
+            self.embedding_hub.clone_vocab(
                 col_name=NaturalConcatInputer.special_col,
                 clone_col_name=self.data.item.lm_col or 'title'
             )
-        cat_embeddings = self.embedding_manager(ConcatInputer.vocab.name)  # type: nn.Embedding
+        cat_embeddings = self.embedding_hub(ConcatInputer.vocab.name)  # type: nn.Embedding
         cat_embeddings.weight.data[ConcatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[ConcatInputer.PAD])
 
-        """user plugin initialization"""
+        # user plugin initialization
         user_plugin = None
         if self.data.user.plugin:
             user_plugin = UserPlugin(
@@ -103,14 +105,14 @@ class Controller:
                 select_cols=self.data.user.plugin_cols,
             )
 
-        """legommender initialization"""
+        # legommender initialization
         # self.legommender = self.legommender_class(
         self.legommender = Legommender(
             meta=self.legommender_meta,
             status=self.status,
             config=self.legommender_config,
             column_map=self.column_map,
-            embedding_manager=self.embedding_manager,
+            embedding_manager=self.embedding_hub,
             user_hub=self.hubs.a_hub(),
             item_hub=self.item_hub,
             user_plugin=user_plugin,
@@ -128,7 +130,7 @@ class Controller:
             for depot in self.depots.depots.values():
                 depot.start_caching()
 
-        """data sets initialization"""
+        # data sets initialization
         self.sets = DataSets(hubs=self.hubs, resampler=self.resampler)
 
     def parse_mode(self):

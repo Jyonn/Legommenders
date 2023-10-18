@@ -1,7 +1,7 @@
 import torch
 
 from loader.meta import Meta
-from utils.stacker import Stacker
+from utils.stacker import FastStacker
 from loader.pager.base_pager import BasePager
 
 
@@ -15,7 +15,7 @@ class FastUserPager(BasePager):
 
         self.hidden_size = hidden_size
         self.fast_user_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
-        self.stacker = Stacker(aggregator=torch.stack)
+        self.stacker = FastStacker(aggregator=torch.stack)
 
     def stack_features(self):
         stacked = dict()
@@ -23,8 +23,11 @@ class FastUserPager(BasePager):
             target = self.current[feature]
             if isinstance(target[0], torch.Tensor):
                 stacked[feature] = torch.stack(target).to(Meta.device)
+            elif isinstance(target[0], dict):
+                stacked[feature] = self.stacker(target)
             else:
                 stacked[feature] = torch.tensor(target).to(Meta.device)
+        # stacked = self.stacker(self.current)
         return dict(batch=stacked)
 
     def get_features(self, content, index) -> dict:

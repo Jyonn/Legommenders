@@ -7,6 +7,7 @@ from torch import nn
 from loader.meta import Meta
 from loader.status import Status
 from model.common.user_plugin import UserPlugin
+from model.inputer.flatten_seq_inputer import FlattenSeqInputer
 from model.operators.base_llm_operator import BaseLLMOperator
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
@@ -105,6 +106,7 @@ class Legommender(nn.Module):
         self.clicks_mask_col = column_map.clicks_mask_col
 
         """initializing core components"""
+        self.flatten_mode = issubclass(self.user_encoder_class.inputer_class, FlattenSeqInputer)
         self.user_encoder = self.prepare_user_module()
         self.item_encoder = None
         if self.config.use_item_content:
@@ -179,7 +181,7 @@ class Legommender(nn.Module):
         if self.cacher.user.cached:
             return self.cacher.user.repr[batch[self.user_col]]
 
-        if self.config.use_item_content:
+        if self.config.use_item_content and not self.flatten_mode:
             clicks = self.get_item_content(batch, self.clicks_col)
         else:
             clicks = self.user_encoder.inputer.get_embeddings(batch[self.clicks_col])
@@ -248,6 +250,9 @@ class Legommender(nn.Module):
             embed_hidden_size=self.config.embed_hidden_size,
             input_dim=self.config.hidden_size,
         ))
+
+        if self.flatten_mode:
+            user_config.inputer_config['item_hub'] = self.item_hub
 
         return self.user_encoder_class(
             config=user_config,

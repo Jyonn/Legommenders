@@ -22,7 +22,6 @@ class AttentionOperatorConfig(BaseOperatorConfig):
 
 
 class AttentionOperator(BaseOperator):
-
     config_class = AttentionOperatorConfig
     inputer_class = ConcatInputer
     config: AttentionOperatorConfig

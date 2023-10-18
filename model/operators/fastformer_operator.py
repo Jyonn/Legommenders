@@ -37,6 +37,7 @@ class FastformerOperator(BaseOperator):
             hidden_dropout_prob=self.config.hidden_dropout_prob,
             num_hidden_layers=self.config.num_hidden_layers,
             intermediate_size=self.config.input_dim * 4,
+            max_position_embeddings=1024,
         ))
 
         self.linear = nn.Linear(self.config.input_dim, self.config.hidden_size)
