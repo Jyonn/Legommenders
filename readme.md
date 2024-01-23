@@ -6,6 +6,11 @@
 
 ## Updates
 
+### Jan. 23, 2024
+
+- Legommenders partially supports the flatten sequential recommendation model.
+- New models are added, including: MaskNet, GDCN, etc.
+
 ### Oct. 16, 2023
 
 - We clean the code and convert names of the item-side parameters. 
