@@ -1,6 +1,6 @@
 # Legommenders
 
-*A modular recommender systems framework*
+*A modular framework for recommender systems*
 
 ![Legommenders](Legommenders.png)
 
