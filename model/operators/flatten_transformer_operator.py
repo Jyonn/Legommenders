@@ -5,6 +5,7 @@ from model.operators.transformer_operator import TransformerOperator
 
 class FlattenTransformerOperator(TransformerOperator):
     inputer_class = FlattenSeqInputer
+    flatten_mode = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

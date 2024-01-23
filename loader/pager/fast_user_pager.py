@@ -9,12 +9,14 @@ class FastUserPager(BasePager):
     def __init__(
             self,
             hidden_size,
+            placeholder,
             **kwargs,
     ):
         super().__init__(**kwargs)
 
         self.hidden_size = hidden_size
-        self.fast_user_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
+        # self.fast_user_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
+        self.fast_user_repr = placeholder.to(Meta.device)
         self.stacker = FastStacker(aggregator=torch.stack)
 
     def stack_features(self):

@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from typing import Optional, List
 
+import numpy as np
 import torch
 from UniTok import Vocab
 
@@ -62,6 +63,8 @@ class FlattenSeqInputer(ConcatInputer):
             item_sample = self.item_hub.depot[item_id]
             for attr_index, col in enumerate(self.item_hub.order):
                 value = item_sample[col]
+                if isinstance(value, np.ndarray):
+                    value = value.tolist()
                 if not isinstance(value, list):
                     value = [value]
                 value = torch.tensor(value, dtype=torch.long)

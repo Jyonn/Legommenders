@@ -1,0 +1,7 @@
+name: it-${key}
+embeddings:
+  -
+    vocab_name: ${key}
+    vocab_type: numpy
+    path: ${data.item.depot}/../${key}.codebooks.npy
+    frozen: ${frozen}$

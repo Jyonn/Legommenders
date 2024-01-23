@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 from oba import Obj
 from pigmento import pnt
@@ -89,10 +91,14 @@ class Controller:
         self.embedding_hub.register_vocab(FlattenSeqInputer.vocab)
         if self.model.config.use_item_content:
             self.embedding_hub.register_depot(self.item_hub)
-            self.embedding_hub.clone_vocab(
-                col_name=NaturalConcatInputer.special_col,
-                clone_col_name=self.data.item.lm_col or 'title'
-            )
+            lm_col = self.data.item.lm_col or 'title'
+            if self.embedding_hub.has_col(lm_col):
+                self.embedding_hub.clone_vocab(
+                    col_name=NaturalConcatInputer.special_col,
+                    clone_col_name=self.data.item.lm_col or 'title'
+                )
+            else:
+                warnings.warn(f'cannot find lm column in item depot, please ensure no natural inputer is used')
         cat_embeddings = self.embedding_hub(ConcatInputer.vocab.name)  # type: nn.Embedding
         cat_embeddings.weight.data[ConcatInputer.PAD] = torch.zeros_like(cat_embeddings.weight.data[ConcatInputer.PAD])
 

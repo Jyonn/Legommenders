@@ -16,7 +16,7 @@ config:
       use_cls_token: false
       use_sep_token: false
   user_config:
-    num_hidden_layers: 3
+    num_hidden_layers: 1
     inputer_config:
       use_cls_token: true
       use_sep_token: true

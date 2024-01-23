@@ -127,7 +127,9 @@ class Worker:
             return 'cpu'
         if isinstance(cuda, int) or isinstance(cuda, str):
             pnt(f'User select cuda {cuda}')
-            return f"cuda:{cuda}"
+            # return f"cuda:{cuda}"
+            cuda = eval(f'[{cuda}]') if isinstance(cuda, str) else cuda
+            return torch.cuda.device(cuda)
         return GPU.auto_choose(torch_format=True)
 
     @staticmethod
@@ -313,7 +315,8 @@ class Worker:
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 scores = self.legommender(batch=batch)
-                scores = scores.squeeze(1)
+                if scores.dim() == 2:
+                    scores = scores.squeeze(1)
 
             batch_size = scores.size(0)
             for col in cols:
@@ -443,7 +446,8 @@ class Worker:
         elif self.mode == 'test_llm_layer_split':
             self.test_llm_layer_split()
         elif self.mode == 'train_get_user_embedding':
-            self.load(self.load_path[0])
+            if self.load_path:
+                self.load(self.load_path[0])
             self.train_get_user_embedding()
         elif self.mode == 'train_get_item_embedding':
             self.load(self.load_path[0])

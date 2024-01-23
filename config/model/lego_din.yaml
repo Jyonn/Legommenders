@@ -11,6 +11,9 @@ config:
     flatten: false
     max_pooling: false
   user_config:
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
     flatten: false
     max_pooling: false
   predictor_config:

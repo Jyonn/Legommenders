@@ -6,11 +6,6 @@ meta:
 config:
   use_item_content: true
   hidden_size: 64
-  dnn_hidden_units: [1000, 1000, 1000]
-  dnn_activations: ReLU
-  dnn_dropout: 0.1
-  dnn_batch_norm: false
-  cross_num: 3
   item_config:
     flatten: false
     max_pooling: false

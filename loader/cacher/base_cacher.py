@@ -1,10 +1,10 @@
 class BaseCacher:
-    def __init__(self, operator, page_size, hidden_size):
+    def __init__(self, operator, page_size, hidden_size, activate=True):
         self.operator = operator
         self.page_size = page_size
         self.hidden_size = hidden_size
 
-        self._activate = True
+        self._activate = activate
         self.cached = False
         self.repr = None
 

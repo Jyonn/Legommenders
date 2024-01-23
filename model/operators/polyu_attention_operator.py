@@ -21,6 +21,7 @@ class PolyAttentionOperator(BaseOperator):
     config_class = PolyAttentionOperatorConfig
     inputer_class = ConcatInputer
     config: PolyAttentionOperatorConfig
+    allow_caching = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -72,7 +72,12 @@ class DCNPredictor(BasePredictor):
         output_dim = self.config.hidden_size * 2 + self.config.dnn_hidden_units[-1]
         self.prediction = nn.Linear(output_dim, 1)
 
-    def predict(self, user_embeddings, item_embeddings):
+    def predict(self, user_embeddings, item_embeddings) -> torch.Tensor:
+        """
+        @param user_embeddings: [B, D]  batch size, embedding size
+        @param item_embeddings: [B, D]  batch size, embedding size
+        @return: [B]  batch size
+        """
         input_embeddings = torch.cat([user_embeddings, item_embeddings], dim=1)  # [batch_size, 2 * hidden_size]
         cross_output = self.cross_net(input_embeddings)
         dnn_output = self.dnn(input_embeddings)

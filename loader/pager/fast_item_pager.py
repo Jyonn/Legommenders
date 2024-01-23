@@ -11,6 +11,7 @@ class FastItemPager(BasePager):
             self,
             inputer: BaseInputer,
             hidden_size,
+            placeholder,
             llm_skip,
             **kwargs,
     ):
@@ -19,7 +20,8 @@ class FastItemPager(BasePager):
         self.inputer = inputer
         self.hidden_size = hidden_size
         self.llm_skip = llm_skip
-        self.fast_item_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
+        # self.fast_item_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
+        self.fast_item_repr = placeholder.to(Meta.device)
         self.stacker = Stacker(aggregator=torch.stack)
 
     def get_features(self, content, index) -> dict:

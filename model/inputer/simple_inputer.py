@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from typing import Optional, List, Dict
 
+import numpy as np
 import torch
 from UniTok import Vocab
 
@@ -29,7 +30,6 @@ class SimpleInputer(BaseInputer):
             if not max_len:
                 sample[col] = [sample[col]]
                 max_len = 1
-
             input_ids[col], attention_mask[col] = self.pad(sample[col], max_len)
             input_ids[col] = torch.tensor(input_ids[col])
             attention_mask[col] = torch.tensor(attention_mask[col])

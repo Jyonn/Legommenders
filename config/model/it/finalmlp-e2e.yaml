@@ -1,0 +1,20 @@
+name: FinalMLP.E2E
+meta:
+  item: Attention
+  user: Attention
+  predictor: FinalMLP
+config:
+  use_neg_sampling: false
+  use_item_content: true
+  hidden_size: ${hidden_size}$
+  embed_hidden_size: ${embed_hidden_size}$
+  item_config:
+    num_attention_heads: 8
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
+  user_config:
+    num_attention_heads: 8
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

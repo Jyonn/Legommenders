@@ -1,0 +1,17 @@
+name: DCN.RL
+meta:
+  user: Pooling
+  predictor: DCN
+config:
+  use_neg_sampling: false
+  use_item_content: false
+  hidden_size: 64
+  user_config:
+    flatten: false
+    max_pooling: false
+  predictor_config:
+    dnn_hidden_units: [ 1000, 1000, 1000 ]
+    dnn_activations: ReLU
+    dnn_dropout: 0.1
+    dnn_batch_norm: false
+    cross_num: 3

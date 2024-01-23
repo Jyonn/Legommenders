@@ -27,8 +27,8 @@ class FactorizationMachine(nn.Module):
         super(FactorizationMachine, self).__init__()
 
     def forward(self, input_embeddings):
-        sum_of_square = torch.sum(input_embeddings, dim=1) ** 2  # sum then square
-        square_of_sum = torch.sum(input_embeddings ** 2, dim=1)  # square then sum
+        sum_of_square = torch.sum(input_embeddings, dim=1) ** 2
+        square_of_sum = torch.sum(input_embeddings ** 2, dim=1)
         bi_interaction = (sum_of_square - square_of_sum) * 0.5
         return bi_interaction.sum(dim=-1, keepdim=True)
 
@@ -54,7 +54,7 @@ class DeepFMPredictor(BasePredictor):
         )
 
     def predict(self, user_embeddings, item_embeddings):
-        input_embeddings = torch.cat([user_embeddings, item_embeddings], dim=1)  # [batch_size, 2 * hidden_size]
+        input_embeddings = torch.stack([user_embeddings, item_embeddings], dim=1)  # [B, 2, D]
         fm_output = self.fm(input_embeddings)
         dnn_output = self.dnn(input_embeddings.flatten(start_dim=1))
         scores = (fm_output + dnn_output) / 2

@@ -17,7 +17,7 @@ policy:
   epoch_start: ${epoch_start}$
   epoch: 50
   lr: ${lr}$
-  news_lr: ${news_lr}$
+  item_lr: ${item_lr}$
   freeze_emb: false
   pin_memory: false
   epoch_batch: ${epoch_batch}$

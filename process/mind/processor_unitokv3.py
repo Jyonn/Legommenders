@@ -270,6 +270,22 @@ class Processor:
             inter_tok = self.get_inter_tok()
             inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, mode))
 
+    def tokenize_original_dev(self):
+        news_tok = self.get_news_tok(
+            max_title_len=20,
+            max_abs_len=50
+        )
+        news_df = self.combine_news_data()
+        news_tok.read_file(news_df).tokenize()
+
+        user_tok = self.get_user_tok(max_history=30)
+        user_df = self.combine_user_df()
+        user_tok.read(user_df).tokenize()
+
+        inter_df = self.repad_inter_data('dev')
+        inter_tok = self.get_inter_tok()
+        inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, 'dev-original'))
+
     def tokenize_neg(self):
         print('tokenize neg')
         self.uid.load(os.path.join(self.store_dir, 'user'))
@@ -283,10 +299,17 @@ class Processor:
 
 
 if __name__ == '__main__':
+    # p = Processor(
+    #     data_dir='/data1/qijiong/Data/MIND/',
+    #     store_dir='../../data/MIND-small-v3',
+    # )
+    #
+    # p.tokenize()
+    # p.tokenize_neg()
+
     p = Processor(
         data_dir='/data1/qijiong/Data/MIND/',
-        store_dir='../../data/MIND-small-v3',
+        store_dir='../../data/MIND-small-v2',
     )
 
-    p.tokenize()
-    p.tokenize_neg()
+    p.tokenize_original_dev()

@@ -3,7 +3,7 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: train_get_user_embedding
 load:
-  save_dir: ../${embed.name}-train_test
+  save_dir: null
   epochs: null
   model_only: true
   strict: true

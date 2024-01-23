@@ -1,0 +1,27 @@
+name: BERT-MINER.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+meta:
+  item: Bert
+  user: PolyAttention
+  predictor: MINER
+config:
+  use_neg_sampling: true
+  use_item_content: true
+  use_fast_eval: ${fast_eval}$
+  max_item_content_batch_size: 0
+  same_dim_transform: false
+  embed_hidden_size: ${embed_hidden_size}$
+  hidden_size: ${hidden_size}$
+  page_size: 512
+  neg_count: 4
+  item_config:
+    llm_dir: bert-base-uncased
+    layer_split: ${layer}$
+    lora: ${lora}$
+    lora_r: ${lora_r}$
+    weights_dir: data/${data.name}/bert-${llm_ver}-split
+  user_config:
+    num_context_codes: 32
+    context_code_dim: 256
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

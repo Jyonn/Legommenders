@@ -68,7 +68,7 @@ def kmeans(
     X = X.to(device)
 
     # initialize
-    if type(cluster_centers) == list:  # ToDo: make this less annoyingly weird
+    if type(cluster_centers) == list:
         initial_state = initialize(X, num_clusters, seed=seed)
     else:
         if tqdm_flag:

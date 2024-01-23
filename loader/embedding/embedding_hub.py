@@ -10,10 +10,10 @@ from loader.data_hub import DataHub
 
 
 class TransformEmbedding(nn.Module):
-    def __init__(self, embedding: nn.Embedding, from_dim: int, to_dim: int):
+    def __init__(self, embedding: nn.Embedding, to_dim: int):
         super(TransformEmbedding, self).__init__()
         self.embedding = embedding
-        self.linear = nn.Linear(from_dim, to_dim)
+        self.linear = nn.Linear(embedding.weight.data.shape[1], to_dim)
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, indexes):
@@ -45,6 +45,7 @@ class EmbeddingHub:
         self._col_to_vocab = dict()
         self._vocab_to_size = dict()
         self._table = nn.ModuleDict()
+        self._vocab_map = dict()
 
         self.hidden_size = hidden_size
         self.same_dim_transform = same_dim_transform
@@ -52,6 +53,9 @@ class EmbeddingHub:
 
     def get_table(self):
         return self._table
+
+    def get_vocab_map(self):
+        return self._vocab_map
 
     def get(self, col, as_vocab=False):
         vocab = col if as_vocab else self._col_to_vocab[col]
@@ -67,6 +71,8 @@ class EmbeddingHub:
     def build_vocab_embedding(self, vocab_name, vocab_size):
         if vocab_name in self._table:
             return
+
+        self._vocab_map[vocab_name] = len(self._vocab_map)
 
         if vocab_name in self._pretrained:
             embedding_info = self._pretrained[vocab_name]
@@ -91,7 +97,6 @@ class EmbeddingHub:
                     pnt(f'transform hidden size from {embedding_size} to {self.hidden_size}')
                     embedding = TransformEmbedding(
                         embedding=embedding,
-                        from_dim=embedding_size,
                         to_dim=self.hidden_size
                     )
                 else:
@@ -107,6 +112,9 @@ class EmbeddingHub:
 
     def clone_vocab(self, col_name, clone_col_name):
         self._col_to_vocab[col_name] = self._col_to_vocab[clone_col_name]
+
+    def has_col(self, col_name) -> bool:
+        return col_name in self._col_to_vocab
 
     def register_vocab(self, vocab_name: Union[str, Vocab], vocab_size=None):
         if isinstance(vocab_name, Vocab):

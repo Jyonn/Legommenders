@@ -1,9 +1,14 @@
+from typing import cast
+
 from loader.cacher.item_cacher import ItemCacher
 from loader.cacher.user_cacher import UserCacher
 
 
 class ReprCacher:
     def __init__(self, legommender):
+        from model.legommender import Legommender
+        legommender = cast(Legommender, legommender)
+
         self.use_item_content = legommender.config.use_item_content
         self._activate = True
 
@@ -12,12 +17,15 @@ class ReprCacher:
             page_size=legommender.config.page_size,
             hidden_size=legommender.config.hidden_size,
             llm_skip=legommender.llm_skip,
+            activate=legommender.item_encoder and legommender.item_encoder.allow_caching,
         )
 
         self.user = UserCacher(
             operator=legommender.get_user_content,
             page_size=legommender.config.page_size,
             hidden_size=legommender.config.hidden_size,
+            activate=legommender.user_encoder.allow_caching,
+            placeholder=legommender.user_encoder.get_full_placeholder(legommender.user_hub.depot.sample_size),
         )
 
         self.user_plugin = legommender.user_plugin

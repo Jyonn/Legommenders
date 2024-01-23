@@ -9,7 +9,7 @@ from loader.status import Status
 from model.legommender import Legommender, LegommenderConfig
 from loader.data_hub import DataHub
 from loader.data_set import DataSet
-from utils.stacker import Stacker
+from utils.stacker import Stacker, FastStacker
 from utils.timer import Timer
 
 
@@ -41,7 +41,7 @@ class Resampler:
         self.item_dataset = None
         self.item_inputer = None
         self.item_cache = None
-        self.stacker = Stacker(aggregator=torch.stack)
+        self.stacker = FastStacker(aggregator=torch.stack)
         # self.stacker = default_collate
         if self.use_item_content:
             self.item_dataset = DataSet(hub=item_hub)
@@ -106,15 +106,16 @@ class Resampler:
             return
 
         # start to inject content knowledge
-        if self.use_neg_sampling:
+        # if self.use_neg_sampling:
             # when using negative sampling, we need to rebuild candidate contents
-            sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
-            return
+        sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
+        return
 
         # when not using negative sampling, we can use cache to speed up
         if sample[self.candidate_col][0] not in self.candidate_cache:
+            item_id = sample[self.candidate_col][0]
             sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
-            self.candidate_cache[sample[self.candidate_col][0]] = sample[self.candidate_col]
+            self.candidate_cache[item_id] = sample[self.candidate_col]
         else:
             sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
 

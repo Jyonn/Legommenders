@@ -58,6 +58,17 @@ class Depots:
                         depot.filter(filter_func_str, col=col)
                         pnt(f'Filter {col} with {filter_str} in {phase} phase, sample num: {sample_num} -> {len(depot)}')
 
+        for phase in [Phases.train, Phases.dev, Phases.test]:
+            filters = user_data.depots[phase].filters
+            depot = self.depots[phase]
+            if not depot:
+                continue
+            for col in filters:
+                for filter_str in filters[col]:
+                    filter_func_str = f'lambda x: {filter_str}'
+                    depot.filter(filter_func_str, col=col)
+                    pnt(f'Filter {col} with {filter_str} in {phase} phase, sample num: {len(depot)}')
+
     @staticmethod
     def create_fast_eval_depot(path, column_map: ColumnMap):
         user_depot = CachingDep(path)

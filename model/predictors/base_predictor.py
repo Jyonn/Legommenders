@@ -1,5 +1,7 @@
 from torch import nn
 
+from model.common.base_module import BaseModule
+
 
 class BasePredictorConfig:
     def __init__(
@@ -12,7 +14,7 @@ class BasePredictorConfig:
         self.embed_hidden_size = embed_hidden_size
 
 
-class BasePredictor(nn.Module):
+class BasePredictor(BaseModule):
     allow_ranking = True
     allow_matching = True
     keep_input_dim = False

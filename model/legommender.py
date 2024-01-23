@@ -6,8 +6,9 @@ from torch import nn
 
 from loader.meta import Meta
 from loader.status import Status
+from model.common.base_module import BaseModule
+from model.common.mediator import Mediator
 from model.common.user_plugin import UserPlugin
-from model.inputer.flatten_seq_inputer import FlattenSeqInputer
 from model.operators.base_llm_operator import BaseLLMOperator
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
@@ -62,11 +63,14 @@ class LegommenderConfig:
 
         self.page_size = page_size
 
-        if self.use_item_content and not self.item_config:
-            raise ValueError('item_config is required when use_item_content is True')
+        if self.use_item_content:
+            if not self.item_config:
+                self.item_config = {}
+                # raise ValueError('item_config is required when use_item_content is True')
+                pnt('automatically set item_config to an empty dict, as use_item_content is True')
 
 
-class Legommender(nn.Module):
+class Legommender(BaseModule):
     def __init__(
             self,
             meta: LegommenderMeta,
@@ -106,12 +110,13 @@ class Legommender(nn.Module):
         self.clicks_mask_col = column_map.clicks_mask_col
 
         """initializing core components"""
-        self.flatten_mode = issubclass(self.user_encoder_class.inputer_class, FlattenSeqInputer)
+        self.flatten_mode = self.user_encoder_class.flatten_mode
         self.user_encoder = self.prepare_user_module()
         self.item_encoder = None
         if self.config.use_item_content:
             self.item_encoder = self.prepare_item_module()
         self.predictor = self.prepare_predictor()
+        self.mediator = Mediator(self)
 
         """initializing extra components"""
         self.user_plugin = user_plugin
@@ -163,7 +168,7 @@ class Legommender(nn.Module):
         batch_num = (sample_size + allow_batch_size - 1) // allow_batch_size
 
         # item_contents = torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float).to(Setting.device)
-        item_contents = self.item_encoder.get_full_item_placeholder(sample_size).to(Meta.device)
+        item_contents = self.item_encoder.get_full_placeholder(sample_size).to(Meta.device)
         for i in range(batch_num):
             start = i * allow_batch_size
             end = min((i + 1) * allow_batch_size, sample_size)
@@ -225,8 +230,10 @@ class Legommender(nn.Module):
         batch_size, candidate_size, hidden_size = item_embeddings.shape
         if self.predictor.keep_input_dim:
             return self.predictor(user_embeddings, item_embeddings)
-        user_embeddings = user_embeddings.unsqueeze(1).repeat(1, candidate_size, 1)  # B, K+1, D
-        user_embeddings = user_embeddings.view(-1, hidden_size)
+        # if user_embeddings: B, S, D
+        # user_embeddings = user_embeddings.unsqueeze(1).repeat(1, candidate_size, 1)  # B, K+1, D
+        # user_embeddings = user_embeddings.view(-1, hidden_size)
+        user_embeddings = self.user_encoder.prepare_for_predictor(user_embeddings, candidate_size)
         item_embeddings = item_embeddings.view(-1, hidden_size)
         scores = self.predictor(user_embeddings, item_embeddings)
         scores = scores.view(batch_size, -1)

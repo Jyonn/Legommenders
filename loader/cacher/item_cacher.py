@@ -8,6 +8,9 @@ class ItemCacher(BaseCacher):
         self.llm_skip = llm_skip
 
     def _cache(self, contents):
+        item_size = len(contents)
+        placeholder = self.operator.get_full_placeholder(item_size)
+
         pager = FastItemPager(
             inputer=self.operator.inputer,
             contents=contents,
@@ -15,6 +18,7 @@ class ItemCacher(BaseCacher):
             page_size=self.page_size,
             hidden_size=self.hidden_size,
             llm_skip=self.llm_skip,
+            placeholder=placeholder,
         )
 
         pager.run()

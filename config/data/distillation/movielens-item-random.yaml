@@ -1,6 +1,6 @@
 name: MovieLens-Distillation-Item-Random
 base_dir: data/MovieLens-100k
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/distillation/movie-random
   order:

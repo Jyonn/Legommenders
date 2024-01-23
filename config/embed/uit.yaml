@@ -1,0 +1,12 @@
+name: uit
+embeddings:
+  -
+    vocab_name: ${key}
+    vocab_type: numpy
+    path: ${data.item.depot}/../${key}.codebooks.npy
+    frozen: ${frozen}$
+  -
+    vocab_name: ${user-key}
+    vocab_type: numpy
+    path: ${data.item.depot}/../${user-key}.codebooks.npy
+    frozen: ${frozen}$

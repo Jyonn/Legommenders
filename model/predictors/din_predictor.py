@@ -58,7 +58,7 @@ class DINAttention(nn.Module):
         self.use_softmax = self.config.din_use_softmax
         hidden_activations = [Dice(units) for units in self.config.attention_hidden_units]
         self.attention_layer = MLPLayer(
-            input_dim=4 * self.hidden_size,
+            input_dim=4 * self.config.hidden_size,
             output_dim=1,
             hidden_units=self.config.attention_hidden_units,
             hidden_activations=hidden_activations,
@@ -69,17 +69,17 @@ class DINAttention(nn.Module):
         )
 
     def forward(self, candidate, clicks, mask=None):
-        # target_item: b x emd
-        # history_sequence: b x len x emb
+        # candidate: b x emd
+        # clicks: b x len x emb
         click_size = clicks.size(1)
-        candidate = candidate.expand(-1, click_size, -1)
+        candidate = candidate.unsqueeze(1).expand(-1, click_size, -1)
         attention_input = torch.cat([
             candidate,
             clicks,
             candidate - clicks,
             candidate * clicks
         ], dim=-1)  # b x len x 4*emb
-        attention_weight = self.attention_layer(attention_input.view(-1, 4 * self.hidden_size))
+        attention_weight = self.attention_layer(attention_input.view(-1, 4 * self.config.hidden_size))
         attention_weight = attention_weight.view(-1, click_size)  # b x len
         if mask is not None:
             attention_weight = attention_weight * mask.float()
