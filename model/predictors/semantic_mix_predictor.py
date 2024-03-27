@@ -116,6 +116,7 @@ class SemanticMixPredictor(BasePredictor):
         # user_embeddings = _user_embeddings
         # item_embeddings = _item_embeddings
 
+        # print(user_embeddings.shape, item_embeddings.shape)
         for i in range(1, user_embeddings.shape[1]):
             user_embeddings[:, i, :] = user_embeddings[:, i, :] + user_embeddings[:, i - 1, :]
         for i in range(1, item_embeddings.shape[1]):

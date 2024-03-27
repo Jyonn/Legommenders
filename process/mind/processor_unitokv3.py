@@ -282,7 +282,7 @@ class Processor:
         user_df = self.combine_user_df()
         user_tok.read(user_df).tokenize()
 
-        inter_df = self.repad_inter_data('dev')
+        inter_df = self.read_inter_data('dev')
         inter_tok = self.get_inter_tok()
         inter_tok.read_file(inter_df).tokenize().store_data(os.path.join(self.store_dir, 'dev-original'))
 

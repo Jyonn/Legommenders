@@ -10,6 +10,7 @@ class ReprCacher:
         legommender = cast(Legommender, legommender)
 
         self.use_item_content = legommender.config.use_item_content
+        self.user_size = legommender.user_hub.depot.vocs[legommender.column_map.user_col].size
         self._activate = True
 
         self.item = ItemCacher(
@@ -25,7 +26,7 @@ class ReprCacher:
             page_size=legommender.config.page_size,
             hidden_size=legommender.config.hidden_size,
             activate=legommender.user_encoder.allow_caching,
-            placeholder=legommender.user_encoder.get_full_placeholder(legommender.user_hub.depot.sample_size),
+            placeholder=legommender.user_encoder.get_full_placeholder(self.user_size),
         )
 
         self.user_plugin = legommender.user_plugin

@@ -1,19 +1,11 @@
-name: DCN.E2E
+name: DCN.E2E-USER
 meta:
-  item: Transformer
   user: Transformer
   predictor: DCN
 config:
   use_neg_sampling: false
-  use_item_content: true
+  use_item_content: false
   hidden_size: ${hidden_size}$
-  embed_hidden_size: ${embed_hidden_size}$
-  item_config:
-    num_attention_heads: 8
-    num_hidden_layers: 6
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
   user_config:
     num_attention_heads: 8
     num_hidden_layers: 6

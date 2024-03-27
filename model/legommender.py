@@ -211,8 +211,10 @@ class Legommender(BaseModule):
             item_embeddings = self.get_item_content(batch, self.candidate_col)
         else:
             item_embeddings = self.embedding_manager(self.clicks_col)(batch[self.candidate_col].to(Meta.device))
+        # print(item_embeddings.shape)
 
         user_embeddings = self.get_user_content(batch)
+        # print(user_embeddings.shape)
 
         if self.use_neg_sampling:
             scores = self.predict_for_neg_sampling(item_embeddings, user_embeddings)

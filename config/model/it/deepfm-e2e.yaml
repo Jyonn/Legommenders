@@ -1,7 +1,7 @@
 name: DeepFM.E2E
 meta:
-  item: Attention
-  user: Attention
+  item: Transformer
+  user: Transformer
   predictor: DeepFM
 config:
   use_neg_sampling: false
@@ -10,11 +10,13 @@ config:
   embed_hidden_size: ${embed_hidden_size}$
   item_config:
     num_attention_heads: 8
+    num_hidden_layers: 6
     inputer_config:
       use_cls_token: false
       use_sep_token: false
   user_config:
     num_attention_heads: 8
+    num_hidden_layers: 6
     inputer_config:
       use_cls_token: false
       use_sep_token: false

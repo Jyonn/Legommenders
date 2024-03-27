@@ -1,0 +1,11 @@
+name: it-cf
+embeddings:
+  -
+    vocab_name: nid-list
+    vocab_type: numpy
+    path: data/MIND-small-it/news-vec.npy
+    frozen: ${frozen}$
+  - vocab_name: uid-list
+    vocab_type: numpy
+    path: data/MIND-small-it/user-vec.npy
+    frozen: ${frozen}$

@@ -1,0 +1,7 @@
+name: it-cf
+embeddings:
+  -
+    vocab_name: nid
+    vocab_type: numpy
+    path: data/MIND-small-it/news-vec.npy
+    frozen: ${frozen}$
