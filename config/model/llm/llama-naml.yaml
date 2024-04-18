@@ -1,16 +1,16 @@
-name: LLAMA-NAML.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+name: LLAMA-NAML.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
 meta:
   item: Llama
   user: Ada
   predictor: Dot
 config:
-  use_news_content: true
-  max_news_content_batch_size: ${max_news_batch_size}$
+  use_item_content: true
+  max_item_content_batch_size: ${max_item_batch_size}$
   same_dim_transform: false
   embed_hidden_size: ${embed_hidden_size}$
   hidden_size: ${hidden_size}$
   neg_count: 4
-  news_config:
+  item_config:
     llm_dir: /home/data1/qijiong/llama-${llm_ver}
     layer_split: ${layer}$
     lora: ${lora}$

@@ -1,6 +1,6 @@
 name: Goodreads-UP
 base_dir: data/Goodreads
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/book
   order:

@@ -38,6 +38,15 @@ class Processor:
             usecols=['uid', 'history', 'pos', 'neg'],
         )
 
+    def read_test_data(self):
+        return pd.read_csv(
+            filepath_or_buffer=os.path.join(self.data_dir, 'personalized_test.tsv'),
+            sep='\t',
+            header=0,
+            names=['uid', 'history', 'pos', 'rewrite_titles'],
+            usecols=['uid', 'history', 'pos'],
+        )
+
     def combine_user_df(self):
         user_train_df = self.read_user_data('train')
         user_dev_df = self.read_user_data('valid')
@@ -124,6 +133,26 @@ class Processor:
             slice_post=True,
         ))
 
+    def get_test_user_tok(self, max_history_len):
+        return UniTok().add_col(Column(
+            tok=IdTok(vocab=self.uid),
+        )).add_col(Column(
+            name='history',
+            tok=SplitTok(
+                sep=',',
+                vocab=self.nid,
+            ),
+            max_length=max_history_len,
+            slice_post=True,
+        )).add_col(Column(
+            name='neg',
+            tok=SplitTok(
+                sep=',',
+                vocab=self.nid,
+            ),
+            max_length=0,
+        ))
+
     def get_inter_tok(self):
         return UniTok().add_index_col(
             name='index'
@@ -179,10 +208,28 @@ class Processor:
             inter_tok = self.get_inter_tok()
             inter_tok.read(df).tokenize().store(os.path.join(self.store_dir, mode))
 
+    def tokenize_test(self):
+        self.nid = Vocab('nid').load(os.path.join(self.store_dir, 'news'))
+        self.nid.deny_edit()
+
+        user_df = self.read_test_data()
+        user_df['neg'] = self.nid.i2o[0]
+        user_tok = self.get_test_user_tok(max_history_len=50)
+        user_tok.read(user_df).tokenize().store(os.path.join(self.store_dir, 'user-test'))
+        uid = Vocab('uid').load(os.path.join(self.store_dir, 'user-test'))
+
+        fake_inter_data = pd.DataFrame({
+            'uid': [self.uid.i2o[0]],
+            'nid': [self.nid.i2o[0]],
+            'click': [1],
+        })
+        inter_tok = self.get_inter_tok()
+        inter_tok.read(fake_inter_data).tokenize().store(os.path.join(self.store_dir, 'test'))
+
 
 if __name__ == '__main__':
     p = Processor(
         data_dir='/home/qijiong/Data/PENS',
         store_dir='../../data/PENS',
     )
-    p.tokenize()
+    p.tokenize_test()

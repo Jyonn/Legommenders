@@ -4,11 +4,11 @@ meta:
   user: GRU
   predictor: Dot
 config:
-  use_news_content: true
+  use_item_content: true
   use_neg_sampling: true
   hidden_size: 64
   neg_count: 4
-  news_config:
+  item_config:
     num_attention_heads: 4
     num_hidden_layers: 3
     inputer_config:
@@ -17,7 +17,7 @@ config:
   user_config:
     columns:
       - plmnr
-    use_news_content: ${model.config.use_news_content}$
+    use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

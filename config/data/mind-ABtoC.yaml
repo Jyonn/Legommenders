@@ -1,7 +1,7 @@
 # CoT 5&6 得到的双条fake数据，97% user数据集
 name: MIND-${version}-ABtoC
 base_dir: data/MIND-${version}
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/news-ABtoC
   order:

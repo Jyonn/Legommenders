@@ -1,17 +1,17 @@
-name: BERT-LSTUR.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.news_config.layer_split}.Lora${model.config.news_config.lora}
+name: BERT-LSTUR.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
 meta:
   item: Bert
   user: GRU
   predictor: Dot
 config:
-  use_news_content: true
+  use_item_content: true
   use_fast_eval: ${fast_eval}$
-  max_news_content_batch_size: 0
+  max_item_content_batch_size: 0
   same_dim_transform: false
   embed_hidden_size: ${embed_hidden_size}$
   hidden_size: ${hidden_size}$
   neg_count: 4
-  news_config:
+  item_config:
     llm_dir: bert-base-uncased
     layer_split: ${layer}$
     lora: ${lora}$
@@ -19,7 +19,7 @@ config:
   user_config:
     columns:
       - bert
-    use_news_content: ${model.config.use_news_content}$
+    use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

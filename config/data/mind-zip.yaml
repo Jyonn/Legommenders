@@ -1,6 +1,6 @@
 name: MIND-${version}-Zip
 base_dir: data/MIND-${version}
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/news
   order:

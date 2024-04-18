@@ -1,23 +1,23 @@
-name: LLAMA-LSTUR.D${model.config.hidden_size}.L${model.config.news_config.layer_split}
+name: LLAMA-LSTUR.D${model.config.hidden_size}.L${model.config.item_config.layer_split}
 meta:
   item: Llama
   user: GRU
   predictor: Dot
 config:
-  use_news_content: true
-  max_news_content_batch_size: 0
+  use_item_content: true
+  max_item_content_batch_size: 0
   same_dim_transform: false
   embed_hidden_size: 4096
   hidden_size: 64
   neg_count: 4
-  news_config:
+  item_config:
     llama_dir: /home/qijiong/Code/LLaMA/7B
     layer_split: ${layer}$
     weights_dir: data/${data.name}/llama-split
   user_config:
     columns:
       - llama
-    use_news_content: ${model.config.use_news_content}$
+    use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

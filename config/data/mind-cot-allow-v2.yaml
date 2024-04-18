@@ -1,7 +1,7 @@
 # CoT得到的单条fake数据，97% user数据集
 name: MIND-${version}-CoT-Allow-V2
 base_dir: data/MIND-${version}
-news:
+item:
   filter_cache: true
   depot: ${data.base_dir}/news-fake-cot2
   order:
