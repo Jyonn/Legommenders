@@ -21,3 +21,18 @@
 - Legommenders involves a set of recommender system algorithms, including:
     - Matching based methods: NAML, NRMS, LSTUR, etc.
     - Ranking based methods: DCN, DeepFM, PNN, etc.
+
+
+## Citations
+
+Legommenders have served as a fundamental framework for several research projects, including [ONCE](https://arxiv.org/abs/2305.06566), [SPAR](https://arxiv.org/abs/2402.10555),[GreenRec](https://arxiv.org/abs/2403.04736), and [UIST](https://arxiv.org/abs/2403.08206).
+If you find Legommenders useful in your research, please consider citing our project:
+
+```
+@online{legommenders,
+  author = {Liu, Qijiong},
+  title = {Legommenders: A Modular Framework for Recommender Systems},
+  year = {2023},
+  url = {https://github.com/Jyonn/Legommenders}
+}
+```
