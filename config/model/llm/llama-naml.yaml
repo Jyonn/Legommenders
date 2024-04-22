@@ -4,6 +4,7 @@ meta:
   user: Ada
   predictor: Dot
 config:
+  use_neg_sampling: true
   use_item_content: true
   max_item_content_batch_size: ${max_item_batch_size}$
   same_dim_transform: false

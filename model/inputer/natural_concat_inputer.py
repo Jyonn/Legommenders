@@ -30,13 +30,24 @@ class NaturalConcatInputer(BaseInputer):
     def get_col_prompts():
         raise NotImplementedError
 
+    class ColPromptWrapper:
+        def __init__(self, prompt_map):
+            self._map = {k: torch.LongTensor(v) for k, v in prompt_map.items()}
+
+        def __getitem__(self, col):
+            brief_col = col.replace('-llama', '')
+            brief_col = brief_col.replace('-token', '')
+            brief_col = brief_col.replace('-bert', '')
+            return self._map[brief_col]
+
     @classmethod
     def get_prompt(cls):
         start_prompt = cls.get_start_prompt()
         start_prompt = torch.LongTensor(start_prompt)
 
-        col_prompt_map = cls.get_col_prompts()
-        col_prompt_map = {k: torch.LongTensor(v) for k, v in col_prompt_map.items()}
+        # col_prompt_map = cls.get_col_prompts()
+        # col_prompt_map = {k: torch.LongTensor(v) for k, v in col_prompt_map.items()}
+        col_prompt_map = cls.ColPromptWrapper(cls.get_col_prompts())
         return start_prompt, col_prompt_map
 
     def get_max_content_len(self):
