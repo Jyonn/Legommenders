@@ -1,5 +1,3 @@
-from torch import nn
-
 from model.common.base_module import BaseModule
 
 
@@ -21,10 +19,11 @@ class BasePredictor(BaseModule):
 
     config_class = BasePredictorConfig
 
-    def __init__(self, config: BasePredictorConfig):
+    def __init__(self, config: BasePredictorConfig, preparer):
         super().__init__()
 
         self.config = config
+        self.preparer = preparer
 
     def predict(self, user_embeddings, item_embeddings):
         raise NotImplementedError

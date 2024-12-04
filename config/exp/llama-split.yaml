@@ -3,9 +3,9 @@ dir: saving/${data.name}/${model.name}/${embed.name}-${exp.name}
 log: ${exp.dir}/exp.log
 mode: test_llm_layer_split
 store:
-  layers: [31, 30, 29, 27]  # 7b
+  layers: [31, 30]  # 7b
 #  layers: [39, 38, 37, 35]  # 13b
-  dir: data/${data.name}/llama-${llm_ver}-split
+  dir: /home/data4/qijiong/Data/Lego/${data.name}/llama-${llm_ver}-split
 load:
   save_dir: null
   model_only: true

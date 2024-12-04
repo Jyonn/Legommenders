@@ -10,13 +10,11 @@ class GRUOperatorConfig(BaseOperatorConfig):
             self,
             columns: list,
             num_layers: int = 1,
-            use_news_content: bool = False,
             **kwargs,
     ):
         super().__init__(**kwargs)
         self.num_columns = len(columns)
         self.num_layers = num_layers
-        self.use_news_content = use_news_content
 
 
 class GRUOperator(BaseOperator):
@@ -29,8 +27,7 @@ class GRUOperator(BaseOperator):
         super().__init__(**kwargs)
 
         input_size = self.config.hidden_size
-        if self.config.use_news_content:
-            input_size *= self.config.num_columns
+        print('gru input size:', input_size)
 
         self.gru = nn.GRU(
             input_size=input_size,

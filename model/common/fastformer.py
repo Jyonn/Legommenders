@@ -1,5 +1,3 @@
-import logging
-
 import torch
 from torch import nn
 from transformers.models.bert.modeling_bert import BertIntermediate, BertOutput, BertSelfOutput
@@ -180,7 +178,6 @@ class FastformerModel(nn.Module):
         if config.pooler_type == 'weightpooler':
             for _ in range(pooler_count):
                 self.poolers.append(AttentionPooling(config))
-        logging.info(f"This model has {len(self.poolers)} poolers.")
 
         self.apply(self.init_weights)
 

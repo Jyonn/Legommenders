@@ -16,6 +16,11 @@ class CNNCatOperator(CNNOperator):
 
     num_columns: int
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.num_columns = len(self.preparer.item_hub.order)
+
     def forward(self, embeddings: dict, mask=None, **kwargs):
         output_list = []
         for col in embeddings:
@@ -33,5 +38,8 @@ class CNNCatOperator(CNNOperator):
         outputs = torch.cat(output_list, dim=-1).to(Meta.device)
         return outputs
 
-    def get_full_item_placeholder(self, sample_size):
-        return torch.zeros(sample_size, self.config.hidden_size * self.num_columns)
+    def export_hidden_size(self):
+        return self.config.hidden_size * self.num_columns
+
+    def get_full_placeholder(self, sample_size):
+        return torch.zeros(sample_size, self.export_hidden_size(), dtype=torch.float)

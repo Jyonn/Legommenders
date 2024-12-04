@@ -8,14 +8,14 @@ config:
   use_item_content: true
   max_item_content_batch_size: ${max_item_batch_size}$
   same_dim_transform: false
-  embed_hidden_size: ${embed_hidden_size}$
+  embed_hidden_size: ${embed_hidden_sijze}$
   hidden_size: ${hidden_size}$
   neg_count: 4
   item_config:
     llm_dir: /home/data1/qijiong/llama-${llm_ver}
     layer_split: ${layer}$
     lora: ${lora}$
-    weights_dir: data/${data.name}/llama-${llm_ver}-split
+    weights_dir: /home/data4/qijiong/Data/Lego/${data.name}/llama-${llm_ver}-split
   user_config:
     num_attention_heads: 12
     inputer_config:

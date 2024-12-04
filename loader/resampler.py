@@ -6,10 +6,11 @@ from tqdm import tqdm
 
 from loader.meta import Meta
 from loader.status import Status
-from model.legommender import Legommender, LegommenderConfig
+from model.legommender import Legommender
 from loader.data_hub import DataHub
 from loader.data_set import DataSet
-from utils.stacker import Stacker, FastStacker
+from model.meta_config import LegommenderConfig
+from utils.stacker import FastStacker
 from utils.timer import Timer
 
 

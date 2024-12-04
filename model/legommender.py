@@ -1,122 +1,62 @@
-from typing import Type
-
 import torch
 from pigmento import pnt
 from torch import nn
 
 from loader.meta import Meta
-from loader.status import Status
 from model.common.base_module import BaseModule
-from model.common.mediator import Mediator
 from model.common.user_plugin import UserPlugin
+from model.meta_config import LegommenderConfig
 from model.operators.base_llm_operator import BaseLLMOperator
-from model.operators.base_operator import BaseOperator
-from model.predictors.base_predictor import BasePredictor
 from loader.cacher.repr_cacher import ReprCacher
 from loader.column_map import ColumnMap
-from loader.embedding.embedding_hub import EmbeddingHub
-from loader.data_hub import DataHub
+from model.preparer import Preparer
 from utils.function import combine_config
 from utils.shaper import Shaper
-
-
-class LegommenderMeta:
-    def __init__(
-            self,
-            item_encoder_class: Type[BaseOperator],
-            user_encoder_class: Type[BaseOperator],
-            predictor_class: Type[BasePredictor],
-    ):
-        self.item_encoder_class = item_encoder_class
-        self.user_encoder_class = user_encoder_class
-        self.predictor_class = predictor_class
-
-
-class LegommenderConfig:
-    def __init__(
-            self,
-            hidden_size,
-            user_config,
-            use_neg_sampling: bool = True,
-            neg_count: int = 4,
-            embed_hidden_size=None,
-            item_config=None,
-            predictor_config=None,
-            use_item_content: bool = True,
-            max_item_content_batch_size: int = 0,
-            same_dim_transform: bool = True,
-            page_size: int = 512,
-            **kwargs,
-    ):
-        self.hidden_size = hidden_size
-        self.item_config = item_config
-        self.user_config = user_config
-        self.predictor_config = predictor_config or {}
-
-        self.use_neg_sampling = use_neg_sampling
-        self.neg_count = neg_count
-        self.use_item_content = use_item_content
-        self.embed_hidden_size = embed_hidden_size or hidden_size
-
-        self.max_item_content_batch_size = max_item_content_batch_size
-        self.same_dim_transform = same_dim_transform
-
-        self.page_size = page_size
-
-        if self.use_item_content:
-            if not self.item_config:
-                self.item_config = {}
-                # raise ValueError('item_config is required when use_item_content is True')
-                pnt('automatically set item_config to an empty dict, as use_item_content is True')
 
 
 class Legommender(BaseModule):
     def __init__(
             self,
-            meta: LegommenderMeta,
-            status: Status,
-            config: LegommenderConfig,
-            column_map: ColumnMap,
-            embedding_manager: EmbeddingHub,
-            user_hub: DataHub,
-            item_hub: DataHub,
+            preparer: Preparer,
             user_plugin: UserPlugin = None,
     ):
         super().__init__()
 
+        self.preparer = preparer
+
         """initializing basic attributes"""
-        self.meta = meta
-        self.status = status
-        self.item_encoder_class = meta.item_encoder_class
-        self.user_encoder_class = meta.user_encoder_class
-        self.predictor_class = meta.predictor_class
+        # self.meta = meta
+        self.status = self.preparer.status
+        self.item_encoder_class = self.preparer.meta.item_encoder_class
+        self.user_encoder_class = self.preparer.meta.user_encoder_class
+        self.predictor_class = self.preparer.meta.predictor_class
 
-        self.use_neg_sampling = config.use_neg_sampling
-        self.neg_count = config.neg_count
+        self.use_neg_sampling = self.preparer.config.use_neg_sampling
+        self.neg_count = self.preparer.config.neg_count
 
-        self.config = config  # type: LegommenderConfig
+        self.config = self.preparer.config  # type: LegommenderConfig
 
-        self.embedding_manager = embedding_manager
-        self.embedding_table = embedding_manager.get_table()
+        self.embedding_manager = self.preparer.embedding_manager
+        self.embedding_table = self.preparer.embedding_manager.get_table()
 
-        self.user_hub = user_hub
-        self.item_hub = item_hub
+        self.user_hub = self.preparer.user_hub
+        self.item_hub = self.preparer.item_hub
 
-        self.column_map = column_map  # type: ColumnMap
-        self.user_col = column_map.user_col
-        self.clicks_col = column_map.clicks_col
-        self.candidate_col = column_map.candidate_col
-        self.label_col = column_map.label_col
-        self.clicks_mask_col = column_map.clicks_mask_col
+        self.column_map = self.preparer.column_map  # type: ColumnMap
+        self.user_col = self.column_map.user_col
+        self.clicks_col = self.column_map.clicks_col
+        self.candidate_col = self.column_map.candidate_col
+        self.label_col = self.column_map.label_col
+        self.clicks_mask_col = self.column_map.clicks_mask_col
 
         """initializing core components"""
         self.flatten_mode = self.user_encoder_class.flatten_mode
-        self.user_encoder = self.prepare_user_module()
         self.item_encoder = None
         if self.config.use_item_content:
             self.item_encoder = self.prepare_item_module()
+        self.user_encoder = self.prepare_user_module()
         self.predictor = self.prepare_predictor()
-        self.mediator = Mediator(self)
+        # self.mediator = Mediator(self)
 
         """initializing extra components"""
         self.user_plugin = user_plugin
@@ -174,6 +114,7 @@ class Legommender(BaseModule):
             end = min((i + 1) * allow_batch_size, sample_size)
             mask = None if attention_mask is None else attention_mask[start:end]
             content = self.item_encoder(item_content[start:end], mask=mask)
+            # print(Structure().analyse_and_stringify(content))
             item_contents[start:end] = content
 
         if not self.llm_skip:
@@ -255,7 +196,7 @@ class Legommender(BaseModule):
     def prepare_user_module(self):
         user_config = self.user_encoder_class.config_class(**combine_config(
             config=self.config.user_config,
-            hidden_size=self.config.hidden_size,
+            hidden_size=self.item_encoder.export_hidden_size(),
             embed_hidden_size=self.config.embed_hidden_size,
             input_dim=self.config.hidden_size,
         ))
@@ -268,6 +209,7 @@ class Legommender(BaseModule):
             hub=self.user_hub,
             embedding_manager=self.embedding_manager,
             target_user=True,
+            preparer=self.preparer,
         )
 
     def prepare_item_module(self):
@@ -283,6 +225,7 @@ class Legommender(BaseModule):
             hub=self.item_hub,
             embedding_manager=self.embedding_manager,
             target_user=False,
+            preparer=self.preparer,
         )
 
     def prepare_predictor(self):
@@ -298,7 +241,7 @@ class Legommender(BaseModule):
             embed_hidden_size=self.config.embed_hidden_size,
         ))
 
-        return self.predictor_class(config=predictor_config)
+        return self.predictor_class(config=predictor_config, preparer=self.preparer)
 
     def get_parameters(self):
         pretrained_parameters = []

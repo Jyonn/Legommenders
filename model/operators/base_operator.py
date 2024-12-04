@@ -1,7 +1,6 @@
 from typing import Type
 
 import torch
-from torch import nn
 
 from model.common.base_module import BaseModule
 from model.inputer.base_inputer import BaseInputer
@@ -31,7 +30,7 @@ class BaseOperator(BaseModule):
     allow_caching = True
     flatten_mode = False
 
-    def __init__(self, config: BaseOperatorConfig, hub: DataHub, embedding_manager: EmbeddingHub, target_user=False):
+    def __init__(self, config: BaseOperatorConfig, hub: DataHub, embedding_manager: EmbeddingHub, preparer, target_user=False):
         super().__init__()
         self.config = config
         self.inputer = self.inputer_class(
@@ -41,6 +40,7 @@ class BaseOperator(BaseModule):
         )
 
         self.target_user = target_user
+        self.preparer = preparer
 
     def get_pretrained_parameter_names(self):
         return []
@@ -50,6 +50,9 @@ class BaseOperator(BaseModule):
 
     def get_full_placeholder(self, sample_size):
         return torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float)
+
+    def export_hidden_size(self):
+        return self.config.hidden_size
 
     # def get_full_item_placeholder(self, sample_size):
     #     return torch.zeros(sample_size, self.config.hidden_size, dtype=torch.float)

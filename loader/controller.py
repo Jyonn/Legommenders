@@ -5,6 +5,7 @@ from oba import Obj
 from pigmento import pnt
 from torch import nn
 
+from model.meta_config import LegommenderMeta, LegommenderConfig
 from loader.data_hubs import DataHubs
 from loader.data_sets import DataSets
 from loader.depot.depot_hub import DepotHub
@@ -15,13 +16,14 @@ from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
 from model.inputer.flatten_seq_inputer import FlattenSeqInputer
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
-from model.legommender import Legommender, LegommenderConfig, LegommenderMeta
+from model.legommender import Legommender
 from loader.column_map import ColumnMap
 from loader.embedding.embedding_hub import EmbeddingHub
-from loader.resampler import Resampler
 from loader.data_loader import DataLoader
 from loader.data_hub import DataHub
 from loader.class_hub import ClassHub
+from model.preparer import Preparer
+from loader.resampler import Resampler
 
 
 class Controller:
@@ -34,7 +36,7 @@ class Controller:
 
         self.status = Status()
 
-        if 'MIND' in self.data.name.upper():
+        if 'MIND' in self.data.name.upper() or 'EB-NERD' in self.data.name.upper():
             Meta.data_type = DatasetType.news
         else:
             Meta.data_type = DatasetType.book
@@ -113,7 +115,7 @@ class Controller:
 
         # legommender initialization
         # self.legommender = self.legommender_class(
-        self.legommender = Legommender(
+        self.preparer = Preparer(
             meta=self.legommender_meta,
             status=self.status,
             config=self.legommender_config,
@@ -121,6 +123,9 @@ class Controller:
             embedding_manager=self.embedding_hub,
             user_hub=self.hubs.a_hub(),
             item_hub=self.item_hub,
+        )
+        self.legommender = Legommender(
+            preparer=self.preparer,
             user_plugin=user_plugin,
         )
         self.resampler = Resampler(

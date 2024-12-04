@@ -16,11 +16,14 @@ class LlamaConcatInputer(NaturalConcatInputer):
     def get_col_prompts():
         return dict(
             newtitle=[529, 3257, 29958],
+            subtitle=[529, 1491, 3257, 29958],
             title=[529, 3257, 29958],
             abs=[529, 16595, 29958],
             cat=[529, 7320, 29958],
+            category=[529, 7320, 29958],
             subCat=[529, 1491, 7320, 29958],
             desc=[529, 16595, 29958],
+            body=[529, 2587, 29958],
         )
 
 

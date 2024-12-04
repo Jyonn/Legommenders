@@ -1,10 +1,21 @@
-# Legommenders
+# <img src="assets/lego.png" alt="icon" style="vertical-align: middle; height: 32px;"> Legommenders
 
 *A modular framework for recommender systems*
 
-![Legommenders](Legommenders.png)
+## Installation
+
+```bash
+gh repo clone Jyonn/Legommenders
+cd Legommenders
+pip install -r requirements.txt  # Note: Legommenders is not compatible to the latest version of transformers yet if you want to finetune LLaMA-based models.
+```
 
 ## Updates
+
+### Dec. 5, 2024
+
+- LSTUR model is now re-added to the Legommenders package, which was not compatible from Jan. 2024.
+- LLMs can be used for item encoder.
 
 ### Jan. 23, 2024
 

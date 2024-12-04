@@ -63,7 +63,7 @@ class Processor:
         self.nid = Vocab(name='nid')
         self.uid = Vocab(name='uid')
 
-    def read_news_data(self, mode):
+    def read_news_data(self, mode: str):
         return pd.read_csv(
             filepath_or_buffer=os.path.join(self.data_dir, mode, 'news.tsv'),
             sep='\t',
@@ -71,7 +71,7 @@ class Processor:
             usecols=['nid', 'cat', 'subcat', 'title', 'abs'],
         )
 
-    def read_user_data(self, mode):
+    def read_user_data(self, mode: str):
         return pd.read_csv(
             filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors.tsv'),
             sep='\t',
@@ -79,7 +79,7 @@ class Processor:
             usecols=['uid', 'history']
         )
 
-    def _read_inter_data(self, mode):
+    def _read_inter_data(self, mode: str):
         return pd.read_csv(
             filepath_or_buffer=os.path.join(self.data_dir, mode, 'behaviors.tsv'),
             sep='\t',
