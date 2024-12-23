@@ -4,7 +4,6 @@ config:
   hidden_size: 64
   neg_count: 4
   user_config:
-    columns: ${data.item.order}$
     use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false
