@@ -21,7 +21,7 @@ class SCSimpleOperator(BaseOperator):
         return embeddings
 
     def get_full_placeholder(self, sample_size):
-        max_length = self.inputer.depot.cols[self.inputer.order[0]].max_length
+        max_length = self.inputer.ut.cols[self.inputer.order[0]].max_length
         return torch.zeros(sample_size, max_length, self.config.hidden_size, dtype=torch.float)
 
 

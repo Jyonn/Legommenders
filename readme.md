@@ -1,6 +1,6 @@
 # <img src="assets/lego.png" alt="icon" style="vertical-align: middle; height: 32px;"> Legommenders
 
-*A modular framework for recommender systems*
+*A Modular Framework for Recommender Systems in the Era of LLMs*
 
 ## Installation
 

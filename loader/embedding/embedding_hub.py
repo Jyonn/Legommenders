@@ -1,7 +1,7 @@
 from typing import Dict, Union
 
 import torch
-from UniTok import Vocab
+from unitok import Vocab
 from pigmento import pnt
 from torch import nn
 
@@ -127,22 +127,21 @@ class EmbeddingHub:
         self.build_vocab_embedding(vocab_name, vocab_size)
 
     def register_depot(self, nrd: DataHub, skip_cols=None):
-        depot, order = nrd.depot, nrd.order
+        depot, order = nrd.ut, nrd.order
         skip_cols = skip_cols or []
-        skip_vocabs = [depot.get_vocab(col) for col in skip_cols]
+        skip_vocabs = [depot.meta.jobs[col].tokenizer.vocab.name for col in skip_cols]
 
         for col in order:
-            vocab_name = depot.get_vocab(col)
-            vocab_size = depot.get_vocab_size(col)
+            vocab = depot.meta.jobs[col].tokenizer.vocab
 
-            if vocab_name in skip_vocabs:
+            if vocab.name in skip_vocabs:
                 pnt(f'skip col {col}')
                 continue
 
-            self._col_to_vocab[col] = vocab_name
-            pnt(f'build mapping {col} -> {vocab_name}')
-            if vocab_name in self._vocab_to_size:
-                assert self._vocab_to_size[vocab_name] == vocab_size, f'conflict vocab {vocab_name}'
+            self._col_to_vocab[col] = vocab.name
+            pnt(f'build mapping {col} -> {vocab.name}')
+            if vocab.name in self._vocab_to_size:
+                assert self._vocab_to_size[vocab.name] == vocab.size, f'conflict vocab {vocab.name}'
                 continue
-            self._vocab_to_size[vocab_name] = vocab_size
-            self.build_vocab_embedding(vocab_name, vocab_size)
+            self._vocab_to_size[vocab.name] = vocab.size
+            self.build_vocab_embedding(vocab.name, vocab.size)

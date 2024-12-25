@@ -1,6 +1,6 @@
 from loader.data_hubs import DataHubs
 from loader.data_set import DataSet
-from loader.meta import Phases
+from loader.meta import LegoSymbols
 from loader.resampler import Resampler
 
 
@@ -18,10 +18,10 @@ class DataSets:
         self.user_set = DataSet(hub=self.hubs.fast_eval_hub, resampler=resampler)
 
         self.sets = {
-            Phases.train: self.train_set,
-            Phases.dev: self.dev_set,
-            Phases.test: self.test_set,
-            Phases.fast_eval: self.user_set,
+            LegoSymbols.train: self.train_set,
+            LegoSymbols.dev: self.dev_set,
+            LegoSymbols.test: self.test_set,
+            LegoSymbols.fast_eval: self.user_set,
         }
 
     def __getitem__(self, item):

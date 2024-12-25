@@ -1,5 +1,5 @@
+from unitok import UniTok
 import torch
-from UniTok import UniDep
 from torch import nn
 
 
@@ -9,24 +9,24 @@ class UserPlugin(nn.Module):
     col_count: int
     project: nn.Sequential
 
-    def __init__(self, depot: UniDep, hidden_size, select_cols=None):
+    def __init__(self, ut: UniTok, hidden_size, select_cols=None):
         super().__init__()
 
-        self.depot = depot
+        self.ut = ut
         self.hidden_size = hidden_size
 
         self.attr_embeds = nn.ModuleDict()
         self.empty_embed = nn.Parameter(torch.zeros(hidden_size))
 
         self.col_count = 0
-        self.selected_cols = select_cols or self.depot.cols
+        self.selected_cols = select_cols or list(map(lambda j: j.name, self.ut.meta.jobs))
         for col in self.selected_cols:
-            if self.depot.id_col == col:
+            if self.ut.key_job.name == col:
                 continue
 
-            voc = self.depot.cols[col].voc.name
-            self.attr_embeds[voc] = nn.Embedding(
-                num_embeddings=self.depot.cols[col].voc.size,
+            vocab = self.ut.meta.jobs[col].tokenizer.vocab
+            self.attr_embeds[vocab] = nn.Embedding(
+                num_embeddings=len(vocab),
                 embedding_dim=hidden_size
             )
             self.col_count += 1
@@ -62,11 +62,11 @@ class UserPlugin(nn.Module):
         if self.activate and uid in self.repr:
             return self.repr[uid]
 
-        attrs = self.depot[uid]
+        attrs = self.ut[uid]
         values = []
         for attr in self.attr_embeds:
             value = attrs[attr]
-            if not self.depot.cols[attr].list:
+            if not self.ut.meta.jobs[attr].return_list:
                 value = [value]
             if value:
                 value = torch.tensor(value).to(self.device)

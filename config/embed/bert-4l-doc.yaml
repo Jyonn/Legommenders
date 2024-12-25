@@ -1,7 +1,0 @@
-name: bert-doc
-embeddings:
-  -
-    vocab_name: nid
-    vocab_type: numpy
-    path: data/${data.name}/bertencoder-4l-last.npy
-    frozen: true

@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pigmento import pnt
 
-from loader.meta import Phases
+from loader.meta import LegoSymbols
 from loader.mode.base_mode import BaseMode
 
 
@@ -18,7 +18,7 @@ class GetEmbedMode(BaseMode):
         self.store_dir = self.controller.exp.dir
 
     def get_user_embedding(self):
-        self.controller.get_loader(Phases.train).test()
+        self.controller.get_loader(LegoSymbols.train).test()
         assert self.cacher.user.cached, 'fast eval not enabled'
         user_embeddings = self.cacher.user.repr.detach().cpu().numpy()
         store_path = os.path.join(self.store_dir, 'user_embeddings.npy')

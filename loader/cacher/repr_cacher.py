@@ -10,7 +10,7 @@ class ReprCacher:
         legommender = cast(Legommender, legommender)
 
         self.use_item_content = legommender.config.use_item_content
-        self.user_size = legommender.user_hub.depot.vocs[legommender.column_map.user_col].size
+        self.user_size = legommender.user_hub.ut.meta.jobs[legommender.column_map.user_col].tokenizer.vocab.size
         self._activate = True
 
         self.item = ItemCacher(

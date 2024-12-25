@@ -54,11 +54,11 @@ class Resampler:
 
         # clicks
         self.user_inputer = legommender.user_encoder.inputer
-        self.max_click_num = self.user_inputer.depot.get_max_length(self.clicks_col)
+        self.max_click_num = self.user_inputer.ut.meta.jobs[self.clicks_col].max_len
 
         # negative sampling
         self.use_neg_sampling = legommender.use_neg_sampling
-        self.item_size = item_hub.depot.get_vocab_size(self.candidate_col)
+        self.item_size = item_hub.ut.meta.jobs[self.candidate_col].tokenizer.vocab.size
 
     def _build_item_cache(self):
         item_cache = []
@@ -111,14 +111,14 @@ class Resampler:
             # when using negative sampling, we need to rebuild candidate contents
         sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
         return
-
-        # when not using negative sampling, we can use cache to speed up
-        if sample[self.candidate_col][0] not in self.candidate_cache:
-            item_id = sample[self.candidate_col][0]
-            sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
-            self.candidate_cache[item_id] = sample[self.candidate_col]
-        else:
-            sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
+        #
+        # # when not using negative sampling, we can use cache to speed up
+        # if sample[self.candidate_col][0] not in self.candidate_cache:
+        #     item_id = sample[self.candidate_col][0]
+        #     sample[self.candidate_col] = self.stacker([self.item_cache[nid] for nid in sample[self.candidate_col]])
+        #     self.candidate_cache[item_id] = sample[self.candidate_col]
+        # else:
+        #     sample[self.candidate_col] = self.candidate_cache[sample[self.candidate_col][0]]
 
     def rebuild_clicks(self, sample):
         if self.legommender.cacher.user.cached:

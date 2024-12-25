@@ -1,16 +1,12 @@
 import glob
 import importlib
 
-# from loader.mode.base_mode import BaseMode
 from model.operators.base_operator import BaseOperator
 from model.predictors.base_predictor import BasePredictor
+from processor.base_processor import BaseProcessor
 
 
 class ClassHub:
-    # @staticmethod
-    # def modes():
-    #     return ClassHub(BaseMode, 'loader/modes', 'Mode')
-
     @staticmethod
     def operators():
         return ClassHub(BaseOperator, 'model/operators', 'Operator')
@@ -18,6 +14,10 @@ class ClassHub:
     @staticmethod
     def predictors():
         return ClassHub(BasePredictor, 'model/predictors', 'Predictor')
+
+    @staticmethod
+    def processors():
+        return ClassHub(BaseProcessor, 'processor', 'Processor')
 
     def __init__(self, base_class, module_dir: str, module_type: str):
         """
@@ -53,3 +53,9 @@ class ClassHub:
 
     def __call__(self, name):
         return self.class_dict[name]
+
+    def __getitem__(self, name):
+        return self.class_dict[name]
+
+    def __contains__(self, name):
+        return name in self.class_dict

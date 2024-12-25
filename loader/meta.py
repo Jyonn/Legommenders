@@ -1,13 +1,14 @@
-class DatasetType:
-    news = 'news'
-    book = 'book'
+from unitok import Symbol
 
 
-class Phases:
-    train = 'train'
-    dev = 'dev'
-    test = 'test'
-    fast_eval = 'fast_eval'
+class LegoSymbols:
+    news = Symbol('news')
+    book = Symbol('book')
+
+    train = Symbol('train')
+    dev = Symbol('dev')
+    test = Symbol('test')
+    fast_eval = Symbol('fast_eval')
 
 
 class Meta:

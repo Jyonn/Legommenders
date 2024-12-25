@@ -1,6 +1,5 @@
 import copy
 
-import numpy as np
 from torch.utils.data import Dataset as BaseDataset
 
 from loader.data_hub import DataHub
@@ -14,14 +13,14 @@ class DataSet(BaseDataset):
             resampler=None,
     ):
         self.hub = hub
-        self.depot = hub.depot
+        self.ut = hub.ut
         self.order = hub.order
         self.append = hub.append
         self.all_cols = [*self.order, *self.append]
 
         self.resampler = resampler
 
-        self.sample_size = self.depot.sample_size
+        self.sample_size = len(self.ut)
         self.split_range = (0, self.sample_size)
 
         self.timer = Timer(activate=True)
@@ -35,13 +34,14 @@ class DataSet(BaseDataset):
         return mode_range[1] - mode_range[0]
 
     def pack_sample(self, index):
-        _sample = self.depot[index]
+        _sample = self.ut[index]
         sample = dict()
         for col in [*self.order, *self.append]:
-            value = _sample[col]
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-            sample[col] = copy.copy(value)
+            # value = _sample[col]
+            # if isinstance(value, np.ndarray):
+            #     value = value.tolist()
+            # sample[col] = copy.copy(value)
+            sample[col] = copy.copy(_sample[col])
 
         if self.resampler:
             sample = self.resampler(sample)

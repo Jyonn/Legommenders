@@ -1,9 +1,0 @@
-name: NAML.NRL
-config:
-  use_item_content: false
-  hidden_size: 64
-  neg_count: 4
-  user_config:
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false

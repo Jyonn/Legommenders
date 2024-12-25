@@ -61,8 +61,8 @@ class SemanticMixPredictor(BasePredictor):
         from model.legommender import Legommender
         if responser_name == ModuleType.legommender:
             legommender = cast(Legommender, response['self'])
-            self.num_item_semantics = legommender.item_hub.depot.cols[legommender.item_hub.order[0]].max_length
-            self.num_user_semantics = legommender.user_hub.depot.cols[legommender.user_hub.order[0]].max_length
+            self.num_item_semantics = legommender.item_hub.ut.cols[legommender.item_hub.order[0]].max_length
+            self.num_user_semantics = legommender.user_hub.ut.cols[legommender.user_hub.order[0]].max_length
             self.linear = nn.Linear(self.num_item_semantics * self.num_user_semantics, 1)
 
             # for i in range(self.num_item_semantics):

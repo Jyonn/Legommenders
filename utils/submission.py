@@ -2,7 +2,7 @@ import os
 import subprocess
 
 import pandas as pd
-from UniTok import UniDep
+from unitok import UniTok
 from tqdm import tqdm
 
 from loader.column_map import ColumnMap
@@ -12,19 +12,21 @@ from utils.timing import Timing
 class Submission:
     def __init__(
             self,
-            depot: UniDep,
+            ut: UniTok,
             column_map: ColumnMap,
             group_worker=5,
     ):
         self.base_dir = 'submission'
         os.makedirs(self.base_dir, exist_ok=True)
 
-        self.depot = depot
+        self.ut = ut
         self.column_map = column_map
         self.group_worker = group_worker
 
-        self.group_vocab = depot.vocabs[depot.cols[column_map.group_col].voc.name]
-        self.item_vocab = depot.vocabs[depot.cols[column_map.candidate_col].voc.name]
+        # self.group_vocab = ut.vocabs[ut.cols[column_map.group_col].voc.name]
+        # self.item_vocab = ut.vocabs[ut.cols[column_map.candidate_col].voc.name]
+        self.group_vocab = ut.meta.jobs[column_map.group_col].tokenizer.vocab
+        self.item_vocab = ut.meta.jobs[column_map.candidate_col].tokenizer.vocab
 
         # self.group_dict = dict()
         # index = 0
@@ -45,7 +47,7 @@ class Submission:
 
         group_dict = dict()
         index = 0
-        for sample in tqdm(self.depot):
+        for sample in tqdm(self.ut):
             if sample[self.column_map.group_col] not in group_dict:
                 group_dict[sample[self.column_map.group_col]] = dict()
                 index = 0

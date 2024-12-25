@@ -53,7 +53,7 @@ class NaturalConcatInputer(BaseInputer):
     def get_max_content_len(self):
         length = 0
         for col in self.order:
-            length += self.depot.cols[col].max_length or 1
+            length += self.ut.cols[col].max_length or 1
         return length
 
     def get_empty_input(self):

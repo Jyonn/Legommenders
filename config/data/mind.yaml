@@ -1,33 +1,31 @@
-name: MIND-${version}
-base_dir: data/MIND-${version}
+name: mind
+base_dir: data/mind
 item:
   filter_cache: true
-  depot: ${data.base_dir}/news
+  depot: ${data.base_dir}/items
   order:
-    - title
-    - cat
+    - title@bert
+    - category
   append:
-    - nid
+    - item_id
 user:
   filter_cache: true
   depots:
     train:
       path: ${data.base_dir}/train
     dev:
-      path: ${data.base_dir}/dev
+      path: ${data.base_dir}/valid
     test:
       path: ${data.base_dir}/test
   filters:
     history:
       - x
   union:
-    - ${data.base_dir}/user-grp
-    - ${data.base_dir}/neg
-  candidate_col: nid
+    - ${data.base_dir}/users
+  candidate_col: item_id
   clicks_col: history
   label_col: click
-  neg_col: neg
-  group_col: imp
-  user_col: uid
+  group_col: user_id
+  user_col: user_id
   index_col: index
-  fake_col: fake
+  neg_col: null

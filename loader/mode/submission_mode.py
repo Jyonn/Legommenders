@@ -1,6 +1,6 @@
 from pigmento import pnt
 
-from loader.meta import Phases
+from loader.meta import LegoSymbols
 from loader.mode.base_mode import BaseMode
 from loader.mode.evaluate_mode import EvaluateMode
 from utils.submission import Submission
@@ -14,7 +14,7 @@ class SubmissionMode(BaseMode):
         self.evaluate = self.mode_hub(EvaluateMode)  # type: EvaluateMode
 
     def work(self):
-        loader = self.controller.get_loader(Phases.test).test()
+        loader = self.controller.get_loader(LegoSymbols.test).test()
         self.legommender.eval()
 
         item_col, group_col = self.controller.column_map.candidate_col, self.controller.column_map.group_col
@@ -22,7 +22,7 @@ class SubmissionMode(BaseMode):
         item_series, group_series = col_series[item_col], col_series[group_col]
 
         submission = Submission(
-            depot=self.controller.depots[Phases.test],
+            ut=self.controller.uts[LegoSymbols.test],
             column_map=self.controller.column_map,
         )
 

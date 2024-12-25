@@ -1,9 +1,7 @@
-from collections import OrderedDict
 from typing import Optional, List, Dict
 
-import numpy as np
 import torch
-from UniTok import Vocab
+from unitok import Vocab
 
 from loader.meta import Meta
 from model.inputer.base_inputer import BaseInputer
@@ -26,7 +24,7 @@ class SimpleInputer(BaseInputer):
         attention_mask = dict()
 
         for col in self.order:
-            max_len = self.depot.cols[col].max_length
+            max_len = self.ut.meta.jobs[col].max_len
             if not max_len:
                 sample[col] = [sample[col]]
                 max_len = 1

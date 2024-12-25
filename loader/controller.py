@@ -4,13 +4,14 @@ import torch
 from oba import Obj
 from pigmento import pnt
 from torch import nn
+from unitok import Symbol
 
 from model.meta_config import LegommenderMeta, LegommenderConfig
 from loader.data_hubs import DataHubs
 from loader.data_sets import DataSets
-from loader.depot.depot_hub import DepotHub
-from loader.depots import Depots
-from loader.meta import Meta, Phases, DatasetType
+from loader.depot.ut_hub import UTHub
+from loader.uts import UTs
+from loader.meta import Meta, LegoSymbols
 from loader.status import Status
 from model.common.user_plugin import UserPlugin
 from model.inputer.concat_inputer import ConcatInputer
@@ -37,25 +38,26 @@ class Controller:
         self.status = Status()
 
         if 'MIND' in self.data.name.upper() or 'EB-NERD' in self.data.name.upper():
-            Meta.data_type = DatasetType.news
+            Meta.data_type = LegoSymbols.news
         else:
-            Meta.data_type = DatasetType.book
+            Meta.data_type = LegoSymbols.book
         pnt('dataset type: ', Meta.data_type)
 
         pnt('build column map ...')
         self.column_map = ColumnMap(**Obj.raw(self.data.user))
 
         # depots and data hubs initialization
-        self.depots = Depots(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
-        self.hubs = DataHubs(depots=self.depots)
+        self.uts = UTs(user_data=self.data.user, modes=self.modes, column_map=self.column_map)
+
+        self.hubs = DataHubs(depots=self.uts)
         self.item_hub = DataHub(
-            depot=self.data.item.depot,
+            ut=self.data.item.depot,
             order=self.data.item.order,
             append=self.data.item.append,
         )
         if self.data.item.union:
-            for depot in self.data.item.union:
-                self.item_hub.depot.union(DepotHub.get(depot))
+            for ut in self.data.item.union:
+                self.item_hub.ut.union(UTHub.get(ut), soft_union=False)
 
         # legommender components initialization
         operator_set = ClassHub.operators()
@@ -108,7 +110,7 @@ class Controller:
         user_plugin = None
         if self.data.user.plugin:
             user_plugin = UserPlugin(
-                depot=DepotHub.get(self.data.user.plugin),
+                ut=UTHub.get(self.data.user.plugin),
                 hidden_size=self.model.config.hidden_size,
                 select_cols=self.data.user.plugin_cols,
             )
@@ -135,29 +137,33 @@ class Controller:
         )
 
         if self.legommender_config.use_neg_sampling:
-            self.depots.negative_filter(self.column_map.label_col)
+            self.uts.negative_filter(self.column_map.label_col)
 
-        if self.exp.policy.use_cache:
-            for depot in self.depots.depots.values():
-                depot.start_caching()
+        # ut 4 beta does not support cache
+        # if self.exp.policy.use_cache:
+        #     for ut in self.uts.uts.values():
+        #         ut.start_caching()
 
         # data sets initialization
         self.sets = DataSets(hubs=self.hubs, resampler=self.resampler)
 
     def parse_mode(self):
         modes = set(self.exp.mode.lower().split('_'))
-        if Phases.train in modes:
-            modes.add(Phases.dev)
-        return modes
+        symbol_modes = set()
+        for mode in [LegoSymbols.train, LegoSymbols.dev, LegoSymbols.test]:
+            if mode.name in modes:
+                symbol_modes.add(mode)
+        if LegoSymbols.train in symbol_modes:
+            symbol_modes.add(LegoSymbols.dev)
+        return symbol_modes
 
-    def get_loader(self, phase):
+    def get_loader(self, phase: Symbol):
         return DataLoader(
             resampler=self.resampler,
             user_set=self.sets.user_set,
             dataset=self.sets[phase],
-            shuffle=phase == Phases.train,
+            shuffle=phase is LegoSymbols.train,
             batch_size=self.exp.policy.batch_size,
             pin_memory=self.exp.policy.pin_memory,
             num_workers=5,
-            # collate_fn=self.stacker,
         )

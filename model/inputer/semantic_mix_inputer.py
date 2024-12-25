@@ -12,7 +12,7 @@ class SemanticMixInputer(BaseInputer):
 
     def __init__(self, item_hub: DataHub, **kwargs):
         self.order = kwargs['hub'].order
-        self.depot = kwargs['hub'].depot
+        self.depot = kwargs['hub'].ut
         assert len(self.order) == 1, 'semantic inputer only support one column of user semantics'
         self.user_semantic_col = self.order[0]
         self.item_hub = item_hub

@@ -1,8 +1,8 @@
 from collections import OrderedDict
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, cast
 
 import torch
-from UniTok import Vocab
+from unitok import Vocab
 
 from loader.meta import Meta
 from model.inputer.base_inputer import BaseInputer
@@ -41,7 +41,7 @@ class ConcatInputer(BaseInputer):
     def get_max_content_len(self):
         length = 0
         for col in self.order:
-            length += self.depot.cols[col].max_length or 1
+            length += self.ut.meta.jobs[col].max_len or 1
         return length
 
     def get_max_sequence_len(self):
@@ -101,7 +101,7 @@ class ConcatInputer(BaseInputer):
 
         for col in input_ids:
             seq = input_ids[col].to(Meta.device)  # type: torch.Tensor # [B, L]
-            mask = (seq > Meta.UNSET).long().to(Meta.device)  # type: torch.Tensor  # [B, L]
+            mask = cast(torch.Tensor, (seq > Meta.UNSET)).long().to(Meta.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
 
             embedding = self.embedding_manager(col)(seq)

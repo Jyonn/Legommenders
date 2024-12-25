@@ -1,7 +1,8 @@
 from typing import Optional, List, Dict
 
 import torch
-from UniTok import Vocab, UniDep
+from unitok import UniTok
+from unitok import Vocab
 
 from loader.embedding.embedding_hub import EmbeddingHub
 from loader.data_hub import DataHub
@@ -18,7 +19,7 @@ class BaseInputer:
     4. user clicks (title, category) -> 20 x 64 -> 64
     """
     def __init__(self, hub: DataHub, embedding_manager: EmbeddingHub, **kwargs):
-        self.depot = hub.depot  # type: UniDep
+        self.ut = hub.ut  # type: UniTok
         self.order = hub.order  # type: list
         self.embedding_manager = embedding_manager  # type: EmbeddingHub
 

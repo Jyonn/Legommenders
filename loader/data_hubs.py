@@ -1,10 +1,10 @@
 from loader.data_hub import DataHub
-from loader.depots import Depots
-from loader.meta import Phases
+from loader.uts import UTs
+from loader.meta import LegoSymbols
 
 
 class DataHubs:
-    def __init__(self, depots: Depots):
+    def __init__(self, depots: UTs):
         column_map = depots.column_map
 
         order = [column_map.clicks_col]
@@ -20,19 +20,19 @@ class DataHubs:
             append.append(column_map.neg_col)
 
         self.train_hub = self.dev_hub = self.test_hub = None
-        if depots.train_depot:
-            self.train_hub = DataHub(depot=depots.train_depot, order=order, append=append)
-        if depots.dev_depot:
-            self.dev_hub = DataHub(depot=depots.dev_depot, order=order, append=append)
-        if depots.test_depot:
-            self.test_hub = DataHub(depot=depots.test_depot, order=order, append=append)
-        self.fast_eval_hub = DataHub(depot=depots.fast_eval_depot, order=order, append=append)
+        if depots.train_ut:
+            self.train_hub = DataHub(ut=depots.train_ut, order=order, append=append)
+        if depots.dev_ut:
+            self.dev_hub = DataHub(ut=depots.dev_ut, order=order, append=append)
+        if depots.test_ut:
+            self.test_hub = DataHub(ut=depots.test_ut, order=order, append=append)
+        self.fast_eval_hub = DataHub(ut=depots.fast_eval_ut, order=order, append=append)
 
         self.hubs = {
-            Phases.train: self.train_hub,
-            Phases.dev: self.dev_hub,
-            Phases.test: self.test_hub,
-            Phases.fast_eval: self.fast_eval_hub,
+            LegoSymbols.train: self.train_hub,
+            LegoSymbols.dev: self.dev_hub,
+            LegoSymbols.test: self.test_hub,
+            LegoSymbols.fast_eval: self.fast_eval_hub,
         }
 
     def __getitem__(self, item):

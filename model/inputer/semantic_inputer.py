@@ -1,15 +1,12 @@
 from collections import OrderedDict
-from typing import Optional, List, Dict
+from typing import Dict
 
 import numpy as np
 import torch
-from UniTok import Vocab
-from pigmento import pnt
 
 from loader.data_hub import DataHub
 from loader.meta import Meta
 from model.inputer.base_inputer import BaseInputer
-from model.inputer.concat_inputer import ConcatInputer, Pointer
 
 
 class SemanticInputer(BaseInputer):
@@ -17,7 +14,7 @@ class SemanticInputer(BaseInputer):
 
     def __init__(self, item_hub: DataHub, **kwargs):
         self.order = kwargs['hub'].order
-        self.depot = kwargs['hub'].depot
+        self.depot = kwargs['hub'].ut
         assert len(self.order) == 1, 'semantic inputer only support one column of user history'
         self.history_col = self.order[0]
         self.item_hub = item_hub
@@ -30,7 +27,7 @@ class SemanticInputer(BaseInputer):
         self.max_sequence_len = self.get_max_sequence_len()  # matrix height
 
     def get_max_content_len(self):
-        return self.item_hub.depot.cols[self.semantic_col].max_length
+        return self.item_hub.ut.cols[self.semantic_col].max_length
 
     def get_max_sequence_len(self):
         return self.depot.cols[self.history_col].max_length
@@ -43,7 +40,7 @@ class SemanticInputer(BaseInputer):
 
         items = sample[self.history_col]
         for index, item_id in enumerate(items):
-            item_sample = self.item_hub.depot[item_id]
+            item_sample = self.item_hub.ut[item_id]
             value = item_sample[self.semantic_col]
             if isinstance(value, np.ndarray):
                 value = value.tolist()

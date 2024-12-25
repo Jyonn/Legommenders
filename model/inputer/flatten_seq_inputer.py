@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import numpy as np
 import torch
-from UniTok import Vocab
+from unitok import Vocab
 
 from loader.data_hub import DataHub
 from loader.meta import Meta
@@ -21,7 +21,7 @@ class FlattenSeqInputer(ConcatInputer):
 
     def __init__(self, item_hub: DataHub, use_attr_sep_token=True, **kwargs):
         self.order = kwargs['hub'].order
-        self.depot = kwargs['hub'].depot
+        self.depot = kwargs['hub'].ut
         assert len(self.order) == 1, 'flatten seq inputer only support one column of user history'
         self.history_col = self.order[0]
         self.item_hub = item_hub
@@ -33,7 +33,7 @@ class FlattenSeqInputer(ConcatInputer):
     def get_max_content_len(self):
         item_length = 0
         for col in self.item_hub.order:
-            item_length += self.item_hub.depot.cols[col].max_length or 1
+            item_length += self.item_hub.ut.cols[col].max_length or 1
         return self.max_history_len * item_length
 
     def get_max_sequence_len(self):
@@ -60,7 +60,7 @@ class FlattenSeqInputer(ConcatInputer):
 
         items = sample[self.history_col]
         for item_id in items:
-            item_sample = self.item_hub.depot[item_id]
+            item_sample = self.item_hub.ut[item_id]
             for attr_index, col in enumerate(self.item_hub.order):
                 value = item_sample[col]
                 if isinstance(value, np.ndarray):
