@@ -3,7 +3,7 @@ from typing import Dict
 
 import torch
 
-from loader.meta import Meta
+from loader.meta import Env
 from model.inputer.base_inputer import BaseInputer
 from model.inputer.concat_inputer import Pointer
 
@@ -19,7 +19,7 @@ class NaturalConcatInputer(BaseInputer):
 
         self.max_content_len = self.get_max_content_len()
         self.max_sequence_len = self.max_content_len + len(self.start_prompt)
-        for col in self.order:
+        for col in self.inputs:
             self.max_sequence_len += len(self.col_prompt_map[col])
 
     @staticmethod
@@ -52,12 +52,12 @@ class NaturalConcatInputer(BaseInputer):
 
     def get_max_content_len(self):
         length = 0
-        for col in self.order:
+        for col in self.inputs:
             length += self.ut.cols[col].max_length or 1
         return length
 
     def get_empty_input(self):
-        return torch.ones(self.max_sequence_len, dtype=torch.long) * Meta.UNSET
+        return torch.ones(self.max_sequence_len, dtype=torch.long) * Env.UNSET
 
     def sample_rebuilder(self, sample: OrderedDict):
         pointer = Pointer()
@@ -66,7 +66,7 @@ class NaturalConcatInputer(BaseInputer):
 
         pointer.update_input(input_id, self.start_prompt)
 
-        for col in self.order:
+        for col in self.inputs:
             value = sample[col]
             if not isinstance(value, list):
                 value = [value]
@@ -93,11 +93,11 @@ class NaturalConcatInputer(BaseInputer):
     ):
         input_ids = batched_samples['input_ids']
 
-        seq = input_ids[self.special_col].to(Meta.device)  # type: torch.Tensor # [B, L]
-        mask = (seq > Meta.UNSET).long().to(Meta.device)  # type: torch.Tensor  # [B, L]
+        seq = input_ids[self.special_col].to(Env.device)  # type: torch.Tensor # [B, L]
+        mask = (seq > Env.UNSET).long().to(Env.device)  # type: torch.Tensor  # [B, L]
         seq *= mask
 
-        embedding = self.embedding_manager(self.special_col)(seq)
+        embedding = self.embedding_hub(self.special_col)(seq)
         embedding *= mask.unsqueeze(-1)
 
         return embedding

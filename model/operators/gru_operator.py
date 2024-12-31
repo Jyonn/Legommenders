@@ -26,11 +26,8 @@ class GRUOperator(BaseOperator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        input_size = self.config.hidden_size
-        print('gru input size:', input_size)
-
         self.gru = nn.GRU(
-            input_size=input_size,
+            input_size=self.config.input_dim,
             hidden_size=self.config.hidden_size,
             num_layers=self.config.num_layers,
             batch_first=True,
@@ -39,7 +36,7 @@ class GRUOperator(BaseOperator):
 
         self.linear = nn.Linear(
             in_features=self.config.hidden_size,
-            out_features=input_size,
+            out_features=self.config.hidden_size,
         )
 
     def forward(self, embeddings, mask=None, **kwargs):

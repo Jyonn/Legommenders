@@ -18,6 +18,10 @@ class BertOperator(BaseLLMOperator):
         self.transformer.embeddings.word_embeddings = None
         self.layer_split(self.transformer.config.num_hidden_layers)
 
+        if self.transformer.config.hidden_size != self.config.input_dim:
+            raise ValueError(f'In {self.classname}, hidden_size of transformer ({self.transformer.config.hidden_size}) '
+                             f'does not match input_dim ({self.config.input_dim})')
+
     def _slice_transformer_layers(self):
         self.transformer.encoder.layer = self.transformer.encoder.layer[self.config.layer_split + 1:]
 

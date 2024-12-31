@@ -10,7 +10,7 @@ class EvaluateMode(BaseMode):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.disable_tqdm = self.controller.exp.policy.disable_tqdm
+        self.disable_tqdm = self.manager.exp.policy.disable_tqdm
 
     def work(self, *args, loader, cols, **kwargs):
         score_series = torch.zeros(len(loader.dataset), dtype=torch.float32)

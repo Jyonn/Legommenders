@@ -1,23 +1,27 @@
 import glob
 import importlib
 
-from model.operators.base_operator import BaseOperator
-from model.predictors.base_predictor import BasePredictor
-from processor.base_processor import BaseProcessor
-
 
 class ClassHub:
     @staticmethod
     def operators():
+        from model.operators.base_operator import BaseOperator
         return ClassHub(BaseOperator, 'model/operators', 'Operator')
 
     @staticmethod
     def predictors():
+        from model.predictors.base_predictor import BasePredictor
         return ClassHub(BasePredictor, 'model/predictors', 'Predictor')
 
     @staticmethod
     def processors():
+        from processor.base_processor import BaseProcessor
         return ClassHub(BaseProcessor, 'processor', 'Processor')
+
+    @staticmethod
+    def embedders():
+        from embedder.base_embedder import BaseEmbedder
+        return ClassHub(BaseEmbedder, 'embedder', 'Embedder')
 
     def __init__(self, base_class, module_dir: str, module_type: str):
         """

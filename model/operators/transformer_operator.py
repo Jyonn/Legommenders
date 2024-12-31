@@ -1,6 +1,6 @@
 from torch import nn
 
-from loader.meta import Meta
+from loader.meta import Env
 from model.common.attention import AdditiveAttention
 from model.operators.attention_operator import AttentionOperatorConfig
 from model.operators.base_operator import BaseOperator
@@ -45,7 +45,7 @@ class TransformerOperator(BaseOperator):
         )
 
     def forward(self, embeddings, mask=None, **kwargs):
-        mask = mask.to(Meta.device)
+        mask = mask.to(Env.device)
 
         transformer_output = self.transformer(
             inputs_embeds=embeddings,

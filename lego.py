@@ -14,8 +14,9 @@ from oba import Obj
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
-from loader.meta import Meta, LegoSymbols
-from loader.controller import Controller
+from loader.env import Env
+from loader.manager import Manager
+from loader.symbols import Symbols
 from model.operators.base_llm_operator import BaseLLMOperator
 from utils.config_init import CommandInit
 from utils.function import seeding
@@ -24,7 +25,6 @@ from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 from loader.pager.llm_split_pager import LLMSplitPager
-from utils.structure import Structure
 from utils.submission import Submission
 
 torch.autograd.set_detect_anomaly(True)
@@ -50,25 +50,24 @@ class Lego:
         pnt('python ', ' '.join(sys.argv))
         pnt(json.dumps(Obj.raw(self.config), indent=4))
 
-        Meta.device = self.get_device()
-        Meta.simple_dev = self.exp.policy.simple_dev
+        Env.device = self.get_device()
+        Env.simple_dev = self.exp.policy.simple_dev
         # Setting.dataset = self.data.dataset
 
-        self.controller = Controller(
+        self.manager = Manager(
             data=self.data,
             embed=self.embed,
             model=self.model,
             exp=self.exp,
         )
 
-        self.legommender = self.controller.legommender.to(Meta.device)
-        self.resampler = self.controller.resampler
+        self.legommender = self.manager.legommender.to(Env.device)
+        self.resampler = self.manager.resampler
         self.cacher = self.legommender.cacher
         self.cacher.activate(config.fast_eval)
         self.load_path = self.parse_load_path()
 
-        pnt(self.controller.uts.a_depot()[0])
-        pnt(Structure().analyse_and_stringify(self.controller.sets.a_set()[0]))
+        self.manager.stringify()
 
         self.optimizer: Optional[torch.optim.Optimizer] = None
         self.scheduler = None
@@ -88,7 +87,7 @@ class Lego:
         while True:
             pnt(f"load model from exp {path}")
             try:
-                state_dict = torch.load(path, map_location=Meta.device)
+                state_dict = torch.load(path, map_location=Env.device)
                 break
             except Exception as e:
                 if not self.exp.load.wait_load:
@@ -144,7 +143,7 @@ class Lego:
         monitor_kwargs = Obj.raw(self.exp.store)
 
         dev_func = self.dev
-        if Meta.simple_dev:
+        if Env.simple_dev:
             monitor_kwargs['maximize'] = False
             dev_func = self.simple_evaluate
             pnt('activate simple dev mode')
@@ -154,11 +153,11 @@ class Lego:
             **monitor_kwargs,
         )
 
-        train_steps = len(self.controller.sets.train_set) // self.exp.policy.batch_size
+        train_steps = len(self.manager.train_set) // self.exp.policy.batch_size
         accumulate_step = 0
         accumulate_batch = self.exp.policy.accumulate_batch or 1
 
-        loader = self.controller.get_loader(LegoSymbols.train).train()
+        loader = self.manager.get_train_loader()
         self.optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
@@ -216,23 +215,22 @@ class Lego:
 
     def dev(self):
         assert self.exp.store.metric
-        loader = self.controller.get_loader(LegoSymbols.dev).eval()
+        loader = self.manager.get_dev_loader()
 
         results = self.evaluate(loader, metrics=[self.exp.store.metric])
         return results, results[self.exp.store.metric]
 
     def test_fake(self):
         self.legommender.eval()
-        loader = self.controller.get_loader(LegoSymbols.test).test()
-        loader.dataset.timer.clear()
+        loader = self.manager.get_test_loader()
 
         score_series, label_series, group_series, fake_series = [], [], [], []
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 scores = self.legommender(batch=batch)
-            labels = batch[self.controller.column_map.label_col].tolist()
-            groups = batch[self.controller.column_map.group_col].tolist()
-            fakes = batch[self.controller.column_map.fake_col].tolist()
+            labels = batch[self.manager.cm.label_col].tolist()
+            groups = batch[self.manager.cm.group_col].tolist()
+            fakes = batch[self.manager.cm.fake_col].tolist()
             score_series.extend(scores.cpu().detach().tolist())
             label_series.extend(labels)
             group_series.extend(groups)
@@ -260,29 +258,27 @@ class Lego:
         # group_series = submission.depot.data[self.config_manager.column_map.group_col].tolist()
         # item_series = submission.depot.data[self.config_manager.column_map.candidate_col].tolist()
         # score_series = [random.random() for _ in range(len(submission.depot))]
-        item_col, group_col = self.controller.column_map.candidate_col, self.controller.column_map.group_col
+        item_col, group_col = self.manager.cm.item_col, self.manager.cm.group_col
         score_series, col_series = self.base_evaluate(loader, cols=[item_col, group_col])
         item_series, group_series = col_series[item_col], col_series[group_col]
         # item_series = [v[0] for v in item_series]
 
-        loader.dataset.timer.summarize()
-
         submission = Submission(
-            ut=self.controller.uts[LegoSymbols.test],
-            column_map=self.controller.column_map,
+            ut=self.manager.test_ut,
+            column_map=self.manager.cm,
         )
 
         export_dir = submission.run(
             scores=score_series,
             groups=group_series,
             items=item_series,
-            model_name=self.model.name,
+            model_name=self.model.key,
         )
 
         pnt(f'export to {export_dir}')
 
     def test(self):
-        loader = self.controller.get_loader(LegoSymbols.test).test()
+        loader = self.manager.get_test_loader()
 
         if self.config.mind_large_submission:
             return self.mind_large_evaluate(loader)
@@ -292,7 +288,7 @@ class Lego:
             pnt(f'{metric}: {results[metric]:.4f}')
 
     def train_get_user_embedding(self):
-        self.controller.get_loader(LegoSymbols.train).test()
+        self.manager.get_train_loader(Symbols.test)
         assert self.cacher.user.cached, 'fast eval not enabled'
         user_embeddings = self.cacher.user.repr.detach().cpu().numpy()
         store_path = os.path.join(self.exp.dir, 'user_embeddings.npy')
@@ -332,7 +328,7 @@ class Lego:
         pool = MetricPool.parse(metrics)
         self.legommender.eval()
 
-        label_col, group_col = self.controller.column_map.label_col, self.controller.column_map.group_col
+        label_col, group_col = self.manager.cm.label_col, self.manager.cm.group_col
         score_series, col_series = self.base_evaluate(loader, cols=[label_col, group_col])
         label_series, group_series = col_series[label_col], col_series[group_col]
 
@@ -340,7 +336,7 @@ class Lego:
         return results
 
     def simple_evaluate(self):
-        loader = self.controller.get_loader(LegoSymbols.dev).eval()
+        loader = self.manager.get_dev_loader()
         total_loss = Meaner()
 
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
@@ -375,7 +371,7 @@ class Lego:
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=self.exp.policy.n_warmup,
-            num_training_steps=len(self.controller.sets.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
+            num_training_steps=len(self.manager.train_set) // self.exp.policy.batch_size * self.exp.policy.epoch,
         )
 
         if self.load_path:
@@ -406,13 +402,13 @@ class Lego:
         pnt(f'Number of parameters: {num_params:.2f}M')
 
     def test_llm_layer_split(self):
-        item_encoder = self.legommender.item_encoder  # type: BaseLLMOperator
+        item_encoder = self.legommender.item_op  # type: BaseLLMOperator
         assert isinstance(item_encoder, BaseLLMOperator), 'llama operator not found'
 
         pager = LLMSplitPager(
             inputer=item_encoder.inputer,
             layers=Obj.raw(self.exp.store.layers),
-            hidden_size=item_encoder.config.embed_hidden_size,
+            hidden_size=item_encoder.config.input_dim,
             contents=self.resampler.item_cache,
             model=item_encoder.get_all_hidden_states,
             page_size=self.config.page_size,

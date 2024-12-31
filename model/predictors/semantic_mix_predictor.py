@@ -4,7 +4,7 @@ import torch
 from pigmento import pnt
 from torch import nn
 
-from loader.meta import Meta
+from loader.meta import Env
 from model.common.mediator import ModuleType
 from model.predictors.base_predictor import BasePredictor, BasePredictorConfig
 from utils.function import combine_config
@@ -61,8 +61,8 @@ class SemanticMixPredictor(BasePredictor):
         from model.legommender import Legommender
         if responser_name == ModuleType.legommender:
             legommender = cast(Legommender, response['self'])
-            self.num_item_semantics = legommender.item_hub.ut.cols[legommender.item_hub.order[0]].max_length
-            self.num_user_semantics = legommender.user_hub.ut.cols[legommender.user_hub.order[0]].max_length
+            self.num_item_semantics = legommender.item_hub.ut.cols[legommender.item_hub.input_cols[0]].max_length
+            self.num_user_semantics = legommender.user_hub.ut.cols[legommender.user_hub.input_cols[0]].max_length
             self.linear = nn.Linear(self.num_item_semantics * self.num_user_semantics, 1)
 
             # for i in range(self.num_item_semantics):
@@ -85,7 +85,7 @@ class SemanticMixPredictor(BasePredictor):
     def get_empty_placeholder(embeddings):
         shape = list(embeddings.shape)
         shape[1] = shape[1] * 2 - 1
-        return torch.zeros(shape, dtype=torch.float).to(Meta.device)
+        return torch.zeros(shape, dtype=torch.float).to(Env.device)
 
     def predict(self, user_embeddings, item_embeddings):
         """

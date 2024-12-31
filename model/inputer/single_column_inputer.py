@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 
-from loader.meta import Meta
+from loader.meta import Env
 from model.inputer.base_inputer import BaseInputer
 
 
@@ -13,8 +13,8 @@ class SingleColumnInputer(BaseInputer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        assert len(self.order) == 1, 'single column inputer only support one column in order'
-        self.column = self.order[0]
+        assert len(self.inputs) == 1, 'single column inputer only support one column in order'
+        self.column = self.inputs[0]
 
     def sample_rebuilder(self, sample: OrderedDict):
         value = sample[self.column]
@@ -26,7 +26,7 @@ class SingleColumnInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        embedding = self.embedding_manager(self.column)(batched_samples.to(Meta.device))
+        embedding = self.embedding_hub(self.column)(batched_samples.to(Env.device))
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):

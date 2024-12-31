@@ -1,5 +1,4 @@
-from loader.controller import Controller
-from model.legommender import Legommender
+from loader.manager import Manager
 
 
 class BaseMode:
@@ -7,12 +6,11 @@ class BaseMode:
 
     def __init__(
             self,
-            legommender: Legommender,
-            controller: Controller,
+            manager: Manager,
             mode_hub,
     ):
-        self.legommender = legommender
-        self.controller = controller
+        self.manager: Manager = manager
+        self.legommender = self.manager.legommender
         self.mode_hub = mode_hub
 
     def work(self, *args, **kwargs):

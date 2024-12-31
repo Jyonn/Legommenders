@@ -18,8 +18,8 @@ class Mediator:
 
         self._modules = {
             ModuleType.legommender: self._legommender,
-            ModuleType.user_encoder: self._legommender.user_encoder,
-            ModuleType.item_encoder: self._legommender.item_encoder,
+            ModuleType.user_encoder: self._legommender.user_op,
+            ModuleType.item_encoder: self._legommender.item_op,
             ModuleType.predictor: self._legommender.predictor,
         }
 

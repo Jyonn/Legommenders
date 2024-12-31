@@ -8,7 +8,7 @@ from pigmento import pnt
 from torch import nn
 from transformers import PreTrainedModel
 
-from loader.meta import Meta
+from loader.env import Env
 from model.common.attention import AdditiveAttention
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
 from model.operators.attention_operator import AttentionOperatorConfig
@@ -51,11 +51,11 @@ class BaseLLMOperator(BaseOperator):
         self.hidden_weights = None
         self.attention_mask = None
 
-        self.linear = nn.Linear(self.config.embed_hidden_size, self.config.hidden_size)
+        self.linear = nn.Linear(self.config.input_dim, self.config.hidden_size)
 
         self.additive_attention = AdditiveAttention(
             embed_dim=self.config.hidden_size,
-            hidden_size=self.config.hidden_size,
+            hidden_size=self.config.additive_hidden_size,
         )
 
     def _slice_transformer_layers(self):
@@ -70,9 +70,9 @@ class BaseLLMOperator(BaseOperator):
             self._slice_transformer_layers()
             # self.transformer.layers = self.transformer.layers[self.config.layer_split+1:]
             hidden_weights = np.load(os.path.join(self.config.weights_dir, f'layer_{self.config.layer_split}.npy'))
-            self.hidden_weights = torch.from_numpy(hidden_weights).to(Meta.device)
+            self.hidden_weights = torch.from_numpy(hidden_weights).to(Env.device)
             attention_mask = np.load(os.path.join(self.config.weights_dir, 'mask.npy'))
-            self.attention_mask = torch.from_numpy(attention_mask).to(Meta.device)
+            self.attention_mask = torch.from_numpy(attention_mask).to(Env.device)
             self.hidden_weights = self.hidden_weights.view(*self.attention_mask.shape[:2], self.hidden_weights.shape[-1])
             pnt(f'hidden_weights.shape: {self.hidden_weights.shape}')
             pnt(f'attention_mask.shape: {self.attention_mask.shape}')
@@ -98,7 +98,7 @@ class BaseLLMOperator(BaseOperator):
 
     def forward(self, embeddings, mask=None, **kwargs):
         if not self.config.layer_split:
-            mask = mask.to(Meta.device)
+            mask = mask.to(Env.device)
 
             llm_output = self.transformer(
                 inputs_embeds=embeddings,

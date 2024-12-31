@@ -1,31 +1,24 @@
 name: mind
 base_dir: data/mind
 item:
-  filter_cache: true
-  depot: ${data.base_dir}/items
-  order:
-    - title@bert
+  ut: ${data.base_dir}/items
+  inputs:
+    - title@bert: 50
     - category
-  append:
-    - item_id
 user:
-  filter_cache: true
-  depots:
-    train:
-      path: ${data.base_dir}/train
-    dev:
-      path: ${data.base_dir}/valid
-    test:
-      path: ${data.base_dir}/test
+  ut: ${data.base_dir}/users
+  max_history: 50
+inter:
+  train: ${data.base_dir}/train
+  dev: ${data.base_dir}/valid
+  test: ${data.base_dir}/test
   filters:
     history:
-      - x
-  union:
-    - ${data.base_dir}/users
-  candidate_col: item_id
-  clicks_col: history
-  label_col: click
-  group_col: user_id
+      - "lambda x: x"
+column_map:
+  item_col: item_id
   user_col: user_id
-  index_col: index
+  history_col: history
   neg_col: null
+  click_col: click
+  group_col: user_id

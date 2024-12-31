@@ -27,9 +27,12 @@ if __name__ == '__main__':
         use_instance_class=True,
     )
 
-    configuration = CommandInit(required_args=['data']).parse()
+    configuration = CommandInit(
+        required_args=['data'],
+        default_args=dict(regenerate=False)
+    ).parse()
     processor_class = get_processor(configuration.data)
     data_dir = DataInit.get(configuration.data)
 
     processor = processor_class(data_dir=data_dir)
-    processor.load()
+    processor.load(regenerate=configuration.regenerate)

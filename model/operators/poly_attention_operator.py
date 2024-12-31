@@ -27,7 +27,7 @@ class PolyAttentionOperator(BaseOperator):
         super().__init__(**kwargs)
 
         self.linear = nn.Linear(
-            in_features=self.config.hidden_size,
+            in_features=self.config.input_dim,
             out_features=self.config.context_code_dim,
             bias=False
         )
@@ -56,3 +56,7 @@ class PolyAttentionOperator(BaseOperator):
         poly_repr = torch.matmul(weights, embeddings)
 
         return poly_repr
+
+    @property
+    def output_dim(self):
+        return self.config.input_dim

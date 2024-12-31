@@ -26,7 +26,7 @@ class Submission:
         # self.group_vocab = ut.vocabs[ut.cols[column_map.group_col].voc.name]
         # self.item_vocab = ut.vocabs[ut.cols[column_map.candidate_col].voc.name]
         self.group_vocab = ut.meta.jobs[column_map.group_col].tokenizer.vocab
-        self.item_vocab = ut.meta.jobs[column_map.candidate_col].tokenizer.vocab
+        self.item_vocab = ut.meta.jobs[column_map.item_col].tokenizer.vocab
 
         # self.group_dict = dict()
         # index = 0
@@ -52,7 +52,7 @@ class Submission:
                 group_dict[sample[self.column_map.group_col]] = dict()
                 index = 0
             index += 1
-            group_dict[sample[self.column_map.group_col]][sample[self.column_map.candidate_col]] = str(index)
+            group_dict[sample[self.column_map.group_col]][sample[self.column_map.item_col]] = str(index)
         pd.to_pickle(group_dict, self.group_dict_path)
         return group_dict
 

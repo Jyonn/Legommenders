@@ -4,22 +4,22 @@ from typing import Dict
 import numpy as np
 import torch
 
-from loader.data_hub import DataHub
-from loader.meta import Meta
+from loader.env import Env
+from loader.ut.lego_ut import LegoUT
 from model.inputer.base_inputer import BaseInputer
 
 
 class SemanticInputer(BaseInputer):
     output_single_sequence = False
 
-    def __init__(self, item_hub: DataHub, **kwargs):
-        self.order = kwargs['hub'].order
-        self.depot = kwargs['hub'].ut
-        assert len(self.order) == 1, 'semantic inputer only support one column of user history'
-        self.history_col = self.order[0]
-        self.item_hub = item_hub
-        assert len(self.item_hub.order) == 1, 'semantic inputer only support one column of item'
-        self.semantic_col = self.item_hub.order[0]
+    def __init__(self, item_ut: LegoUT, item_inputs, **kwargs):
+        self.user_inputs = kwargs['user_inputs']
+        self.user_ut: LegoUT = kwargs['user_ut']
+        assert len(self.user_inputs) == 1, 'semantic inputer only support one column of user history'
+        self.history_col = self.user_inputs[0]
+        self.item_ut: LegoUT = item_ut
+        assert len(item_inputs) == 1, 'semantic inputer only support one column of item'
+        self.semantic_col = item_inputs[0]
 
         super().__init__(**kwargs)
 
@@ -27,10 +27,10 @@ class SemanticInputer(BaseInputer):
         self.max_sequence_len = self.get_max_sequence_len()  # matrix height
 
     def get_max_content_len(self):
-        return self.item_hub.ut.cols[self.semantic_col].max_length
+        return self.item_ut.meta.jobs[self.semantic_col].max_len
 
     def get_max_sequence_len(self):
-        return self.depot.cols[self.history_col].max_length
+        return self.user_ut.meta.jobs[self.history_col].max_len
 
     def get_empty_input(self):
         return torch.zeros(self.max_sequence_len, self.max_content_len, dtype=torch.long)
@@ -40,7 +40,7 @@ class SemanticInputer(BaseInputer):
 
         items = sample[self.history_col]
         for index, item_id in enumerate(items):
-            item_sample = self.item_hub.ut[item_id]
+            item_sample = self.item_ut[item_id]
             value = item_sample[self.semantic_col]
             if isinstance(value, np.ndarray):
                 value = value.tolist()
@@ -61,6 +61,6 @@ class SemanticInputer(BaseInputer):
             self,
             batched_samples: Dict[str, torch.Tensor],
     ):
-        input_ids = batched_samples['input_ids'].to(Meta.device)
-        embedding = self.embedding_manager(self.semantic_col)(input_ids)
+        input_ids = batched_samples['input_ids'].to(Env.device)
+        embedding = self.embedding_hub(self.semantic_col)(input_ids)
         return embedding

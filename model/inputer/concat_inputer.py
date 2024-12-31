@@ -4,7 +4,7 @@ from typing import Optional, Dict, List, cast
 import torch
 from unitok import Vocab
 
-from loader.meta import Meta
+from loader.env import Env
 from model.inputer.base_inputer import BaseInputer
 
 
@@ -40,18 +40,18 @@ class ConcatInputer(BaseInputer):
 
     def get_max_content_len(self):
         length = 0
-        for col in self.order:
+        for col in self.inputs:
             length += self.ut.meta.jobs[col].max_len or 1
         return length
 
     def get_max_sequence_len(self):
-        return self.max_content_len + int(self.use_cls_token) + int(self.use_sep_token) * len(self.order)
+        return self.max_content_len + int(self.use_cls_token) + int(self.use_sep_token) * len(self.inputs)
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
         return [self.vocab]
 
     def get_empty_input(self):
-        return torch.ones(self.max_sequence_len, dtype=torch.long) * Meta.UNSET
+        return torch.ones(self.max_sequence_len, dtype=torch.long) * Env.UNSET
 
     def sample_rebuilder(self, sample: OrderedDict):
         pointer = Pointer()
@@ -61,7 +61,7 @@ class ConcatInputer(BaseInputer):
         if self.use_cls_token:
             pointer.update_special_token(special_ids, self.CLS)
 
-        for col in self.order:
+        for col in self.inputs:
             value = sample[col]
             if not isinstance(value, list):
                 value = [value]
@@ -95,16 +95,17 @@ class ConcatInputer(BaseInputer):
 
         input_embeddings = torch.zeros(
             *shape,
-            self.embedding_manager.hidden_size,
+            self.embedding_hub.embedding_dim,
             dtype=torch.float
-        ).to(Meta.device)
+        ).to(Env.device)
 
         for col in input_ids:
-            seq = input_ids[col].to(Meta.device)  # type: torch.Tensor # [B, L]
-            mask = cast(torch.Tensor, (seq > Meta.UNSET)).long().to(Meta.device)  # type: torch.Tensor  # [B, L]
+            vocab = self.ut.meta.jobs[col].tokenizer.vocab.name
+            seq = input_ids[col].to(Env.device)  # type: torch.Tensor # [B, L]
+            mask = cast(torch.Tensor, (seq > Env.UNSET)).long().to(Env.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
 
-            embedding = self.embedding_manager(col)(seq)
+            embedding = self.embedding_hub(vocab)(seq)
             embedding *= mask.unsqueeze(-1)
 
             input_embeddings += embedding

@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from tqdm import tqdm
 
-from loader.meta import Meta
+from loader.meta import Env
 
 
 class BasePager:
@@ -38,7 +38,7 @@ class BasePager:
 
     def stack_features(self):
         return {
-            feature: torch.stack(self.current[feature]).to(Meta.device)
+            feature: torch.stack(self.current[feature]).to(Env.device)
             for feature in self.current
         }
 

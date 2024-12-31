@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import torch
 
-from loader.meta import Meta
+from loader.env import Env
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.simple_inputer import SimpleInputer
 
@@ -43,7 +43,7 @@ class PoolingOperator(BaseOperator):
         pooled_embeddings = dict()
 
         for col in embeddings:
-            col_mask = mask[col].to(Meta.device)
+            col_mask = mask[col].to(Env.device)
             col_embedding = embeddings[col]
             col_embedding = col_embedding * col_mask.unsqueeze(-1)
             if self.config.max_pooling:

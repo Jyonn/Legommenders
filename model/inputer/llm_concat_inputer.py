@@ -1,16 +1,17 @@
 from loader.meta import LegoSymbols
-from loader.meta import Meta
+from loader.meta import Env
 from model.inputer.natural_concat_inputer import NaturalConcatInputer
 
 
 class LlamaConcatInputer(NaturalConcatInputer):
     @staticmethod
     def get_start_prompt():
-        if Meta.data_type is LegoSymbols.news:
-            return [10130, 4274, 29901]  # news article:
-        else:
-            assert Meta.data_type == LegoSymbols.book
-            return [2909, 29901]  # book:
+        # if Env.data_type is LegoSymbols.news:
+        #     return [10130, 4274, 29901]  # news article:
+        # else:
+        #     assert Env.data_type == LegoSymbols.book
+        #     return [2909, 29901]  # book:
+        pass
 
     @staticmethod
     def get_col_prompts():
@@ -30,11 +31,12 @@ class LlamaConcatInputer(NaturalConcatInputer):
 class BertConcatInputer(NaturalConcatInputer):
     @staticmethod
     def get_start_prompt():
-        if Meta.data_type is LegoSymbols.news:
-            return [2739, 3720, 1024]
-        else:
-            assert Meta.data_type is LegoSymbols.book
-            return [2338, 1024]
+        pass
+        # if Env.data_type is LegoSymbols.news:
+        #     return [2739, 3720, 1024]
+        # else:
+        #     assert Env.data_type is LegoSymbols.book
+        #     return [2338, 1024]
 
     @staticmethod
     def get_col_prompts():

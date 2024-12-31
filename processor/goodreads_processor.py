@@ -8,24 +8,24 @@ from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer
 from processor.base_processor import BaseProcessor, Interactions
 
 
-class MINDProcessor(BaseProcessor):
+class GoodreadsProcessor(BaseProcessor):
     IID_COL = 'nid'
     UID_COL = 'uid'
     HIS_COL = 'history'
     LBL_COL = 'click'
 
+    NUM_TEST = 20_000
+    NUM_FINETUNE = 100_000
+
     REQUIRE_STRINGIFY = False
 
     @property
     def default_attrs(self):
-        return ['title', 'abstract', 'category', 'subcategory']
+        return ['title']
 
     def config_item_tokenization(self):
         bert_tokenizer = BertTokenizer(vocab='bert')
         llama1_tokenizer = TransformersTokenizer(vocab='llama1', key='huggyllama/llama-7b')
-        bert_cache_tokenizer = BertTokenizer(vocab='bert', use_cache=True)
-        llama1_cache_tokenizer = TransformersTokenizer(vocab='llama1', key='huggyllama/llama-7b', use_cache=True)
-
         self.item.add_job(tokenizer=bert_tokenizer, column='title', name='title@bert', truncate=50)
         self.item.add_job(tokenizer=bert_tokenizer, column='abstract', name='abstract@bert', truncate=200)
         self.item.add_job(tokenizer=bert_tokenizer, column='category', name='category@bert', truncate=0)
@@ -37,37 +37,14 @@ class MINDProcessor(BaseProcessor):
         self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
         self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
 
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt', name='prompt@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_title', name='prompt_title@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_abstract', name='prompt_abstract@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_category', name='prompt_category@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_subcategory', name='prompt_subcategory@bert')
-
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt', name='prompt@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_title', name='prompt_title@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_abstract', name='prompt_abstract@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_category', name='prompt_category@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_subcategory', name='prompt_subcategory@llama1')
-
-    def _load_items(self, path: str) -> pd.DataFrame:
-        return pd.read_csv(
-            filepath_or_buffer=cast(str, path),
-            sep='\t',
-            names=[self.IID_COL, 'category', 'subcategory', 'title', 'abstract', 'url', 'tit_ent', 'abs_ent'],
-            usecols=[self.IID_COL, 'category', 'subcategory', 'title', 'abstract'],
-        )
-
     def load_items(self) -> pd.DataFrame:
-        train_df = self._load_items(os.path.join(self.data_dir, 'train', 'news.tsv'))
-        valid_df = self._load_items(os.path.join(self.data_dir, 'dev', 'news.tsv'))
-        item_df = pd.concat([train_df, valid_df]).drop_duplicates([self.IID_COL])
-        item_df['abstract'] = item_df['abstract'].fillna('')
-        item_df['prompt'] = 'Here is a piece of news article. '
-        item_df['prompt_title'] = 'Title: '
-        item_df['prompt_abstract'] = 'Abstract: '
-        item_df['prompt_category'] = 'Category: '
-        item_df['prompt_subcategory'] = 'Subcategory: '
-        return item_df
+        path = os.path.join(self.data_dir, 'goodreads_book_works.json')
+        items = pd.read_json(path, lines=True)
+        items = items[['best_book_id', 'original_title']]
+        # if original title strip is empty, then skip
+        items = items[items['original_title'].str.strip() != '']
+        items.columns = [self.IID_COL, 'title']
+        return items
 
     def _load_users(self, path: str) -> pd.DataFrame:
         return pd.read_csv(

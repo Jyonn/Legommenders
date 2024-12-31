@@ -105,10 +105,10 @@ class BaseProcessor(abc.ABC):
             return (self._stringify(df) for df in dfs)
         return wrapper
 
-    def load(self):
+    def load(self, regenerate=False):
         pnt(f'load {self.get_name()} processor')
 
-        if os.path.exists(self.item_save_dir) and os.path.exists(self.user_save_dir) and \
+        if not regenerate and os.path.exists(self.item_save_dir) and os.path.exists(self.user_save_dir) and \
                 all([os.path.exists(self.get_save_dir(mode)) for mode in Interactions.modes]):
             self.item = UniTok.load(self.item_save_dir)
             pnt(f'loaded {len(self.item)} items')
@@ -153,6 +153,12 @@ class BaseProcessor(abc.ABC):
         self.item_df = self.item_df[self.item_df[self.IID_COL].isin(used_items)]
         self.item_df = self.item_df.reset_index(drop=True)
         pnt(f'compressed to {len(self.item_df)} items')
+
+        self.item_df.to_parquet(os.path.join(self.save_dir, 'items.parquet'))
+        self.user_df.to_parquet(os.path.join(self.save_dir, 'users.parquet'))
+        self.interactions.train_df.to_parquet(os.path.join(self.save_dir, 'train.parquet'))
+        self.interactions.valid_df.to_parquet(os.path.join(self.save_dir, 'valid.parquet'))
+        self.interactions.test_df.to_parquet(os.path.join(self.save_dir, 'test.parquet'))
 
         with UniTok() as self.item:
             item_vocab = Vocab(name=self.IID_COL)

@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 import torch
 from unitok import Vocab
 
-from loader.meta import Meta
+from loader.env import Env
 from model.inputer.base_inputer import BaseInputer
 from utils.slice_dict import SliceOrderedDict, SliceDict
 
@@ -17,13 +17,13 @@ class SimpleInputer(BaseInputer):
     @classmethod
     def pad(cls, l: list, max_len: int):
         # return padded list and mask
-        return l + [Meta.UNSET] * (max_len - len(l)), [1] * len(l) + [0] * (max_len - len(l))
+        return l + [Env.UNSET] * (max_len - len(l)), [1] * len(l) + [0] * (max_len - len(l))
 
     def sample_rebuilder(self, sample: dict):
         input_ids = dict()
         attention_mask = dict()
 
-        for col in self.order:
+        for col in self.inputs:
             max_len = self.ut.meta.jobs[col].max_len
             if not max_len:
                 sample[col] = [sample[col]]
@@ -51,12 +51,12 @@ class SimpleInputer(BaseInputer):
         for col in input_ids:
             col_input = input_ids[col]  # batch_size, content_len
 
-            seq = col_input.to(Meta.device)  # type: torch.Tensor
+            seq = col_input.to(Env.device)  # type: torch.Tensor
             # mask = (seq > Setting.UNSET).long()  # type: torch.Tensor
-            mask = attention_mask[col].to(Meta.device)
+            mask = attention_mask[col].to(Env.device)
             seq *= mask
 
-            embedding = self.embedding_manager(col)(seq)  # batch_size, content_len, embedding_dim
+            embedding = self.embedding_hub(col)(seq)  # batch_size, content_len, embedding_dim
             mask = mask.unsqueeze(-1)  # batch_size, (content_len,) 1
 
             embedding *= mask  # batch_size, content_len, embedding_dim

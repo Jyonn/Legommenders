@@ -1,4 +1,5 @@
 from model.common.base_module import BaseModule
+from model.lego_config import LegoConfig
 
 
 class BasePredictorConfig:
@@ -19,11 +20,11 @@ class BasePredictor(BaseModule):
 
     config_class = BasePredictorConfig
 
-    def __init__(self, config: BasePredictorConfig, preparer):
+    def __init__(self, config: BasePredictorConfig, lego_config: LegoConfig):
         super().__init__()
 
         self.config = config
-        self.preparer = preparer
+        self.lego_config: LegoConfig = lego_config
 
     def predict(self, user_embeddings, item_embeddings):
         raise NotImplementedError

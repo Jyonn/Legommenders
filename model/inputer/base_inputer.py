@@ -4,8 +4,7 @@ import torch
 from unitok import UniTok
 from unitok import Vocab
 
-from loader.embedding.embedding_hub import EmbeddingHub
-from loader.data_hub import DataHub
+from loader.embedding_hub import EmbeddingHub
 
 
 class BaseInputer:
@@ -18,10 +17,10 @@ class BaseInputer:
     3. user clicks (item ids) -> 20 x 64
     4. user clicks (title, category) -> 20 x 64 -> 64
     """
-    def __init__(self, hub: DataHub, embedding_manager: EmbeddingHub, **kwargs):
-        self.ut = hub.ut  # type: UniTok
-        self.order = hub.order  # type: list
-        self.embedding_manager = embedding_manager  # type: EmbeddingHub
+    def __init__(self, ut, inputs, embedding_hub: EmbeddingHub, **kwargs):
+        self.ut: UniTok = ut
+        self.inputs: list = inputs
+        self.embedding_hub: EmbeddingHub = embedding_hub
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
         raise NotImplementedError
@@ -38,5 +37,5 @@ class BaseInputer:
     ):
         raise NotImplementedError
 
-    # def embedding_processor(self, embeddings: torch.Tensor, mask: torch.Tensor = None):
-    #     raise NotImplementedError
+    def __call__(self, sample: dict):
+        return self.sample_rebuilder(sample)

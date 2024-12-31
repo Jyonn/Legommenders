@@ -1,4 +1,4 @@
-from loader.meta import Meta
+from loader.env import Env
 from model.common.attention import AdditiveAttention
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.concat_inputer import ConcatInputer
@@ -24,11 +24,15 @@ class AdaOperator(BaseOperator):
         super().__init__(**kwargs)
 
         self.additive_attention = AdditiveAttention(
-            embed_dim=self.config.hidden_size,
+            embed_dim=self.config.input_dim,
             hidden_size=self.config.additive_hidden_size,
         )
 
     def forward(self, embeddings, mask=None, **kwargs):
-        mask = mask.to(Meta.device)
+        mask = mask.to(Env.device)
         outputs = self.additive_attention(embeddings, mask)  # [B, D]
         return outputs
+
+    @property
+    def output_dim(self):
+        return self.config.input_dim

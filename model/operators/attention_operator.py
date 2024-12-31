@@ -1,6 +1,6 @@
 from torch import nn
 
-from loader.meta import Meta
+from loader.meta import Env
 from model.common.attention import AdditiveAttention
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.concat_inputer import ConcatInputer
@@ -44,7 +44,7 @@ class AttentionOperator(BaseOperator):
         )
 
     def forward(self, embeddings, mask=None, **kwargs):
-        mask = mask.to(Meta.device)
+        mask = mask.to(Env.device)
 
         outputs, _ = self.multi_head_attention(
             query=embeddings,

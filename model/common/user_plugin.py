@@ -19,7 +19,7 @@ class UserPlugin(nn.Module):
         self.empty_embed = nn.Parameter(torch.zeros(hidden_size))
 
         self.col_count = 0
-        self.selected_cols = select_cols or list(map(lambda j: j.name, self.ut.meta.jobs))
+        self.selected_cols = select_cols or list(map(lambda j: j.key, self.ut.meta.jobs))
         for col in self.selected_cols:
             if self.ut.key_job.name == col:
                 continue

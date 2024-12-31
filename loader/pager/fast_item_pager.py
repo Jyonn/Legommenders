@@ -1,6 +1,6 @@
 import torch
 
-from loader.meta import Meta
+from loader.env import Env
 from model.inputer.base_inputer import BaseInputer
 from utils.stacker import Stacker
 from loader.pager.base_pager import BasePager
@@ -21,7 +21,7 @@ class FastItemPager(BasePager):
         self.hidden_size = hidden_size
         self.llm_skip = llm_skip
         # self.fast_item_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
-        self.fast_item_repr = placeholder.to(Meta.device)
+        self.fast_item_repr = placeholder.to(Env.device)
         self.stacker = Stacker(aggregator=torch.stack)
 
     def get_features(self, content, index) -> dict:
@@ -43,10 +43,10 @@ class FastItemPager(BasePager):
 
         for feature in feature_cols:
             if isinstance(self.current[feature][0], torch.Tensor):
-                features[feature] = torch.stack(self.current[feature]).to(Meta.device)
+                features[feature] = torch.stack(self.current[feature]).to(Env.device)
             else:
                 assert isinstance(self.current[feature][0], dict)
-                features[feature] = self.stacker(self.current[feature], apply=lambda x: x.to(Meta.device))
+                features[feature] = self.stacker(self.current[feature], apply=lambda x: x.to(Env.device))
         return features
 
     def combine(self, slices, features, output):

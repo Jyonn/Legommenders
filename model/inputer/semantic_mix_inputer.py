@@ -3,21 +3,20 @@ from collections import OrderedDict
 import numpy as np
 import torch
 
-from loader.data_hub import DataHub
+from loader.ut.lego_ut import LegoUT
 from model.inputer.base_inputer import BaseInputer
 
 
 class SemanticMixInputer(BaseInputer):
     output_single_sequence = True
 
-    def __init__(self, item_hub: DataHub, **kwargs):
-        self.order = kwargs['hub'].order
-        self.depot = kwargs['hub'].ut
-        assert len(self.order) == 1, 'semantic inputer only support one column of user semantics'
-        self.user_semantic_col = self.order[0]
-        self.item_hub = item_hub
-        assert len(self.item_hub.order) == 1, 'semantic inputer only support one column of item'
-        self.semantic_col = self.item_hub.order[0]
+    def __init__(self, item_ut: LegoUT, item_inputs, **kwargs):
+        self.user_inputs = kwargs['user_inputs']
+        self.user_ut = kwargs['user_ut']
+        assert len(self.user_inputs) == 1, 'semantic inputer only support one column of user semantics'
+        self.user_semantic_col = self.user_inputs[0]
+        assert len(self.inputs) == 1, 'semantic inputer only support one column of item'
+        self.semantic_col = self.inputs[0]
 
         super().__init__(**kwargs)
 
@@ -31,7 +30,7 @@ class SemanticMixInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        embedding = self.embedding_manager(self.semantic_col)(batched_samples)
+        embedding = self.embedding_hub(self.semantic_col)(batched_samples)
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):
