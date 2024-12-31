@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 from pigmento import pnt
-from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol
+from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol, VocabularyHub
 
 
 class Interactions(dict):
@@ -73,7 +73,10 @@ class BaseProcessor(abc.ABC):
         return cls.__name__.replace('Processor', '').lower()
 
     def config_item_tokenization(self):
-        raise NotImplemented
+        pass
+
+    def config_user_tokenization(self):
+        pass
 
     def load_items(self) -> pd.DataFrame:
         raise NotImplemented
@@ -105,6 +108,15 @@ class BaseProcessor(abc.ABC):
             return (self._stringify(df) for df in dfs)
         return wrapper
 
+    def after_load_items(self):
+        pass
+
+    def after_load_users(self):
+        pass
+
+    def after_load_interactions(self):
+        pass
+
     def load(self, regenerate=False):
         pnt(f'load {self.get_name()} processor')
 
@@ -123,12 +135,18 @@ class BaseProcessor(abc.ABC):
         self.item_df = self.load_items()
         pnt(f'loaded {len(self.item_df)} items')
 
+        self.after_load_items()
+
         self.user_df = self.load_users()
         pnt(f'loaded {len(self.user_df)} users')
+
+        self.after_load_users()
 
         self.interactions = self.load_interactions()
         for mode in Interactions.modes:
             pnt(f'loaded {len(self.interactions[mode])} {mode.name} interactions')
+
+        self.after_load_interactions()
 
         user_vocab = Vocab(name=self.UID_COL)
         user_vocab.extend(list(self.user_df[self.UID_COL]))
@@ -168,9 +186,12 @@ class BaseProcessor(abc.ABC):
             pnt(f'tokenized {len(self.item)} items')
 
         with UniTok() as self.user:
+            VocabularyHub.add(item_vocab.name, item_vocab)
+
             user_vocab = Vocab(name=self.UID_COL)
             self.user.add_job(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_JOB, key=True)
             self.user.add_job(tokenizer=EntitiesTokenizer(vocab=item_vocab), column=self.HIS_COL, name=self.HIS_JOB, truncate=0)
+            self.config_user_tokenization()
             self.user.tokenize(self.user_df).save(self.user_save_dir)
             pnt(f'tokenized {len(self.user)} users')
 

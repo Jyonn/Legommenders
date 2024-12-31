@@ -12,20 +12,17 @@ class FastItemPager(BasePager):
             inputer: BaseInputer,
             hidden_size,
             placeholder,
-            llm_skip,
             **kwargs,
     ):
         super().__init__(**kwargs)
 
         self.inputer = inputer
         self.hidden_size = hidden_size
-        self.llm_skip = llm_skip
-        # self.fast_item_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)
         self.fast_item_repr = placeholder.to(Env.device)
         self.stacker = Stacker(aggregator=torch.stack)
 
     def get_features(self, content, index) -> dict:
-        if self.llm_skip:
+        if Env.llm_cache:
             return dict(
                 embeddings=torch.tensor(index),
                 mask=None,
@@ -37,9 +34,9 @@ class FastItemPager(BasePager):
 
     def stack_features(self):
         features = dict()
-        if self.llm_skip:
+        if Env.llm_cache:
             features['mask'] = None
-        feature_cols = ['embeddings'] if self.llm_skip else self.current
+        feature_cols = ['embeddings'] if Env.llm_cache else self.current
 
         for feature in feature_cols:
             if isinstance(self.current[feature][0], torch.Tensor):

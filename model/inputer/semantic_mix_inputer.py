@@ -10,13 +10,13 @@ from model.inputer.base_inputer import BaseInputer
 class SemanticMixInputer(BaseInputer):
     output_single_sequence = True
 
-    def __init__(self, item_ut: LegoUT, item_inputs, **kwargs):
-        self.user_inputs = kwargs['user_inputs']
-        self.user_ut = kwargs['user_ut']
-        assert len(self.user_inputs) == 1, 'semantic inputer only support one column of user semantics'
-        self.user_semantic_col = self.user_inputs[0]
-        assert len(self.inputs) == 1, 'semantic inputer only support one column of item'
-        self.semantic_col = self.inputs[0]
+    def __init__(self, **kwargs):
+        self.item_ut: LegoUT = kwargs['item_ut']
+        self.item_inputs: list = kwargs['item_inputs']
+        assert len(self.inputs) == 1, 'semantic inputer only support one column of user semantics'
+        self.user_semantic_col = self.inputs[0]
+        assert len(self.item_inputs) == 1, 'semantic inputer only support one column of item'
+        self.semantic_col = self.item_inputs[0]
 
         super().__init__(**kwargs)
 
@@ -30,7 +30,8 @@ class SemanticMixInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        embedding = self.embedding_hub(self.semantic_col)(batched_samples)
+        vocab = self.item_ut.meta.jobs[self.semantic_col].tokenizer.vocab
+        embedding = self.embedding_hub(vocab)(batched_samples)
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):

@@ -3,11 +3,11 @@ base_dir: data/mind
 item:
   ut: ${data.base_dir}/items
   inputs:
-    - title@bert: 50
+    - title@bert: 30
     - category
 user:
   ut: ${data.base_dir}/users
-  max_history: 50
+  truncate: 50
 inter:
   train: ${data.base_dir}/train
   dev: ${data.base_dir}/valid
@@ -19,6 +19,6 @@ column_map:
   item_col: item_id
   user_col: user_id
   history_col: history
-  neg_col: null
-  click_col: click
+  neg_col: neg
+  label_col: click
   group_col: user_id

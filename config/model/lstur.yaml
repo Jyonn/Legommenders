@@ -1,22 +1,19 @@
-name: PLMNR-LSTUR
+name: LSTUR
 meta:
-  item: Transformer
+  item: CNNCat
   user: GRU
   predictor: Dot
 config:
-  use_item_content: true
   use_neg_sampling: true
-  hidden_size: 64
+  use_item_content: true
+  hidden_size: ${hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
   neg_count: 4
   item_config:
-    num_attention_heads: 4
-    num_hidden_layers: 3
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: true
+    dropout: 0.1
+    kernel_size: 3
   user_config:
-    columns:
-      - plmnr
+    columns: ${data.item.order}$
     use_item_content: ${model.config.use_item_content}$
     inputer_config:
       use_cls_token: false

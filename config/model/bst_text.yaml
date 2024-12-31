@@ -1,24 +1,20 @@
-name: FancyDCN
+name: BST
 meta:
-  item: CNN
-  user: Ada
-  predictor: DCN
+  item: Pooling
+  user: Transformer
+  predictor: Dot
 config:
   use_neg_sampling: true
   use_item_content: true
   hidden_size: ${hidden_size}$
-  embed_hidden_size: ${embed_hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
   neg_count: 4
   item_config:
     dropout: 0.1
     kernel_size: 3
   user_config:
+    num_attention_heads: 4
+    num_hidden_layers: 3
     inputer_config:
       use_cls_token: false
       use_sep_token: false
-  predictor_config:
-    dnn_hidden_units: [ 500, 500, 500 ]
-    dnn_activations: ReLU
-    dnn_dropout: 0.1
-    dnn_batch_norm: false
-    cross_num: 3

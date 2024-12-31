@@ -51,10 +51,11 @@ class EmbeddingHub:
             self,
             embedding_dim,
             transformation,
-            transformation_dropout: Optional[float] = 0.1,
+            transformation_dropout: float,
     ):
         if transformation not in self.global_types:
             raise ValueError(f'invalid transformation type {transformation}, expected {self.global_types}')
+
         pnt(f'global transformation type: {transformation}')
         pnt(f'global transformation dropout: {transformation_dropout}')
 

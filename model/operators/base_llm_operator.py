@@ -10,7 +10,7 @@ from transformers import PreTrainedModel
 
 from loader.env import Env
 from model.common.attention import AdditiveAttention
-from model.inputer.natural_concat_inputer import NaturalConcatInputer
+from model.inputer.concat_inputer import ConcatInputer
 from model.operators.attention_operator import AttentionOperatorConfig
 from model.operators.base_operator import BaseOperator
 
@@ -39,8 +39,8 @@ class BaseLLMOperatorConfig(AttentionOperatorConfig):
 
 class BaseLLMOperator(BaseOperator):
     config_class = BaseLLMOperatorConfig
-    inputer_class = NaturalConcatInputer
-    inputer: NaturalConcatInputer
+    inputer_class = ConcatInputer
+    inputer: ConcatInputer
     config: BaseLLMOperatorConfig
 
     def __init__(self, **kwargs):

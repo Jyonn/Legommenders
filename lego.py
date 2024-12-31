@@ -6,7 +6,6 @@ import time
 from typing import Optional, cast
 
 import numpy as np
-import pandas as pd
 import pigmento
 import torch
 from pigmento import pnt
@@ -162,7 +161,7 @@ class Lego:
         for epoch in range(self.exp.policy.epoch_start, self.exp.policy.epoch + self.exp.policy.epoch_start):
             # loader.start_epoch(epoch - self.exp.policy.epoch_start, self.exp.policy.epoch)
             self.legommender.train()
-            loader.train()
+            self.manager.setup(Symbols.train)
             for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
                 # if step >= 1000:
                 #     break
@@ -219,38 +218,6 @@ class Lego:
 
         results = self.evaluate(loader, metrics=[self.exp.store.metric])
         return results, results[self.exp.store.metric]
-
-    def test_fake(self):
-        self.legommender.eval()
-        loader = self.manager.get_test_loader()
-
-        score_series, label_series, group_series, fake_series = [], [], [], []
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
-            with torch.no_grad():
-                scores = self.legommender(batch=batch)
-            labels = batch[self.manager.cm.label_col].tolist()
-            groups = batch[self.manager.cm.group_col].tolist()
-            fakes = batch[self.manager.cm.fake_col].tolist()
-            score_series.extend(scores.cpu().detach().tolist())
-            label_series.extend(labels)
-            group_series.extend(groups)
-            fake_series.extend(fakes)
-
-        df = pd.DataFrame(dict(
-            score=score_series,
-            label=label_series,
-            group=group_series,
-            fake=fake_series,
-        ))
-        groups = df.groupby('fake')
-        pnt('group by fake done')
-
-        for fake, group in groups:
-            pnt('inactive users' if fake else 'active users')
-            pool = MetricPool.parse(self.exp.metrics)
-            results = pool.calculate(group['score'].tolist(), group['label'].tolist(), group['group'].tolist())
-            for metric in results:
-                pnt(f'{metric}: {results[metric]:.4f}')
 
     def mind_large_evaluate(self, loader):
         self.legommender.eval()
@@ -429,9 +396,6 @@ class Lego:
             self.train_runner()
         elif self.exp.mode == 'test':
             self.iter_runner(self.test_runner)
-            # self.test()
-        elif self.exp.mode == 'test_fake':
-            self.iter_runner(self.test_fake)
         elif self.mode == 'train_test':
             epoch = self.train_runner()
             self.load(os.path.join(self.exp.dir, f'epoch_{epoch}.bin'))
@@ -459,20 +423,12 @@ if __name__ == '__main__':
             warmup=0,
             fast_eval=True,
             simple_dev=False,
-            batch_size=64,
-            acc_batch=1,
-            lora=1,
-            lora_r=32,
-            lr=0.0001,
-            item_lr=0.00001,
-            mind_large_submission=False,
-            hidden_size=64,
+            hidden_size=256,
+            item_hidden_size='${hidden_size}$',
+            item_page_size=64,
             epoch_batch=0,
-            max_item_batch_size=0,
-            page_size=512,
             patience=2,
             epoch_start=0,
-            frozen=True,
             load_path=None,
         ),
         makedirs=[

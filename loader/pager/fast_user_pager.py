@@ -1,6 +1,6 @@
 import torch
 
-from loader.meta import Env
+from loader.env import Env
 from utils.stacker import FastStacker
 from loader.pager.base_pager import BasePager
 

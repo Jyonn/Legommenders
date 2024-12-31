@@ -1,2 +1,4 @@
-name: free
+name: null
+transformation: auto
+transformation_dropout: 0.0
 embeddings: []

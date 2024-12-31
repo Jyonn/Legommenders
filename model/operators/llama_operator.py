@@ -2,13 +2,10 @@ import torch
 from transformers import LlamaModel
 
 
-from model.inputer.llm_concat_inputer import LlamaConcatInputer
 from model.operators.base_llm_operator import BaseLLMOperator
 
 
 class LlamaOperator(BaseLLMOperator):
-    inputer_class = LlamaConcatInputer
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

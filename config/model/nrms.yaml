@@ -7,7 +7,7 @@ config:
   use_neg_sampling: true
   use_item_content: true
   hidden_size: ${hidden_size}$
-  embed_hidden_size: ${embed_hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
   neg_count: 4
   item_config:
     num_attention_heads: 8

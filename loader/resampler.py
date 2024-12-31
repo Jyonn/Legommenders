@@ -85,7 +85,7 @@ class Resampler:
             return
 
         if Env.llm_cache:
-            # if llm_skip, we don't need to rebuild candidate contents,
+            # if llm_cache, we don't need to rebuild candidate contents,
             # as llm cache has stored their content knowledge
             sample[self.item_col] = self.pack_tensor(sample[self.item_col])
             return
@@ -135,7 +135,7 @@ class Resampler:
             return
 
         if Env.llm_cache:
-            # if llm_skip, we don't need to rebuild click contents,
+            # if llm_cache, we don't need to rebuild click contents,
             # as llm cache has stored their content knowledge
             sample[self.history_col] = self.pack_tensor(sample[self.history_col])
             return

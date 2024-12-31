@@ -1,10 +1,8 @@
 import torch
 from pigmento import pnt
 from torch import nn
-from torch.nn.modules.module import T
 
 from loader.env import Env
-from model.common.base_module import BaseModule
 from model.lego_config import LegoConfig
 from model.operators.base_llm_operator import BaseLLMOperator
 from loader.cacher.repr_cacher import ReprCacher
@@ -12,7 +10,7 @@ from loader.column_map import ColumnMap
 from utils.shaper import Shaper
 
 
-class Legommender(BaseModule):
+class Legommender(nn.Module):
     def __init__(
             self,
             config: LegoConfig,
@@ -31,6 +29,7 @@ class Legommender(BaseModule):
         self.neg_count = self.config.neg_count
 
         self.embedding_hub = self.config.embedding_hub
+        self.embedding_table = self.embedding_hub.get_table()  # do not delete this line, the table should be mapped to the customized device
 
         self.user_hub = self.config.user_ut
         self.item_hub = self.config.item_ut
@@ -39,12 +38,6 @@ class Legommender(BaseModule):
 
         """initializing core components"""
         self.flatten_mode = self.user_encoder_class.flatten_mode
-        # self.item_encoder = None
-        # if self.config.use_item_content:
-        #     self.item_encoder = self.prepare_item_module()
-        # self.user_encoder = self.prepare_user_module()
-        # self.predictor = self.prepare_predictor()
-        # self.mediator = Mediator(self)
         self.item_op = self.config.item_operator
         self.user_op = self.config.user_operator
         self.predictor = self.config.predictor
@@ -132,7 +125,8 @@ class Legommender(BaseModule):
         if self.config.use_item_content:
             item_embeddings = self.get_item_content(batch, self.cm.item_col)
         else:
-            item_embeddings = self.embedding_hub(self.cm.history_col)(batch[self.cm.item_col].to(Env.device))
+            vocab = self.config.user_ut.meta.jobs[self.cm.history_col].tokenizer.vocab.name
+            item_embeddings = self.embedding_hub(vocab)(batch[self.cm.item_col].to(Env.device))
         # print(item_embeddings.shape)
 
         user_embeddings = self.get_user_content(batch)

@@ -1,13 +1,12 @@
-name: LLAMA-MINER.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+name: LLAMA-NRMS.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
 meta:
   item: Llama
-  user: PolyAttention
+  user: Attention
   predictor: Dot
 config:
   use_item_content: true
-  max_item_content_batch_size: ${max_item_batch_size}$
-  same_dim_transform: false
-  embed_hidden_size: ${embed_hidden_size}$
+  item_page_size: ${item_page_size}$
+  item_hidden_size: ${item_hidden_size}$
   hidden_size: ${hidden_size}$
   neg_count: 4
   item_config:
@@ -16,8 +15,7 @@ config:
     lora: ${lora}$
     weights_dir: data/${data.name}/llama-${llm_ver}-split
   user_config:
-    num_context_codes: 32
-    context_code_dim: 256
+    num_attention_heads: 8
     inputer_config:
       use_cls_token: false
       use_sep_token: false

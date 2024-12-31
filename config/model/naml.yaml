@@ -1,20 +1,18 @@
-name: BST
+name: NAML
 meta:
-  item: Pooling
-  user: Transformer
+  item: CNN
+  user: Ada
   predictor: Dot
 config:
   use_neg_sampling: true
   use_item_content: true
   hidden_size: ${hidden_size}$
-  embed_hidden_size: ${embed_hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
   neg_count: 4
   item_config:
     dropout: 0.1
     kernel_size: 3
   user_config:
-    num_attention_heads: 4
-    num_hidden_layers: 3
     inputer_config:
       use_cls_token: false
       use_sep_token: false

@@ -59,11 +59,11 @@ class LegoUT(UniTok):
         ut._filter_cache_dir = os.path.join(save_dir, 'filters')
         os.makedirs(ut._filter_cache_dir, exist_ok=True)
 
-        ut.cache_meta_path = os.path.join(ut._filter_cache_dir, 'filter_cache.pkl')
+        ut._filter_cache_meta_path = os.path.join(ut._filter_cache_dir, 'filter_cache.pkl')
         ut._caches = []
         ut._load_cache()
 
-        ut.selected_attrs = set()
+        ut._selected_attrs = set()
 
         return ut
 
@@ -162,3 +162,4 @@ class LegoUT(UniTok):
     def __getitem__(self, item):
         if len(self._selected_attrs):
             return super().__getitem__((item, self._selected_attrs))
+        return super().__getitem__(item)

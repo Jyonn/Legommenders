@@ -1,6 +1,6 @@
 from torch import nn
 
-from loader.meta import Env
+from loader.env import Env
 from model.common.attention import AdditiveAttention
 from model.operators.base_operator import BaseOperator, BaseOperatorConfig
 from model.inputer.concat_inputer import ConcatInputer

@@ -49,6 +49,7 @@ class Manager:
         self.load_data()
         self.load_model_configs()
         self.load_embeddings()
+        self.lego_config.build_components()
 
         self.legommender = Legommender(self.lego_config)
         self.resampler = Resampler(self.lego_config)
@@ -87,17 +88,17 @@ class Manager:
 
     def load_users(self):
         ut = UTHub.get(self.data.user.ut)
-        if self.data.user.max_history:
+        if self.data.user.truncate:
             ut.retruncate(
                 job=ut.meta.jobs[self.cm.history_col],
-                max_len=self.data.user.max_history
+                truncate=self.data.user.truncate
             )
         return ut
 
     def load_interactions(self):
         uts = dict()
         for mode in self.modes:
-            uts[mode.key] = UTHub.get(self.data.inter[mode.key], use_filter_cache=True)
+            uts[mode] = UTHub.get(self.data.inter[mode.name], use_filter_cache=True)
         return uts
 
     def create_fast_ut(self):
@@ -117,24 +118,27 @@ class Manager:
         return ut
 
     def load_data(self):
+        self.cm = ColumnMap(**Obj.raw(self.data.column_map))
+
         self.item_ut, self.item_inputs = self.load_items()
         self.user_ut = self.load_users()
         self.inter_uts = self.load_interactions()
         self.fast_ut = self.create_fast_ut()
+        self.inter_uts[Symbols.fast_eval] = self.fast_ut
 
-        for mode in self.modes:
-            self.inter_uts[mode].union(self.user_ut)
+        for mode in self.inter_uts:
+            with self.inter_uts[mode] as ut:
+                ut.union(self.user_ut, soft_union=False)
 
         if self.data.inter.filters:
             for col in self.data.inter.filters:
                 for filter_str in self.data.inter.filters[col]:
-                    for mode in self.modes:
+                    for mode in self.inter_uts:
                         ut = self.inter_uts[mode]
                         sample_num = len(ut)
                         ut.filter(filter_str, col=col)
                         pnt(f'Filter {col} with {filter_str} in {mode} phase, sample num: {sample_num} -> {len(ut)}')
 
-        self.cm = ColumnMap(**Obj.raw(self.data.column_map))
         self.cm.set_column_vocab(self.fast_ut)
 
     def load_model_configs(self):
@@ -196,20 +200,20 @@ class Manager:
 
     def load_datasets(self):
         self.inter_sets = dict()
-        for mode in {*self.modes, Symbols.fast_eval}:
+        for mode in self.inter_uts:
             ut = self.inter_uts[mode]
-            if not ut:
-                continue
-            self.inter_sets[mode] = DataSet(ut)
+            self.inter_sets[mode] = DataSet(ut, resampler=self.resampler)
 
     def stringify(self):
         for mode in self.modes:
             if mode in self.inter_uts:
                 pnt(self.inter_uts[mode][0])
+                break
 
         for mode in self.modes:
             if mode in self.inter_uts:
                 pnt(Structure().analyse_and_stringify(self.inter_sets[mode][0]))
+                break
 
     def _get_loader(self, mode: Symbol):
         return DataLoader(
@@ -245,18 +249,18 @@ class Manager:
         return self.inter_sets[Symbols.test]
 
     def get_train_loader(self, setup=Symbols.train):
-        self._setup(setup)
+        self.setup(setup)
         return self._get_loader(Symbols.train)
 
     def get_dev_loader(self, setup=Symbols.dev):
-        self._setup(setup)
+        self.setup(setup)
         return self._get_loader(Symbols.dev)
 
     def get_test_loader(self, setup=Symbols.test):
-        self._setup(setup)
+        self.setup(setup)
         return self._get_loader(Symbols.test)
 
-    def _setup(self, mode):
+    def setup(self, mode):
         if mode is Symbols.train:
             Env.train()
             self.legommender.train().cacher.clean()
@@ -269,5 +273,5 @@ class Manager:
 
         self.legommender.eval().cacher.cache(
             item_contents=self.resampler.item_cache,
-            user_contents=self.inter_uts[Symbols.fast_eval],
+            user_contents=self.inter_sets[Symbols.fast_eval],
         )

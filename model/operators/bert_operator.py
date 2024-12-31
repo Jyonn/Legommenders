@@ -1,16 +1,11 @@
-from typing import Optional
-
 import torch
 from peft import get_peft_model
 from transformers import BertModel
 
-from model.inputer.llm_concat_inputer import BertConcatInputer
 from model.operators.base_llm_operator import BaseLLMOperator
 
 
 class BertOperator(BaseLLMOperator):
-    inputer_class = BertConcatInputer
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

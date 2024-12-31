@@ -10,23 +10,24 @@ class ReprCacher:
         from model.legommender import Legommender
         legommender = cast(Legommender, legommender)
 
-        self.use_item_content = legommender.config.use_item_content
-        self.user_size = legommender.user_hub.ut.meta.jobs[legommender.cm.user_col].tokenizer.vocab.size
+        config = legommender.config
+
+        self.use_item_content = config.use_item_content
+        self.user_size = config.user_ut.meta.jobs[legommender.cm.user_col].tokenizer.vocab.size
         self._activate = True
 
         self.item = ItemCacher(
             operator=legommender.item_op,
-            page_size=legommender.config.cache_page_size,
-            hidden_size=legommender.config.hidden_size,
-            llm_skip=legommender.llm_skip,
+            page_size=config.cache_page_size,
+            hidden_size=config.hidden_size,
             activate=legommender.item_op and legommender.item_op.allow_caching,
             trigger=Env.set_item_cache,
         )
 
         self.user = UserCacher(
             operator=legommender.get_user_content,
-            page_size=legommender.config.cache_page_size,
-            hidden_size=legommender.config.hidden_size,
+            page_size=config.cache_page_size,
+            hidden_size=config.hidden_size,
             activate=legommender.user_op.allow_caching,
             placeholder=legommender.user_op.get_full_placeholder(self.user_size),
             trigger=Env.set_user_cache,

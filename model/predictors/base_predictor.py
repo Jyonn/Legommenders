@@ -1,27 +1,25 @@
-from model.common.base_module import BaseModule
-from model.lego_config import LegoConfig
+from torch import nn
 
 
 class BasePredictorConfig:
     def __init__(
             self,
             hidden_size,
-            embed_hidden_size,
             **kwargs
     ):
         self.hidden_size = hidden_size
-        self.embed_hidden_size = embed_hidden_size
 
 
-class BasePredictor(BaseModule):
+class BasePredictor(nn.Module):
     allow_ranking = True
     allow_matching = True
     keep_input_dim = False
 
     config_class = BasePredictorConfig
 
-    def __init__(self, config: BasePredictorConfig, lego_config: LegoConfig):
+    def __init__(self, config: BasePredictorConfig, lego_config):
         super().__init__()
+        from model.lego_config import LegoConfig
 
         self.config = config
         self.lego_config: LegoConfig = lego_config

@@ -1,10 +1,9 @@
 from typing import Type
 
 import torch
+from torch import nn
 
-from model.common.base_module import BaseModule
 from model.inputer.base_inputer import BaseInputer
-from model.lego_config import LegoConfig
 
 
 class BaseOperatorConfig:
@@ -20,7 +19,7 @@ class BaseOperatorConfig:
         self.inputer_config = inputer_config or {}
 
 
-class BaseOperator(BaseModule):
+class BaseOperator(nn.Module):
     config_class = BaseOperatorConfig
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
@@ -29,17 +28,20 @@ class BaseOperator(BaseModule):
 
     def __init__(self, config: BaseOperatorConfig, lego_config, target_user=False):
         super().__init__()
+        from model.lego_config import LegoConfig
+
         self.config: BaseOperatorConfig = config
         self.target_user: bool = target_user
         self.lego_config: LegoConfig = lego_config
 
         if target_user:
-            args = (lego_config.user_ut, lego_config.user_inputs)
+            ut, inputs = lego_config.user_ut, lego_config.user_inputs
         else:
-            args = (lego_config.item_ut, lego_config.item_inputs)
+            ut, inputs = lego_config.item_ut, lego_config.item_inputs
 
         self.inputer = self.inputer_class(
-            *args,
+            ut=ut,
+            inputs=inputs,
             embedding_hub=self.lego_config.embedding_hub,
             **self.config.inputer_config,
         )

@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 from tqdm import tqdm
 
-from loader.meta import Env
+from loader.env import Env
 
 
 class BasePager:

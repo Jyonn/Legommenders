@@ -1,13 +1,15 @@
-name: PLMNR-Fastformer.D${model.config.hidden_size}
+name: MINER
 meta:
   item: Transformer
-  user: Fastformer
-  predictor: Dot
+  user: PolyAttention
+  predictor: MINER
 config:
   use_item_content: true
   use_neg_sampling: true
-  hidden_size: 64
+  hidden_size: ${hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
   neg_count: 4
+  score_type: weighted
   item_config:
     num_attention_heads: 8
     num_hidden_layers: 3
@@ -15,8 +17,8 @@ config:
       use_cls_token: false
       use_sep_token: true
   user_config:
-    num_attention_heads: 8
-    num_hidden_layers: 3
+    num_context_codes: 32
+    context_code_dim: 200
     inputer_config:
       use_cls_token: false
       use_sep_token: false

@@ -5,9 +5,8 @@ meta:
   predictor: Dot
 config:
   use_item_content: true
-  max_item_content_batch_size: 0
-  same_dim_transform: false
-  embed_hidden_size: ${embed_hidden_size}$
+  item_page_size: ${item_page_size}$
+  item_hidden_size: ${item_hidden_size}$
   hidden_size: ${hidden_size}$
   neg_count: 4
   item_config:

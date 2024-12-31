@@ -15,12 +15,6 @@ class DataSet(BaseDataset):
         self.resampler = resampler
 
     def __getitem__(self, index):
-        return self.pack_sample(index)
-
-    def __len__(self):
-        return len(self.ut)
-
-    def pack_sample(self, index):
         _sample = self.ut[index]
         sample = dict()
         for col in _sample:
@@ -29,6 +23,9 @@ class DataSet(BaseDataset):
         if self.resampler:
             sample = self.resampler(sample)
         return sample
+
+    def __len__(self):
+        return len(self.ut)
 
     def __iter__(self):
         for i in range(len(self)):

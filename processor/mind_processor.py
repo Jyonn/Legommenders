@@ -3,7 +3,7 @@ import random
 from typing import cast
 
 import pandas as pd
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer
+from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer
 
 from processor.base_processor import BaseProcessor, Interactions
 
@@ -13,6 +13,7 @@ class MINDProcessor(BaseProcessor):
     UID_COL = 'uid'
     HIS_COL = 'history'
     LBL_COL = 'click'
+    NEG_COL = 'neg'
 
     REQUIRE_STRINGIFY = False
 
@@ -48,6 +49,9 @@ class MINDProcessor(BaseProcessor):
         self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_abstract', name='prompt_abstract@llama1')
         self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_category', name='prompt_category@llama1')
         self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_subcategory', name='prompt_subcategory@llama1')
+
+    def config_user_tokenization(self):
+        self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=100)
 
     def _load_items(self, path: str) -> pd.DataFrame:
         return pd.read_csv(
@@ -114,6 +118,31 @@ class MINDProcessor(BaseProcessor):
         train_df = self._load_interactions(os.path.join(self.data_dir, 'train', 'behaviors.tsv'))
         test_df = self._load_interactions(os.path.join(self.data_dir, 'dev', 'behaviors.tsv'))
 
+        # inter_df = pd.concat([train_df, test_df], ignore_index=True)
+        #
+        # # group the entire interactions by UID_COL, for each user,
+        # # select 10% interactions as valid_df and another 10% interactions as test_df
+        # # make sure that both valid and test data should have both positive and negative samples
+        #
+        # groups = inter_df.groupby(self.UID_COL)
+        # valid_df = []
+        # test_df = []
+        #
+        # for _, group in groups:
+        #     # if less than 2 negative samples or 2 positive samples, skip this group
+        #     pos_group = group[group[self.LBL_COL] == 1]
+        #     neg_group = group[group[self.LBL_COL] == 0]
+        #     if len(pos_group) == 0 or len(neg_group) == 0:
+        #         continue
+        #     valid_pos = pos_group.sample(frac=0.1)
+        #     valid_neg = neg_group.sample(frac=0.1)
+        #     valid_df.append(valid_pos)
+        #     valid_df.append(valid_neg)
+        #     test_pos = pos_group.drop(valid_pos.index)
+        #     test_neg = neg_group.drop(valid_neg.index)
+        #     test_df.append(test_pos)
+        #     test_df.append(test_neg)
+
         # group train_df by UID_COL, select 10% users as valid_df
         users = list(train_df[self.UID_COL].unique())
         random.shuffle(users)
@@ -126,3 +155,12 @@ class MINDProcessor(BaseProcessor):
         test_df = test_df.reset_index(drop=True)
 
         return Interactions(train_df, valid_df, test_df)
+
+    def after_load_interactions(self):
+        df = pd.concat([self.interactions.train_df, self.interactions.valid_df])
+        neg_df = df[df[self.LBL_COL] == 0]
+        neg_df = neg_df.groupby(self.UID_COL)[self.IID_COL].apply(list).reset_index()
+        neg_df.columns = [self.UID_COL, self.NEG_COL]
+        self.user_df = self.user_df.merge(neg_df, on=self.UID_COL, how='left')
+        # set negative samples to empty list if it is NaN
+        self.user_df[self.NEG_COL] = self.user_df[self.NEG_COL].apply(lambda x: x if isinstance(x, list) else [])
