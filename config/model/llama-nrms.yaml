@@ -1,4 +1,4 @@
-name: LLAMA-NRMS.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+name: LLAMA-NRMS
 meta:
   item: Llama
   user: Attention

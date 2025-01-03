@@ -29,7 +29,6 @@ class BasePager:
 
             if self.current_count == self.page_size:
                 self._process()
-
         if self.current_count:
             self._process()
 

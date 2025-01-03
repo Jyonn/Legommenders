@@ -1,3 +1,7 @@
+from utils.path_hub import PathHub
+from utils.timer import Timer
+
+
 class Env:
     # device
     device = None
@@ -15,6 +19,9 @@ class Env:
     item_cache = False
     user_cache = False
     llm_cache = False
+
+    # timer
+    timer = Timer()  # used for debug
 
     @classmethod
     def train(cls):
@@ -49,3 +56,7 @@ class Env:
     @classmethod
     def set_llm_cache(cls, llm_cache):
         cls.llm_cache = llm_cache
+
+    @classmethod
+    def set_path_hub(cls, path_hub: PathHub):
+        cls.path_hub = path_hub

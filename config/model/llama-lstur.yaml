@@ -1,4 +1,4 @@
-name: LLAMA-LSTUR.D${model.config.hidden_size}.L${model.config.item_config.layer_split}
+name: LLAMA-LSTUR
 meta:
   item: Llama
   user: GRU

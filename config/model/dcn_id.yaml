@@ -1,4 +1,4 @@
-name: DCN.RL
+name: DCN
 meta:
   user: Pooling
   predictor: DCN

@@ -2,6 +2,7 @@ import copy
 
 from torch.utils.data import Dataset as BaseDataset
 
+from loader.env import Env
 from loader.ut.lego_ut import LegoUT
 
 
@@ -19,7 +20,6 @@ class DataSet(BaseDataset):
         sample = dict()
         for col in _sample:
             sample[col] = copy.copy(_sample[col])
-
         if self.resampler:
             sample = self.resampler(sample)
         return sample

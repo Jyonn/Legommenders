@@ -1,9 +1,13 @@
+import base64
+import hashlib
+import json
 import os
 import random
 import sys
 
 import numpy as np
 import torch
+from oba import Obj
 
 
 def combine_config(config: dict, **kwargs):
@@ -51,3 +55,16 @@ def argparse():
             except ValueError:
                 pass
     return kwargs
+
+
+def get_signature(data, embed, model, exp):
+    configuration = {
+        'data': Obj.raw(data),
+        'embed': Obj.raw(embed),
+        'model': Obj.raw(model),
+        'exp': Obj.raw(exp),
+    }
+    canonical_str = json.dumps(configuration, sort_keys=True, ensure_ascii=False)
+    md5_digest = hashlib.md5(canonical_str.encode('utf-8')).digest()
+    b64_str = base64.urlsafe_b64encode(md5_digest).decode('utf-8').rstrip('=')
+    return b64_str[:8]

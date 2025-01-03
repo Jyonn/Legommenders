@@ -53,7 +53,7 @@ class ConfigInit(abc.ABC):
         with open(f'.{cls.classname()}') as f:
             config = f.read()
 
-        for line in config.strip().split('\n'):
+        for line in config.strip().split('\n'):  # type: str
             key, value = line.split('=')
             cls._d[key.strip().lower()] = value.strip()
 

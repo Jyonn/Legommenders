@@ -21,8 +21,7 @@ class Legommender(nn.Module):
 
         """initializing basic attributes"""
         # self.meta = meta
-        self.item_encoder_class = self.config.item_operator_class
-        self.user_encoder_class = self.config.user_operator_class
+        self.user_operator_class = self.config.user_operator_class
         self.predictor_class = self.config.predictor_class
 
         self.use_neg_sampling = self.config.use_neg_sampling
@@ -37,7 +36,7 @@ class Legommender(nn.Module):
         self.cm = self.config.column_map  # type: ColumnMap
 
         """initializing core components"""
-        self.flatten_mode = self.user_encoder_class.flatten_mode
+        self.flatten_mode = self.user_operator_class.flatten_mode
         self.item_op = self.config.item_operator
         self.user_op = self.config.user_operator
         self.predictor = self.config.predictor
@@ -49,9 +48,11 @@ class Legommender(nn.Module):
             if isinstance(self.item_op, BaseLLMOperator):
                 if self.item_op.config.layer_split:
                     Env.set_llm_cache(True)
+        pnt(f'set llm cache: {Env.llm_cache}')
 
         self.shaper = Shaper()
         self.cacher = ReprCacher(self)
+        self.cacher.activate(self.config.use_fast_eval)
 
         self.loss_func = nn.CrossEntropyLoss() if self.use_neg_sampling else nn.BCEWithLogitsLoss()
 
@@ -168,54 +169,6 @@ class Legommender(nn.Module):
     def __repr__(self):
         return self.__str__()
 
-    # def prepare_user_module(self):
-    #     user_config = self.user_encoder_class.config_class(**combine_config(
-    #         config=self.config.user_config,
-    #         hidden_size=self.item_encoder.output_dim,
-    #         embed_hidden_size=self.config.item_hidden_size,
-    #         input_dim=self.config.hidden_size,
-    #     ))
-    #
-    #     if self.flatten_mode:
-    #         user_config.inputer_config['item_ut'] = self.config.item_ut
-    #         user_config.inputer_config['item_inputs'] = self.config.item_inputs
-    #
-    #     return self.user_encoder_class(
-    #         target_user=True,
-    #         lego_config=self.config,
-    #     )
-    #
-    # def prepare_item_module(self):
-    #     item_config = self.item_encoder_class.config_class(**combine_config(
-    #         config=self.config.item_config,
-    #         hidden_size=self.config.hidden_size,
-    #         embed_hidden_size=self.config.item_hidden_size,
-    #         input_dim=self.config.item_hidden_size,
-    #     ))
-    #
-    #     return self.item_encoder_class(
-    #         target_user=False,
-    #         lego_config=self.config,
-    #     )
-    #
-    # def prepare_predictor(self):
-    #     if self.config.use_neg_sampling and not self.predictor_class.allow_matching:
-    #         raise ValueError(f'{self.predictor_class.__name__} does not support negative sampling')
-    #
-    #     if not self.config.use_neg_sampling and not self.predictor_class.allow_ranking:
-    #         raise ValueError(f'{self.predictor_class.__name__} only supports negative sampling')
-    #
-    #     predictor_config = self.predictor_class.config_class(**combine_config(
-    #         config=self.config.predictor_config,
-    #         hidden_size=self.config.hidden_size,
-    #         embed_hidden_size=self.config.item_hidden_size,
-    #     ))
-    #
-    #     return self.predictor_class(
-    #         config=predictor_config,
-    #         lego_config=self.config,
-    #     )
-
     def get_parameters(self):
         pretrained_parameters = []
         other_parameters = []
@@ -227,16 +180,12 @@ class Legommender(nn.Module):
         for name, param in self.named_parameters():
             if not param.requires_grad:
                 continue
-            is_pretrained = False
             for pretrained_name in pretrained_signals:
-                if name.startswith(f'item_encoder.{pretrained_name}'):
+                if name.startswith(f'item_op.{pretrained_name}'):
                     pretrained_names.append((name, param.data.shape))
                     pretrained_parameters.append(param)
-                    is_pretrained = True
                     break
-
-            if not is_pretrained:
-                # pnt(f'[N] {name} {param.data.shape}')
+            else:
                 other_names.append((name, param.data.shape))
                 other_parameters.append(param)
 

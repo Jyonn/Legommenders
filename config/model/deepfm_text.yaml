@@ -1,4 +1,4 @@
-name: DeepFM
+name: DeepFM_text
 meta:
   item: Pooling
   user: Pooling

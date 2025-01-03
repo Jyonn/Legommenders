@@ -1,4 +1,4 @@
-name: LLAMA-MINER.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+name: LLAMA-MINER
 meta:
   item: Llama
   user: PolyAttention

@@ -23,7 +23,7 @@ class BaseInputer:
         self.embedding_hub: EmbeddingHub = embedding_hub
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
-        raise NotImplementedError
+        return []
 
     def sample_rebuilder(self, sample: dict):
         raise NotImplementedError

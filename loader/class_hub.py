@@ -23,6 +23,11 @@ class ClassHub:
         from embedder.base_embedder import BaseEmbedder
         return ClassHub(BaseEmbedder, 'embedder', 'Embedder')
 
+    @staticmethod
+    def mode_handlers():
+        from loader.mode.base_mode import BaseMode
+        return ClassHub(BaseMode, 'loader/mode', 'Mode')
+
     def __init__(self, base_class, module_dir: str, module_type: str):
         """
         @param base_class: e.g., BaseOperator, BasePredictor, BaseMode
@@ -40,7 +45,7 @@ class ClassHub:
         for class_ in self.class_list:
             name = class_.__name__
             name = name.replace(self.upper_module_type, '')
-            self.class_dict[name] = class_
+            self.class_dict[name.lower()] = class_
 
     def get_class_list(self):
         # file_paths = glob.glob('model/recommenders/*_model.py')
@@ -56,10 +61,13 @@ class ClassHub:
         return class_list
 
     def __call__(self, name):
-        return self.class_dict[name]
+        return self.class_dict[name.lower()]
 
     def __getitem__(self, name):
-        return self.class_dict[name]
+        return self.class_dict[name.lower()]
 
     def __contains__(self, name):
-        return name in self.class_dict
+        return name.lower() in self.class_dict
+
+    def list(self):
+        return list(self.class_dict.keys())

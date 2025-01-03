@@ -10,6 +10,7 @@ from sklearn.metrics import log_loss, roc_auc_score, ndcg_score, label_ranking_a
 class Metric:
     name: str
     group: bool
+    minimize: bool
 
     def calculate(self, scores: list, labels: list) -> Union[int, float]:
         pass
@@ -24,6 +25,7 @@ class Metric:
 class LogLoss(Metric):
     name = 'LogLoss'
     group = False
+    minimize = True
 
     def calculate(self, scores: list, labels: list):
         return log_loss(labels, scores)
@@ -32,6 +34,7 @@ class LogLoss(Metric):
 class AUC(Metric):
     name = 'AUC'
     group = False
+    minimize = False
 
     def calculate(self, scores: list, labels: list):
         return roc_auc_score(labels, scores)
@@ -40,11 +43,13 @@ class AUC(Metric):
 class GAUC(AUC):
     name = 'GAUC'
     group = True
+    minimize = False
 
 
 class MRR(Metric):
     name = 'MRR'
     group = True
+    minimize = False
 
     def calculate(self, scores: list, labels: list):
         return label_ranking_average_precision_score([labels], [scores])
@@ -53,6 +58,7 @@ class MRR(Metric):
 class F1(Metric):
     name = 'F1'
     group = False
+    minimize = False
 
     def __init__(self, threshold=0.5):
         self.threshold = threshold
@@ -68,6 +74,7 @@ class F1(Metric):
 class HitRatio(Metric):
     name = 'HitRatio'
     group = True
+    minimize = False
 
     def __init__(self, n):
         self.n = n
@@ -86,6 +93,7 @@ class HitRatio(Metric):
 class Recall(Metric):
     name = 'Recall'
     group = True
+    minimize = False
 
     def __init__(self, n):
         self.n = n
@@ -104,6 +112,7 @@ class Recall(Metric):
 class NDCG(Metric):
     name = 'NDCG'
     group = True
+    minimize = False
 
     def __init__(self, n):
         self.n = n
@@ -174,3 +183,11 @@ class MetricPool:
 
     def __call__(self, *args, **kwargs):
         return self.calculate(*args, **kwargs)
+
+    @classmethod
+    def is_minimize(cls, metric: str):
+        if isinstance(metric, Metric):
+            return metric.minimize
+        assert isinstance(metric, str)
+        metric = metric.split('@')[0]
+        return cls.metric_dict[metric].minimize

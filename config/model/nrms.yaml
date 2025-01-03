@@ -10,12 +10,12 @@ config:
   item_hidden_size: ${item_hidden_size}$
   neg_count: 4
   item_config:
-    num_attention_heads: 8
+    num_attention_heads: ${num_item_heads:8}$
     inputer_config:
       use_cls_token: false
       use_sep_token: true
   user_config:
-    num_attention_heads: 8
+    num_attention_heads: ${num_user_heads:8}$
     inputer_config:
       use_cls_token: false
       use_sep_token: true

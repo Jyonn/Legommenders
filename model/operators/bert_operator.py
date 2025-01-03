@@ -1,15 +1,18 @@
 import torch
 from peft import get_peft_model
-from transformers import BertModel
+from transformers import AutoModel, BertModel
 
 from model.operators.base_llm_operator import BaseLLMOperator
 
 
 class BertOperator(BaseLLMOperator):
+    key = 'bert-base-uncased'
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer = BertModel.from_pretrained(self.config.llm_dir)  # type: BertModel
+        self.transformer: BertModel = AutoModel.from_pretrained(self.key)
+
         self.transformer.embeddings.word_embeddings = None
         self.layer_split(self.transformer.config.num_hidden_layers)
 

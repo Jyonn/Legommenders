@@ -36,6 +36,7 @@ class LegoConfig:
             predictor_config=None,
             use_neg_sampling: bool = True,
             use_item_content: bool = True,
+            use_fast_eval: bool = True,
             item_page_size: int = 0,
             cache_page_size: int = 512,
             **kwargs,
@@ -55,15 +56,16 @@ class LegoConfig:
 
         self.item_page_size = item_page_size
         self.cache_page_size = cache_page_size
+        self.use_fast_eval = use_fast_eval
 
     def set_component_classes(
         self,
-        item_encoder_class: Type[BaseOperator],
-        user_encoder_class: Type[BaseOperator],
+        item_operator_class: Type[BaseOperator],
+        user_operator_class: Type[BaseOperator],
         predictor_class: Type[BasePredictor]
     ):
-        self.item_operator_class = item_encoder_class
-        self.user_operator_class = user_encoder_class
+        self.item_operator_class = item_operator_class
+        self.user_operator_class = user_operator_class
         self.predictor_class = predictor_class
 
     def set_item_ut(self, item_ut: LegoUT, item_inputs: list):
@@ -79,6 +81,12 @@ class LegoConfig:
 
     def set_embedding_hub(self, embedding_hub: EmbeddingHub):
         self.embedding_hub = embedding_hub
+
+    def set_save_dir(self, save_dir: str):
+        self.base_save_dir = save_dir
+
+    def set_signature(self, signature: str):
+        self.signature = signature
 
     def build_components(self):
         self.item_operator = None
@@ -99,7 +107,7 @@ class LegoConfig:
         user_config = self.user_operator_class.config_class(**combine_config(
             config=self.user_config,
             hidden_size=self.hidden_size,
-            input_dim=self.item_operator.output_dim,
+            input_dim=self.item_operator.output_dim if self.use_item_content else self.item_hidden_size,
         ))
 
         if self.user_operator_class.flatten_mode:
@@ -127,3 +135,13 @@ class LegoConfig:
             config=predictor_config,
             lego_config=self,
         )
+
+    def register_inputer_vocabs(self):
+        if self.use_item_content:
+            item_vocabs = self.item_operator.inputer.get_vocabs()
+            for vocab in item_vocabs:
+                self.embedding_hub.register_vocab(vocab)
+
+        user_vocabs = self.user_operator.inputer.get_vocabs()
+        for vocab in user_vocabs:
+            self.embedding_hub.register_vocab(vocab)

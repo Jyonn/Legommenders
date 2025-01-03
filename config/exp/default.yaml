@@ -1,0 +1,25 @@
+load:
+  sign: ${load_sign:null}
+  model_only: true
+  strict: false
+store:
+  metric: ${metric:GAUC}
+  patience: ${patience:5}$
+policy:
+  epoch: 50
+  lr: ${lr:0.001}$
+  item_lr: ${item_lr:null}$
+  freeze_emb: false
+  pin_memory: false
+  epoch_batch: ${epoch_batch:0}$
+  batch_size: ${batch_size}$
+  device: gpu
+  n_warmup: ${warmup:0}$
+  check_interval: ${interval:-2}$
+  simple_dev: ${simple_dev:false}$
+metrics:
+  - GAUC
+  - MRR
+  - NDCG@1
+  - NDCG@5
+  - NDCG@10

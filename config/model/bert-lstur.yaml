@@ -1,11 +1,10 @@
-name: BERT-LSTUR.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+name: BERT-LSTUR
 meta:
   item: Bert
   user: GRU
   predictor: Dot
 config:
   use_item_content: true
-  use_fast_eval: ${fast_eval}$
   item_page_size: ${item_page_size}$
   same_dim_transform: false
   item_hidden_size: ${item_hidden_size}$

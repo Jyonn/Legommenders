@@ -100,7 +100,7 @@ class ConcatInputer(BaseInputer):
         ).to(Env.device)
 
         for col in input_ids:
-            vocab = self.ut.meta.jobs[col].tokenizer.vocab.name
+            vocab = col if col == self.vocab.name else self.ut.meta.jobs[col].tokenizer.vocab.name
             seq = input_ids[col].to(Env.device)  # type: torch.Tensor # [B, L]
             mask = cast(torch.Tensor, (seq > Env.UNSET)).long().to(Env.device)  # type: torch.Tensor  # [B, L]
             seq *= mask

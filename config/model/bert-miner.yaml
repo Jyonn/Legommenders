@@ -1,4 +1,4 @@
-name: BERT-MINER.VER${llm_ver}.D${model.config.hidden_size}.L${model.config.item_config.layer_split}.Lora${model.config.item_config.lora}
+name: BERT-MINER
 meta:
   item: Bert
   user: PolyAttention
@@ -6,7 +6,6 @@ meta:
 config:
   use_neg_sampling: true
   use_item_content: true
-  use_fast_eval: ${fast_eval}$
   item_page_size: ${item_page_size}$
   item_hidden_size: ${item_hidden_size}$
   hidden_size: ${hidden_size}$

@@ -74,15 +74,15 @@ class EmbeddingHub:
     def load_pretrained_embedding(
             self,
             vocab_name,
-            embedding_path,
+            path,
             transformation=DEFAULT,
             transformation_dropout=None,
             frozen=True,
     ):
-        embedding = np.load(embedding_path)
+        embedding = np.load(path)
         embedding = torch.tensor(embedding, dtype=torch.float32)
         embedding = nn.Embedding.from_pretrained(embedding)
-        pnt(f'load pretrained embedding {vocab_name} of {embedding.shape}')
+        pnt(f'load pretrained embedding {vocab_name} of {embedding.weight.shape}')
 
         if transformation not in self.pretrained_types:
             raise ValueError(f'invalid transformation type {transformation}, expected {self.pretrained_types}')
@@ -117,9 +117,9 @@ class EmbeddingHub:
         pe = self._pretrained_embeddings[vocab.name]
 
         frozen_str = "frozen" if pe.frozen else "unfrozen"
-        pnt(f'load {frozen_str} vocab: {vocab.name} {pe.embedder.shape}')
+        pnt(f'load {frozen_str} vocab: {vocab.name} {pe.embedder.weight.shape}')
 
-        if int(pe.embedder.shape[0]) != vocab.size:
+        if int(pe.embedder.weight.shape[0]) != vocab.size:
             raise ValueError(f'{vocab.name} not meet the expected vocab size {vocab.size}')
 
         pe.embedder.weight.requires_grad = not pe.frozen
@@ -140,6 +140,7 @@ class EmbeddingHub:
         if vocab.name in self._vocab_size:
             if self._vocab_size[vocab.name] != vocab.size:
                 raise ValueError(f'conflict vocab {vocab.name}: {self._vocab_size[vocab.name]} vs {vocab.size}')
+            return
         self._vocab_size[vocab.name] = vocab.size
         self.build_vocab_embedding(vocab)
 

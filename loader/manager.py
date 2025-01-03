@@ -40,6 +40,8 @@ class Manager:
 
     embedding_hub: EmbeddingHub
 
+    checkpoint_paths: list[str]
+
     def __init__(self, data, embed, model, exp):
         self.data = data
         self.embed = embed
@@ -50,21 +52,13 @@ class Manager:
         self.load_model_configs()
         self.load_embeddings()
         self.lego_config.build_components()
+        self.lego_config.register_inputer_vocabs()
 
         self.legommender = Legommender(self.lego_config)
         self.resampler = Resampler(self.lego_config)
 
         self.load_datasets()
-
-    # def parse_mode(self):
-    #     modes = set(self.exp.mode.lower().split('_'))
-    #     symbol_modes = set()
-    #     for mode in self.modes:
-    #         if mode.key in modes:
-    #             symbol_modes.add(mode)
-    #     if LegoSymbols.train in symbol_modes:
-    #         symbol_modes.add(LegoSymbols.dev)
-    #     return symbol_modes
+        # self.load_checkpoint_paths()
 
     def load_items(self):
         ut = UTHub.get(self.data.item.ut)
@@ -157,8 +151,8 @@ class Manager:
 
         self.lego_config = LegoConfig(**Obj.raw(self.model.config))
         self.lego_config.set_component_classes(
-            item_encoder_class=self.item_operator_class,
-            user_encoder_class=self.user_operator_class,
+            item_operator_class=self.item_operator_class,
+            user_operator_class=self.user_operator_class,
             predictor_class=self.predictor_class,
         )
         self.lego_config.set_item_ut(self.item_ut, self.item_inputs)
