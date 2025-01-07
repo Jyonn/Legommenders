@@ -1,11 +1,11 @@
 import random
 
 import torch
-from tqdm import tqdm
 
 from loader.env import Env
 from loader.data_set import DataSet
 from model.lego_config import LegoConfig
+from utils import bars
 from utils.stacker import FastStacker
 from utils.timer import Timer
 
@@ -51,7 +51,7 @@ class Resampler:
 
     def _build_item_cache(self):
         item_cache = []
-        for sample in tqdm(self.item_dataset):
+        for sample in (bars.DescBar(desc='Building Item Cache'))(self.item_dataset):
             item_cache.append(self.item_inputer(sample))
         return item_cache
 
@@ -84,7 +84,7 @@ class Resampler:
             sample[self.item_col] = self.pack_tensor(sample[self.item_col])
             return
 
-        if Env.llm_cache:
+        if Env.lm_cache:
             # if llm_cache, we don't need to rebuild candidate contents,
             # as llm cache has stored their content knowledge
             sample[self.item_col] = self.pack_tensor(sample[self.item_col])
@@ -134,7 +134,7 @@ class Resampler:
             sample[self.mask_col] = self.user_inputer.get_mask(sample[self.history_col])
             return
 
-        if Env.llm_cache:
+        if Env.lm_cache:
             # if llm_cache, we don't need to rebuild click contents,
             # as llm cache has stored their content knowledge
             sample[self.history_col] = self.pack_tensor(sample[self.history_col])

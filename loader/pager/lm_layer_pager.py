@@ -4,7 +4,7 @@ from model.inputer.concat_inputer import ConcatInputer
 from loader.pager.base_pager import BasePager
 
 
-class LLMSplitPager(BasePager):
+class LMLayerPager(BasePager):
     def __init__(
             self,
             inputer: ConcatInputer,
@@ -12,7 +12,7 @@ class LLMSplitPager(BasePager):
             hidden_size: int,
             **kwargs
     ):
-        super().__init__(**kwargs)
+        super().__init__(desc='Language Model Layer Caching', **kwargs)
 
         self.inputer = inputer
         self.layers = layers

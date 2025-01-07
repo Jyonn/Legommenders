@@ -44,12 +44,12 @@ class Legommender(nn.Module):
 
         """initializing utils"""
         # special cases for llama
-        Env.set_llm_cache(False)
+        Env.set_lm_cache(False)
         if self.config.use_item_content:
             if isinstance(self.item_op, BaseLMOperator):
                 if self.item_op.config.tune_from:
-                    Env.set_llm_cache(True)
-        pnt(f'set llm cache: {Env.llm_cache}')
+                    Env.set_lm_cache(True)
+        pnt(f'set llm cache: {Env.lm_cache}')
 
         self.shaper = Shaper()
         self.cacher = ReprCacher(self)
@@ -75,7 +75,7 @@ class Legommender(nn.Module):
             # return self.cacher.item.repr[batch[col]]
             return item_repr
 
-        if not Env.llm_cache:
+        if not Env.lm_cache:
             _shape = None
             item_content = self.shaper.transform(batch[col])  # batch_size, click_size, max_seq_len
             attention_mask = self.item_op.inputer.get_mask(item_content)
@@ -99,7 +99,7 @@ class Legommender(nn.Module):
             # print(Structure().analyse_and_stringify(content))
             item_contents[start:end] = content
 
-        if not Env.llm_cache:
+        if not Env.lm_cache:
             item_contents = self.shaper.recover(item_contents)
         else:
             item_contents = item_contents.view(*_shape, -1)

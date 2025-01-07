@@ -5,17 +5,17 @@ import torch
 from peft import get_peft_model, LoraConfig
 from pigmento import pnt
 from torch import nn
-from tqdm import tqdm
 from transformers import AutoModel
 from transformers.modeling_outputs import BaseModelOutputWithPast
 
 from loader.data_set import DataSet
 from loader.env import Env
-from loader.pager.llm_split_pager import LLMSplitPager
+from loader.pager.lm_layer_pager import LMLayerPager
 from model.common.attention import AdditiveAttention
 from model.inputer.concat_inputer import ConcatInputer
 from model.operators.attention_operator import AttentionOperatorConfig
 from model.operators.base_operator import BaseOperator
+from utils import bars
 from utils.config_init import ModelInit
 
 
@@ -192,12 +192,12 @@ class BaseLMOperator(BaseOperator):
     def cache(self, layers):
         dataset = DataSet(ut=self.lego_config.item_ut)
         contents = []
-        for sample in tqdm(dataset):
+        for sample in bars.DescBar(desc='Caching Item Content')(dataset):
             contents.append(self.inputer(sample))
 
         self.to(Env.device)
 
-        pager = LLMSplitPager(
+        pager = LMLayerPager(
             inputer=self.inputer,
             layers=layers,
             hidden_size=self.cache_hidden_size,

@@ -18,7 +18,7 @@ class Env:
     # resampler
     item_cache = False
     user_cache = False
-    llm_cache = False
+    lm_cache = False
 
     # timer
     timer = Timer()  # used for debug
@@ -54,8 +54,8 @@ class Env:
         cls.user_cache = user_cache
 
     @classmethod
-    def set_llm_cache(cls, llm_cache):
-        cls.llm_cache = llm_cache
+    def set_lm_cache(cls, lm_cache):
+        cls.lm_cache = lm_cache
 
     @classmethod
     def set_path_hub(cls, path_hub: PathHub):

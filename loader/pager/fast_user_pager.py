@@ -12,7 +12,7 @@ class FastUserPager(BasePager):
             placeholder,
             **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(desc='User Caching', **kwargs)
 
         self.hidden_size = hidden_size
         # self.fast_user_repr = torch.zeros(len(self.contents), hidden_size, dtype=torch.float).to(Meta.device)

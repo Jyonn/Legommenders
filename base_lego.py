@@ -8,15 +8,16 @@ import pigmento
 import torch
 from pigmento import pnt
 from oba import Obj
-from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 from unitok import JsonHandler
 
 from loader.env import Env
 from loader.manager import Manager
 from loader.symbols import Symbols
+from utils import bars
 from utils.function import seeding, get_signature
 from utils.gpu import GPU
+from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.path_hub import PathHub
 
@@ -149,7 +150,11 @@ class BaseLego:
 
     @staticmethod
     def log_interval(epoch, step, loss):
-        pnt(f'[epoch {epoch}] step {step}, loss {loss:.4f}')
+        # pnt(f'[epoch {epoch}] step {step}, loss {loss:.4f}')
+        # with open(self.log_file, 'a+') as f:
+        #     f.write(f'{prefix_s} {text}\n')
+        with open(Env.path_hub.log_path, 'a+') as f:
+            f.write(f'[epoch {epoch}] step {step}, loss {loss:.4f}\n')
 
     @staticmethod
     def log_epoch(epoch, results):
@@ -171,12 +176,14 @@ class BaseLego:
         pnt(f'store item embeddings to {store_path}')
         np.save(store_path, item_embeddings)
 
-    def base_evaluate(self, loader, cols):
+    def base_evaluate(self, loader, cols, bar: bars.Bar):
         score_series = torch.zeros(len(loader.dataset), dtype=torch.float32)
         col_series = {col: torch.zeros(len(loader.dataset), dtype=torch.long) for col in cols}
 
+        meaner = Meaner()
+
         index = 0
-        for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
+        for step, batch in enumerate(bar := bar(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 scores = self.legommender(batch=batch)
                 if scores.dim() == 2:
@@ -188,17 +195,19 @@ class BaseLego:
                     col_series[col][index:index + batch_size] = batch[col][:, 0]
                 else:
                     col_series[col][index:index + batch_size] = batch[col]
-            score_series[index:index + batch_size] = scores.cpu().detach()
+            scores = scores.cpu().detach()
+            score_series[index:index + batch_size] = scores
             index += batch_size
+            bar.set_postfix_str(f'score: {meaner(scores.mean().item()):.4f}')
 
         return score_series, col_series
 
-    def evaluate(self, loader, metrics):
+    def evaluate(self, loader, metrics, bar: bars.Bar):
         pool = MetricPool.parse(metrics)
         self.legommender.eval()
 
         label_col, group_col = self.manager.cm.label_col, self.manager.cm.group_col
-        score_series, col_series = self.base_evaluate(loader, cols=[label_col, group_col])
+        score_series, col_series = self.base_evaluate(loader, cols=[label_col, group_col], bar=bar)
         label_series, group_series = col_series[label_col], col_series[group_col]
 
         results = pool.calculate(score_series, label_series, group_series)

@@ -29,13 +29,13 @@ python embed.py --model bertbase
 #### [NAML](https://arxiv.org/abs/1907.05576)
 
 ```bash
-python trainer.py --data config/data/mind-glove.yaml --model config/model/naml.yaml --hidden_size 256 --lr 0.001 --batch_size 64 --item_page_size 0 --embed config/embed/glove.yaml
+python trainer.py --data config/data/mind.yaml --model config/model/naml.yaml --hidden_size 256 --lr 0.001 --batch_size 64 --item_page_size 0 --embed config/embed/glove.yaml
 ```
 
 #### [NRMS](https://aclanthology.org/D19-1671/)
 
 ```bash
-python trainer.py --data config/data/mind-glove.yaml --model config/model/nrms.yaml --hidden_size 256 --lr 0.001 --batch_size 64 --item_page_size 0 --embed config/embed/glove.yaml
+python trainer.py --data config/data/mind.yaml --model config/model/nrms.yaml --hidden_size 256 --lr 0.001 --batch_size 64 --item_page_size 0 --embed config/embed/glove.yaml
 ```
 
 #### [PLMNR-NAML](https://arxiv.org/abs/2104.07413)

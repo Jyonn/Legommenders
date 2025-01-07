@@ -17,6 +17,7 @@ policy:
   n_warmup: ${warmup:0}$
   check_interval: ${interval:-2}$
   simple_dev: ${simple_dev:false}$
+  disable_tqdm: ${disable_tqdm:false}$
 metrics:
   - GAUC
   - MRR

@@ -1,24 +1,25 @@
 from typing import Callable
 
 import torch
-from tqdm import tqdm
 
 from loader.env import Env
+from utils import bars
 
 
 class BasePager:
-    def __init__(self, contents: list, model: Callable, page_size: int, **kwargs):
+    def __init__(self, contents: list, model: Callable, page_size: int, desc: str = None, **kwargs):
         self.contents = contents
         self.model = model
         self.page_size = page_size
         self.current = dict()
         self.current_count = self.cache_count = 0
+        self.desc = desc or 'Pager Caching'
 
     def get_features(self, content, index) -> dict:
         raise NotImplementedError
 
     def run(self):
-        for index, content in enumerate(tqdm(self.contents)):
+        for index, content in enumerate(bars.DescBar(desc=self.desc)(self.contents)):
             features = self.get_features(content, index=index)
             for feature, value in features.items():
                 if feature not in self.current:
