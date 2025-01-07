@@ -41,13 +41,37 @@ python trainer.py --data config/data/mind-glove.yaml --model config/model/nrms.y
 #### [PLMNR-NAML](https://arxiv.org/abs/2104.07413)
 
 ```bash
-python trainer.py --data config/data/mind-lm.yaml --model config/model/bert-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 128 --embed config/embed/bert.yaml --use_lora 1 --lora_r 8 --lora_alpha 128 --lm bert
+python trainer.py 
+  --data config/data/mind-lm.yaml 
+  --model config/model/bert-naml.yaml 
+  --hidden_size 256 
+  --lr 0.0001 
+  --batch_size 64 
+  --item_page_size 128  # set it as large as possible based on your GPU memory  
+  --embed config/embed/bert.yaml  # generate the yaml first, by running python embed.py --model bertbase
+  --use_lora 1 
+  --lora_r 8 
+  --lora_alpha 128 
+  --lm bert  # indicate the language model
+  --tune_from -2  # freeze the first N-1 layers, and tune the last layer, it is the same as --tune_from 10
 ```
 
 #### [ONCE-DIRE-LLAMA1-NAML](https://arxiv.org/abs/2305.06566)
 
 ```bash
-python trainer.py --data config/data/mind-lm-prompt.yaml --model config/model/llama-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 64 --embed config/embed/llama.yaml --use_lora 1 --lora_r 32 --lora_alpha 128 --lm llama1
+python trainer.py 
+  --data config/data/mind-lm-prompt.yaml  # for more powerful language models, we suggest to use the data concatenated with natural prompts
+  --model config/model/llama-naml.yaml 
+  --hidden_size 256 
+  --lr 0.0001 
+  --batch_size 64 
+  --item_page_size 64 
+  --embed config/embed/llama.yaml  # generate the yaml first, by running python embed.py --model llama1
+  --use_lora 1 
+  --lora_r 32 
+  --lora_alpha 128 
+  --lm llama1 
+  --tune_from -2  # freeze the first N-1 layers, and tune the last layer, it is the same as --tune_from 30
 ```
 
 More documentations will be available soon.
