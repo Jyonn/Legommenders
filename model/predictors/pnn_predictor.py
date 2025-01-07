@@ -44,7 +44,7 @@ class PNNPredictor(BasePredictor):
         self.inner_product_layer = InnerProductInteraction(num_fields=2)
 
         self.dnn = MLPLayer(
-            input_dim=self.config.hidden_size + 1,
+            input_dim=self.config.hidden_size * 2 + 1,
             output_dim=1,  # output hidden layer
             hidden_units=self.config.dnn_hidden_units,
             hidden_activations=self.config.dnn_activations,

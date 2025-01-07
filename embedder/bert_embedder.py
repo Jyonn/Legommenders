@@ -3,23 +3,21 @@ import abc
 from transformers.models.bert import BertModel
 
 from embedder.base_embedder import BaseEmbedder
+from utils.config_init import ModelInit
 
 
 class BertEmbedder(BaseEmbedder, abc.ABC):
-    def __init__(self, name):
-        super().__init__(name)
-
-        self.transformer: BertModel = BertModel.from_pretrained(name)
+    def __init__(self):
+        super().__init__()
+        self.transformer: BertModel = BertModel.from_pretrained(ModelInit.get(str(self)))
 
     def _get_embeddings(self):
         return self.transformer.embeddings.word_embeddings
 
 
 class BertBaseEmbedder(BertEmbedder):
-    def __init__(self):
-        super().__init__('bert-base-uncased')
+    pass
 
 
 class BertLargeEmbedder(BertEmbedder):
-    def __init__(self):
-        super().__init__('bert-large-uncased')
+    pass

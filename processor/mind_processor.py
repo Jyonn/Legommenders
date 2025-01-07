@@ -3,9 +3,11 @@ import random
 from typing import cast
 
 import pandas as pd
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer
+from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer, Vocab
+from unitok.tokenizer.glove_tokenizer import GloVeTokenizer
 
 from processor.base_processor import BaseProcessor, Interactions
+from utils.config_init import ModelInit
 
 
 class MINDProcessor(BaseProcessor):
@@ -23,9 +25,7 @@ class MINDProcessor(BaseProcessor):
 
     def config_item_tokenization(self):
         bert_tokenizer = BertTokenizer(vocab='bert')
-        llama1_tokenizer = TransformersTokenizer(vocab='llama1', key='huggyllama/llama-7b')
-        bert_cache_tokenizer = BertTokenizer(vocab='bert', use_cache=True)
-        llama1_cache_tokenizer = TransformersTokenizer(vocab='llama1', key='huggyllama/llama-7b', use_cache=True)
+        llama1_tokenizer = TransformersTokenizer(vocab='llama1', key=ModelInit.get('llama1'))
 
         self.item.add_job(tokenizer=bert_tokenizer, column='title', name='title@bert', truncate=50)
         self.item.add_job(tokenizer=bert_tokenizer, column='abstract', name='abstract@bert', truncate=200)
@@ -38,17 +38,21 @@ class MINDProcessor(BaseProcessor):
         self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
         self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
 
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt', name='prompt@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_title', name='prompt_title@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_abstract', name='prompt_abstract@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_category', name='prompt_category@bert')
-        self.item.add_job(tokenizer=bert_cache_tokenizer, column='prompt_subcategory', name='prompt_subcategory@bert')
+        self.item.add_job(tokenizer=bert_tokenizer, column='prompt', name='prompt@bert')
+        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_title', name='prompt_title@bert')
+        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_abstract', name='prompt_abstract@bert')
+        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_category', name='prompt_category@bert')
+        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_subcategory', name='prompt_subcategory@bert')
 
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt', name='prompt@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_title', name='prompt_title@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_abstract', name='prompt_abstract@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_category', name='prompt_category@llama1')
-        self.item.add_job(tokenizer=llama1_cache_tokenizer, column='prompt_subcategory', name='prompt_subcategory@llama1')
+        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt', name='prompt@llama1')
+        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_title', name='prompt_title@llama1')
+        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_abstract', name='prompt_abstract@llama1')
+        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_category', name='prompt_category@llama1')
+        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_subcategory', name='prompt_subcategory@llama1')
+
+
+
+
 
     def config_user_tokenization(self):
         self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=100)

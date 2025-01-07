@@ -1,7 +1,0 @@
-name: llama-token
-embeddings:
-  -
-    vocab_name: english
-    vocab_type: numpy
-    path: data/llama-token.npy
-    frozen: true

@@ -1,5 +1,4 @@
 import json
-from typing import Union
 
 import torch
 

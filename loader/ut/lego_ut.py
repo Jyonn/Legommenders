@@ -6,7 +6,7 @@ from typing import Protocol, cast, Union
 from pigmento import pnt
 from unitok import UniTok
 
-from utils.rand import Rand
+from utils import function
 
 
 class SupportsWriteStr(Protocol):
@@ -97,7 +97,7 @@ class LegoUT(UniTok):
     def _store_cache(self):
         pnt(f'store filter cache on {str(self)}')
 
-        filter_name = f'{Rand()[6]}.pkl'
+        filter_name = f'{function.get_random_string(6)}.pkl'
         filter_path = os.path.join(self._filter_cache_dir, filter_name)
         PickleHandler.save(self._legal_indices, filter_path)
         # json.dump(self._legal_indices, cast(SupportsWrite, open(filter_path, 'w')))

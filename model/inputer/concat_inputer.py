@@ -35,6 +35,8 @@ class ConcatInputer(BaseInputer):
         self.use_cls_token = use_cls_token
         self.use_sep_token = use_sep_token
 
+        self.vocab_activated = self.use_sep_token or self.use_cls_token
+
         self.max_content_len = self.get_max_content_len()
         self.max_sequence_len = self.get_max_sequence_len()
 
@@ -48,7 +50,7 @@ class ConcatInputer(BaseInputer):
         return self.max_content_len + int(self.use_cls_token) + int(self.use_sep_token) * len(self.inputs)
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
-        return [self.vocab]
+        return [self.vocab] if self.vocab_activated else []
 
     def get_empty_input(self):
         return torch.ones(self.max_sequence_len, dtype=torch.long) * Env.UNSET
@@ -74,9 +76,10 @@ class ConcatInputer(BaseInputer):
             if self.use_sep_token:
                 pointer.update_special_token(special_ids, self.SEP)
 
-        input_ids[self.vocab.name] = special_ids
+        if self.vocab_activated:
+            input_ids[self.vocab.name] = special_ids
+            input_ids[self.vocab.name][pointer.pos:] = self.PAD
         attention_mask = torch.tensor([1] * pointer.pos + [0] * (self.max_sequence_len - pointer.pos), dtype=torch.long)
-        input_ids[self.vocab.name][pointer.pos:] = self.PAD
 
         return dict(
             input_ids=input_ids,
@@ -104,7 +107,6 @@ class ConcatInputer(BaseInputer):
             seq = input_ids[col].to(Env.device)  # type: torch.Tensor # [B, L]
             mask = cast(torch.Tensor, (seq > Env.UNSET)).long().to(Env.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
-
             embedding = self.embedding_hub(vocab)(seq)
             embedding *= mask.unsqueeze(-1)
 

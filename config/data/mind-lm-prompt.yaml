@@ -3,8 +3,11 @@ base_dir: data/mind
 item:
   ut: ${data.base_dir}/items
   inputs:
-    - title@glove: 30
-    - category
+    - prompt@${lm}
+    - prompt_title@${lm}
+    - title@${lm}: 30
+    - prompt_category@${lm}
+    - category@${lm}
 user:
   ut: ${data.base_dir}/users
   truncate: 50

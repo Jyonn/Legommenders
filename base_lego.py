@@ -48,6 +48,8 @@ class BaseLego:
         JsonHandler.save(Obj.raw(self.config), Env.path_hub.cfg_path)
 
         pnt('START TIME:', datetime.datetime.now())
+        pnt('SIGNATURE:', Env.path_hub.signature)
+        pnt('BASE DIR:', Env.path_hub.checkpoint_base_dir)
         pnt('python', ' '.join(sys.argv))
 
         Env.device = self.get_device()
@@ -64,20 +66,21 @@ class BaseLego:
         self.legommender = self.manager.legommender.to(Env.device)
         self.resampler = self.manager.resampler
         self.cacher = self.legommender.cacher
-        self.cacher.activate(config.fast_eval)
 
         self.manager.stringify()
 
         self.optimizer: Optional[torch.optim.Optimizer] = None
         self.scheduler = None
 
-    def init_pigmento(self):
+    @staticmethod
+    def init_pigmento():
         pigmento.add_time_prefix()
         pigmento.add_log_plugin(Env.path_hub.log_path)
         pigmento.add_dynamic_color_plugin()
         pnt.set_display_mode(
             display_method_name=False,
             display_class_name=True,
+            use_instance_class=True,
         )
 
     def init_optimizer(self):

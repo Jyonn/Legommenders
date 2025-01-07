@@ -1,0 +1,7 @@
+embeddings:
+- frozen: true
+  path: data/embeddings/bertbase.npy
+  vocab_name: bert
+name: bertbase
+transformation: auto
+transformation_dropout: 0.1

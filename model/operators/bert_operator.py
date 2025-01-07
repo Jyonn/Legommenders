@@ -1,82 +1,52 @@
+import abc
+
 import torch
-from peft import get_peft_model
-from transformers import AutoModel, BertModel
+from peft import get_peft_model, PeftConfig
+from transformers import BertModel
 
-from model.operators.base_llm_operator import BaseLLMOperator
+from model.operators.lm_operator import BaseLMOperator
 
 
-class BertOperator(BaseLLMOperator):
-    key = 'bert-base-uncased'
+class BertOperator(BaseLMOperator, abc.ABC):
+    transformer: BertModel
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer: BertModel = AutoModel.from_pretrained(self.key)
-
         self.transformer.embeddings.word_embeddings = None
-        self.layer_split(self.transformer.config.num_hidden_layers)
+        self._prepare_network()
 
         if self.transformer.config.hidden_size != self.config.input_dim:
             raise ValueError(f'In {self.classname}, hidden_size of transformer ({self.transformer.config.hidden_size}) '
                              f'does not match input_dim ({self.config.input_dim})')
 
     def _slice_transformer_layers(self):
-        self.transformer.encoder.layer = self.transformer.encoder.layer[self.config.layer_split + 1:]
+        self.transformer.encoder.layer = self.transformer.encoder.layer[self.config.tune_from + 1:]
 
-    def _lora_encoder(self, peft_config):
+    def _lora_encoder(self, peft_config: PeftConfig):
         self.transformer.encoder = get_peft_model(self.transformer.encoder, peft_config)
         self.transformer.encoder.print_trainable_parameters()
 
-    def get_all_hidden_states(
-            self,
-            hidden_states,
-            attention_mask,
+    def _loop_forward(
+        self,
+        hidden_states: torch.FloatTensor,
+        attention_mask: torch.Tensor,
+        output_hidden_states: bool = True,
     ):
-        bert = self.transformer
-
         input_shape = hidden_states.size()[:-1]
-        device = hidden_states.device
+        extended_attention_mask = self.transformer.get_extended_attention_mask(attention_mask, input_shape)
 
-        token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
-
-        hidden_states = bert.embeddings(
-            token_type_ids=token_type_ids,
-            inputs_embeds=hidden_states,
-        )
-
-        return self._layer_forward(
+        output = self.transformer.encoder(
             hidden_states=hidden_states,
-            attention_mask=attention_mask,
+            attention_mask=extended_attention_mask,
+            return_dict=True,
         )
+        return output.last_hidden_state
 
-    def _layer_forward(
-        self,
-        hidden_states: torch.FloatTensor,
-        attention_mask: torch.Tensor,
-    ):
-        bert = self.transformer
 
-        attention_mask = bert.get_extended_attention_mask(attention_mask, hidden_states.size()[:-1])
-        all_hidden_states = ()
+class BertBaseOperator(BertOperator):
+    pass
 
-        for i, layer_module in enumerate(bert.encoder.layer):
-            all_hidden_states = all_hidden_states + (hidden_states,)
-            layer_outputs = layer_module(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-            )
-            hidden_states = layer_outputs[0]
 
-        all_hidden_states = all_hidden_states + (hidden_states,)
-
-        return all_hidden_states
-
-    def layer_forward(
-        self,
-        hidden_states: torch.FloatTensor,
-        attention_mask: torch.Tensor,
-    ):
-        return self._layer_forward(
-            hidden_states=hidden_states,
-            attention_mask=attention_mask,
-        )[0]
+class BertLargeOperator(BertOperator):
+    pass

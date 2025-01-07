@@ -1,22 +1,26 @@
 name: BERT-NRMS
 meta:
-  item: Bert
+  item: BertBase
   user: Attention
   predictor: Dot
 config:
+  use_neg_sampling: true
   use_item_content: true
-  item_page_size: ${item_page_size}$
-  item_hidden_size: ${item_hidden_size}$
+  use_fast_eval: ${fast_eval:true}$
+  item_page_size: ${item_page_size:128}$
+  item_hidden_size: 768
   hidden_size: ${hidden_size}$
   neg_count: 4
   item_config:
-    llm_dir: bert-base-uncased
-    layer_split: ${layer}$
-    lora: ${lora}$
-    lora_r: ${lora_r}$
-    weights_dir: data/${data.name}/bert-${llm_ver}-split
+    tune_from: ${tune_from:0}$
+    use_lora: ${use_lora:false}$
+    lora_r: ${lora_r:null}$
+    lora_alpha: ${lora_alpha:null}$
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
   user_config:
-    num_attention_heads: 8
+    num_attention_heads: ${num_user_heads:8}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false

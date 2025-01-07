@@ -4,9 +4,9 @@ from torch import nn
 
 from loader.env import Env
 from model.lego_config import LegoConfig
-from model.operators.base_llm_operator import BaseLLMOperator
 from loader.cacher.repr_cacher import ReprCacher
 from loader.column_map import ColumnMap
+from model.operators.lm_operator import BaseLMOperator
 from utils.shaper import Shaper
 
 
@@ -28,7 +28,8 @@ class Legommender(nn.Module):
         self.neg_count = self.config.neg_count
 
         self.embedding_hub = self.config.embedding_hub
-        self.embedding_table = self.embedding_hub.get_table()  # do not delete this line, the table should be mapped to the customized device
+        # do not delete this line, the trainable parameters will be displayed
+        self.embedding_table = self.embedding_hub.table
 
         self.user_hub = self.config.user_ut
         self.item_hub = self.config.item_ut
@@ -45,8 +46,8 @@ class Legommender(nn.Module):
         # special cases for llama
         Env.set_llm_cache(False)
         if self.config.use_item_content:
-            if isinstance(self.item_op, BaseLLMOperator):
-                if self.item_op.config.layer_split:
+            if isinstance(self.item_op, BaseLMOperator):
+                if self.item_op.config.tune_from:
                     Env.set_llm_cache(True)
         pnt(f'set llm cache: {Env.llm_cache}')
 

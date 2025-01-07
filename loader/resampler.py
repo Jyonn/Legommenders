@@ -52,7 +52,7 @@ class Resampler:
     def _build_item_cache(self):
         item_cache = []
         for sample in tqdm(self.item_dataset):
-            item_cache.append(self.item_inputer.sample_rebuilder(sample))
+            item_cache.append(self.item_inputer(sample))
         return item_cache
 
     @staticmethod
@@ -126,11 +126,11 @@ class Resampler:
 
         if not self.use_item_content:
             # if not using item content, we use vanilla inputer provided by user operator to rebuild clicks
-            sample[self.history_col] = self.user_inputer.sample_rebuilder(sample)
+            sample[self.history_col] = self.user_inputer(sample)
             return
         if self.lego_config.user_operator_class.flatten_mode:
             # in flatten mode, click contents will be rebuilt by user inputer
-            sample[self.history_col] = self.user_inputer.sample_rebuilder(sample)
+            sample[self.history_col] = self.user_inputer(sample)
             sample[self.mask_col] = self.user_inputer.get_mask(sample[self.history_col])
             return
 

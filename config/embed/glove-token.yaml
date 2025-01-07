@@ -1,7 +1,0 @@
-name: glove-token
-embeddings:
-  -
-    vocab_name: english
-    vocab_type: numpy
-    path: /data1/qijiong/Data/Glove/300d/vectors.npy
-    frozen: true

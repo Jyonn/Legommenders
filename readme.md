@@ -7,10 +7,40 @@
 ```bash
 gh repo clone Jyonn/Legommenders
 cd Legommenders
-pip install -r requirements.txt  # Note: Legommenders is not compatible to the latest version of transformers yet if you want to finetune LLaMA-based models.
+pip install -r requirements.txt
 ```
 
+## Quick Start with Three Steps
+
+### Data Preprocessing
+
+```bash
+python process.py --data mind
+```
+
+### Token Embedding Extraction
+
+```bash
+python embed.py --model bertbase
+```
+
+### Training a Recommender
+
+#### [NAML](https://arxiv.org/abs/1907.05576)
+
+```bash
+python trainer.py --data config/data/mind-glove.yaml --model config/model/naml.yaml --hidden_size 256 --lr 0.001 --batch_size 64 --item_page_size 0 --embed config/embed/null.yaml
+```
+
+```bash
+python trainer.py --data config/data/mind-llama.yaml --model config/model/llama-naml.yaml --tune_from 30 --hidden_size 256 -- 0.0001 --use_lora 1 --batch_size 64 --item_page_size 64 --lora_r 32 --lora_alpha 128 --embed config/embed/llama.yaml --llama 1
+``` 
+
 ## Updates
+
+### Jan. 6, 2025
+
+- Legommenders v2.0 beta is released!
 
 ### Dec. 5, 2024
 
@@ -40,10 +70,10 @@ Legommenders have served as a fundamental framework for several research project
 If you find Legommenders useful in your research, please consider citing our project:
 
 ```
-@online{legommenders,
-  author = {Liu, Qijiong},
-  title = {Legommenders: A Modular Framework for Recommender Systems},
-  year = {2023},
-  url = {https://github.com/Jyonn/Legommenders}
+@article{legommenders,
+  title={Legommenders: A Comprehensive Content-Based Recommendation Library with LLM Support},
+  author={Liu, Qijiong and Fan, Lu and Wu, Xiao-Ming},
+  journal={arXiv preprint arXiv:2412.15973},
+  year={2024}
 }
 ```

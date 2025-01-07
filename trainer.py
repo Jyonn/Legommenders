@@ -6,7 +6,6 @@ from loader.env import Env
 from loader.symbols import Symbols
 from tester import Tester
 from utils.config_init import CommandInit
-from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
 
@@ -14,14 +13,15 @@ from utils.monitor import Monitor
 class Trainer(Tester):
     def simple_evaluate(self):
         loader = self.manager.get_dev_loader()
-        total_loss = Meaner()
+        losses = []
 
         for step, batch in enumerate(tqdm(loader, disable=self.disable_tqdm)):
             with torch.no_grad():
                 loss = self.legommender(batch=batch)
-            total_loss.add(loss.item())
+            losses.append(loss.item())
 
-        total_loss = total_loss.mean()
+        # total_loss = total_loss.mean()
+        total_loss = sum(losses) / len(losses)
         return dict(loss=total_loss), total_loss
 
     def dev(self):

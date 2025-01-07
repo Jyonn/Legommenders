@@ -1,7 +1,0 @@
-name: llama-full
-embeddings:
-  -
-    vocab_name: nid
-    vocab_type: numpy
-    path: data/${data.name}/news-llama-new.7b.full.npy
-    frozen: true

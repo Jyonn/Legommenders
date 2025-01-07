@@ -1,20 +1,19 @@
 import abc
-import os
+import os.path
+import warnings
+from typing import cast
 
 import refconfig
 from oba import Obj
 from refconfig import RefConfig
 
 from utils.function import argparse
-from utils.rand import Rand
-from utils.timing import Timing
 
 
 class CommandInit:
-    def __init__(self, required_args, default_args=None, makedirs=None):
+    def __init__(self, required_args, default_args=None):
         self.required_args = required_args
         self.default_args = default_args or {}
-        self.makedirs = makedirs or []
 
     def parse(self):
         kwargs = argparse()
@@ -28,13 +27,9 @@ class CommandInit:
                 kwargs[arg] = self.default_args[arg]
 
         config = RefConfig().add(refconfig.CType.SMART, **kwargs)
-        config = config.add(refconfig.CType.RAW, rand=Rand(), time=Timing()).parse()
+        config = config.add(refconfig.CType.RAW).parse()
 
         config = Obj(config)
-
-        for makedir in self.makedirs:
-            dir_name = config[makedir]
-            os.makedirs(dir_name, exist_ok=True)
 
         return config
 
@@ -50,12 +45,18 @@ class ConfigInit(abc.ABC):
 
         cls._d = dict()
 
+        if not os.path.exists(f'.{cls.classname()}'):
+            warnings.warn(f'config file .{cls.classname()} not found')
+            print(f'example .{cls.classname()} config:')
+            print(cls.examples())
+            return cls._d
+
         with open(f'.{cls.classname()}') as f:
             config = f.read()
 
         for line in config.strip().split('\n'):  # type: str
             key, value = line.split('=')
-            cls._d[key.strip().lower()] = value.strip()
+            cls._d[key.strip().lower()] = cast(str, value).strip()
 
         return cls._d
 
@@ -75,6 +76,18 @@ class ConfigInit(abc.ABC):
     def classname(cls):
         return cls.__name__.lower().replace('init', '')
 
+    @classmethod
+    def examples(cls):
+        raise NotImplementedError
+
 
 class DataInit(ConfigInit):
-    pass
+    @classmethod
+    def examples(cls):
+        return '\n'.join(['mind = /path/to/mind', 'goodreads = /path/to/goodreads'])
+
+
+class ModelInit(ConfigInit):
+    @classmethod
+    def examples(cls):
+        return '\n'.join(['bertbase = bert-base-uncased', 'bertlarge = bert-large-uncased'])

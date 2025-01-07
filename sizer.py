@@ -20,12 +20,14 @@ class Sizer(BaseLego):
 
 if __name__ == '__main__':
     configuration = CommandInit(
-        required_args=['data', 'model', 'exp'],
+        required_args=['data', 'model'],
         default_args=dict(
+            exp='config/exp/default.yaml',
             embed='config/embed/null.yaml',
             hidden_size=256,
             item_hidden_size='${hidden_size}$',
             item_page_size=64,
+            batch_size=64,
         ),
     ).parse()
 

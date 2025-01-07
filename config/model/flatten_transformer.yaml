@@ -9,7 +9,6 @@ config:
   hidden_size: ${hidden_size}$
   item_hidden_size: ${item_hidden_size}$
   neg_count: 4
-  page_size: ${page_size}$
   item_config:
     num_hidden_layers: 1
     inputer_config:

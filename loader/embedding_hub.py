@@ -6,6 +6,7 @@ from unitok import Vocab
 from pigmento import pnt
 from torch import nn
 
+from loader.env import Env
 from loader.ut.lego_ut import LegoUT
 
 
@@ -64,12 +65,9 @@ class EmbeddingHub:
         self.transformation_dropout = transformation_dropout
 
         self._vocab_size = dict()
-        self._table = nn.ModuleDict()
+        self.table = nn.ModuleDict()
 
         self._pretrained_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
-
-    def get_table(self):
-        return self._table
 
     def load_pretrained_embedding(
             self,
@@ -83,6 +81,9 @@ class EmbeddingHub:
         embedding = torch.tensor(embedding, dtype=torch.float32)
         embedding = nn.Embedding.from_pretrained(embedding)
         pnt(f'load pretrained embedding {vocab_name} of {embedding.weight.shape}')
+
+        if vocab_name == '<vocab_name>':
+            raise ValueError(f'please specify the vocab name for the pretrained embedding in the embed config')
 
         if transformation not in self.pretrained_types:
             raise ValueError(f'invalid transformation type {transformation}, expected {self.pretrained_types}')
@@ -103,15 +104,15 @@ class EmbeddingHub:
         )
 
     def build_vocab_embedding(self, vocab: Vocab):
-        if vocab.name in self._table:
+        if vocab.name in self.table:
             return
 
         if vocab.name not in self._pretrained_embeddings:
             pnt(f'create vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
-            self._table.add_module(vocab.name, nn.Embedding(
+            self.table.add_module(vocab.name, nn.Embedding(
                 num_embeddings=vocab.size,
                 embedding_dim=self.embedding_dim
-            ))
+            ).to(Env.device))
             return
 
         pe = self._pretrained_embeddings[vocab.name]
@@ -134,7 +135,7 @@ class EmbeddingHub:
                 transformation_dropout=pe.transformation_dropout,
             )
 
-        self._table.add_module(vocab.name, pe.embedder)
+        self.table.add_module(vocab.name, pe.embedder.to(Env.device))
 
     def register_vocab(self, vocab: Vocab):
         if vocab.name in self._vocab_size:
@@ -150,7 +151,7 @@ class EmbeddingHub:
             self.register_vocab(vocab)
 
     def __call__(self, vocab_name):
-        return self._table[vocab_name]
+        return self.table[vocab_name]
 
     # def register_depot(self, nrd: DataHub, skip_cols=None):
     #     depot, order = nrd.ut, nrd.input_cols

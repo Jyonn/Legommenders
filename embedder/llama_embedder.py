@@ -3,28 +3,26 @@ import abc
 from transformers import AutoModelForCausalLM, LlamaForCausalLM
 
 from embedder.base_embedder import BaseEmbedder
+from utils.config_init import ModelInit
 
 
 class LlamaEmbedder(BaseEmbedder, abc.ABC):
-    def __init__(self, key):
-        super().__init__(key)
+    def __init__(self):
+        super().__init__()
 
-        self.transformer = AutoModelForCausalLM.from_pretrained(self.key)  # type: LlamaForCausalLM
+        self.transformer = AutoModelForCausalLM.from_pretrained(ModelInit.get(str(self)))  # type: LlamaForCausalLM
 
     def _get_embeddings(self):
         return self.transformer.model.embed_tokens
 
 
 class Llama1Embedder(LlamaEmbedder):
-    def __init__(self):
-        super().__init__(key='huggyllama/llama-7b')
+    pass
 
 
 class Llama2Embedder(LlamaEmbedder):
-    def __init__(self):
-        super().__init__(key='meta-llama/Llama-2-7b-hf')
+    pass
 
 
 class Llama3Embedder(LlamaEmbedder):
-    def __init__(self):
-        super().__init__(key='meta-llama/Meta-Llama-3-8B')
+    pass

@@ -82,12 +82,6 @@ class LegoConfig:
     def set_embedding_hub(self, embedding_hub: EmbeddingHub):
         self.embedding_hub = embedding_hub
 
-    def set_save_dir(self, save_dir: str):
-        self.base_save_dir = save_dir
-
-    def set_signature(self, signature: str):
-        self.signature = signature
-
     def build_components(self):
         self.item_operator = None
 

@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import random
+import string
 import sys
 
 import numpy as np
@@ -40,10 +41,10 @@ def argparse():
             assert arg.startswith('--')
             key = arg[2:]
 
-    for key, value in kwargs.items():
+    for key, value in kwargs.items():  # type: str, str
         if value == 'null':
             kwargs[key] = None
-        elif value.isdigit():
+        elif value.isdigit() or (value.startswith('-') and value[1:].isdigit()):
             kwargs[key] = int(value)
         elif value.lower() == 'true':
             kwargs[key] = True
@@ -68,3 +69,8 @@ def get_signature(data, embed, model, exp):
     md5_digest = hashlib.md5(canonical_str.encode('utf-8')).digest()
     b64_str = base64.urlsafe_b64encode(md5_digest).decode('utf-8').rstrip('=')
     return b64_str[:8]
+
+
+def get_random_string(length=6):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+

@@ -4,18 +4,22 @@ meta:
   user: Attention
   predictor: Dot
 config:
+  use_neg_sampling: true
   use_item_content: true
-  item_page_size: ${item_page_size}$
-  item_hidden_size: ${item_hidden_size}$
+  item_page_size: ${item_page_size:128}$
+  item_hidden_size: 4096
   hidden_size: ${hidden_size}$
   neg_count: 4
   item_config:
-    llm_dir: /home/data1/qijiong/llama-${llm_ver}
-    layer_split: ${layer}$
-    lora: ${lora}$
-    weights_dir: data/${data.name}/llama-${llm_ver}-split
+    tune_from: ${tune_from}$
+    use_lora: ${use_lora:false}$
+    lora_r: ${lora_r:null}$
+    lora_alpha: ${lora_alpha:null}$
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false
   user_config:
-    num_attention_heads: 8
+    num_attention_heads: ${num_user_heads:8}$
     inputer_config:
       use_cls_token: false
       use_sep_token: false
