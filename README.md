@@ -41,13 +41,13 @@ python trainer.py --data config/data/mind-glove.yaml --model config/model/nrms.y
 #### [PLMNR-NAML](https://arxiv.org/abs/2104.07413)
 
 ```bash
-python trainer.py --data config/data/mind-bert.yaml --model config/model/bert-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 128 --embed config/embed/bert.yaml --use_lora 1 --lora_r 8 --lora_alpha 128
+python trainer.py --data config/data/mind-lm.yaml --model config/model/bert-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 128 --embed config/embed/bert.yaml --use_lora 1 --lora_r 8 --lora_alpha 128 --lm bert
 ```
 
 #### [ONCE-DIRE-LLAMA1-NAML](https://arxiv.org/abs/2305.06566)
 
 ```bash
-python trainer.py --data config/data/mind-llama.yaml --model config/model/llama-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 64 --embed config/embed/llama.yaml --use_lora 1 --lora_r 32 --lora_alpha 128 --llama 1
+python trainer.py --data config/data/mind-lm-prompt.yaml --model config/model/llama-naml.yaml --hidden_size 256 --lr 0.0001 --batch_size 64 --item_page_size 64 --embed config/embed/llama.yaml --use_lora 1 --lora_r 32 --lora_alpha 128 --lm llama1
 ```
 
 More documentations will be available soon.
