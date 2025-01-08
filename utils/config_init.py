@@ -91,3 +91,9 @@ class ModelInit(ConfigInit):
     @classmethod
     def examples(cls):
         return '\n'.join(['bertbase = bert-base-uncased', 'bertlarge = bert-large-uncased'])
+
+
+class AuthInit(ConfigInit):
+    @classmethod
+    def examples(cls):
+        return '\n'.join(['user = user', 'password = password'])

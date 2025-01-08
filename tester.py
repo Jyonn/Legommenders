@@ -2,14 +2,14 @@ from pigmento import pnt
 
 from base_lego import BaseLego
 from loader.env import Env
+from utils import bars
 from utils.config_init import CommandInit
 
 
 class Tester(BaseLego):
     def test(self):
         loader = self.manager.get_test_loader()
-
-        results = self.evaluate(loader, metrics=self.exp.metrics)
+        results = self.evaluate(loader, metrics=self.exp.metrics, bar=bars.TestBar())
 
         with open(Env.path_hub.result_path, 'w') as f:
             for metric in results:

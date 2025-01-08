@@ -60,6 +60,14 @@ class DevBar(Bar):
         self.leave = False
 
 
+class TestBar(Bar):
+    def __init__(self):
+        super().__init__()
+
+        self.bar_format = "Testing [{percentage:.0f}% < {remaining}] {postfix}"
+        self.leave = False
+
+
 class DescBar(Bar):
     def __init__(self, desc):
         super().__init__()
@@ -67,28 +75,3 @@ class DescBar(Bar):
         self.bar_format = "{desc} [{percentage:.0f}% < {remaining}]"
         self.bar_format = self.bar_format.replace("{desc}", desc)
         self.leave = False
-
-#
-# def train(iterable, epoch, **kwargs):
-#     bar = "Training Epoch {epoch} [{percentage:.0f}% < {remaining}] {postfix}"
-#     bar = bar.replace("{epoch}", str(epoch))
-#     return tqdm(
-#         iterable=iterable,
-#         bar_format=bar,
-#         ncols=100,
-#         leave=False,
-#         **kwargs,
-#     )
-#
-#
-# def dev(iterable, epoch, train_loss, **kwargs):
-#     bar = "Train loss: {train_loss} | Validating Epoch {epoch} [{percentage:.0f}% < {remaining}] {postfix}"
-#     bar = bar.replace("{epoch}", str(epoch))
-#     bar = bar.replace("{train_loss}", f"{train_loss:.4f}")
-#     return tqdm(
-#         iterable=iterable,
-#         bar_format=bar,
-#         ncols=100,
-#         leave=False,
-#         **kwargs,
-#     )
