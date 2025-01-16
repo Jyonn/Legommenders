@@ -1,3 +1,4 @@
+import warnings
 from collections import OrderedDict
 from multiprocessing import Pool
 from typing import Dict, Union, List
@@ -55,20 +56,30 @@ class LRAP(Metric):
         return label_ranking_average_precision_score([labels], [scores])
 
 
-class MRR(Metric):
-    name = 'MRR'
+class MRR0(Metric):
+    name = 'MRR0'
     group = True
     minimize = False
 
     def calculate(self, scores: list, labels: list):
-        # ranked_indices = np.argsort(-np.array(scores))
-        # do not use numpy or torch
         ranked_indices = sorted(range(len(scores)), key=lambda x: scores[x], reverse=True)
 
         for rank, idx in enumerate(ranked_indices, start=1):  # type: int, int
             if labels[idx] == 1:
                 return 1 / rank
         return 0
+
+
+class MRR(Metric):
+    name = 'MRR'
+    group = True
+    minimize = False
+
+    def calculate(self, scores: list, labels: list):
+        order = sorted(range(len(scores)), key=lambda x: scores[x], reverse=True)
+        y_true = [labels[i] for i in order]
+        rr_score = [y_true[i] / (i + 1) for i in range(len(y_true))]
+        return sum(rr_score) / sum(y_true)
 
 
 class F1(Metric):
@@ -141,7 +152,7 @@ class NDCG(Metric):
 
 
 class MetricPool:
-    metric_list = [LogLoss, AUC, GAUC, F1, Recall, NDCG, HitRatio, LRAP, MRR]
+    metric_list = [LogLoss, AUC, GAUC, F1, Recall, NDCG, HitRatio, LRAP, MRR, MRR0]
     metric_dict = {m.name.upper(): m for m in metric_list}
 
     def __init__(self, metrics):
@@ -163,7 +174,12 @@ class MetricPool:
                 m, argument = m[:at], [int(m[at+1:])]
             if m.upper() not in MetricPool.metric_dict:
                 raise ValueError(f'Metric {m} not found')
-            metrics.append(MetricPool.metric_dict[m.upper()](*argument))
+            metric = MetricPool.metric_dict[m.upper()](*argument)
+            if isinstance(metric, MRR):
+                warnings.warn('Following existing recommendation repositories, '
+                              'the implementation of MRR is not the same as the original one. '
+                              'To get the original MRR, use MRR0 instead.')
+            metrics.append(metric)
         return cls(metrics)
 
     def calculate(self, scores, labels, groups, group_worker=5):
