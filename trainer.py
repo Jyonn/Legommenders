@@ -99,8 +99,8 @@ class Trainer(Tester):
         self.test()
 
 
-if __name__ == '__main__':
-    configuration = CommandInit(
+def get_configurations():
+    return CommandInit(
         required_args=['data', 'model'],
         default_args=dict(
             embed='config/embed/null.yaml',
@@ -111,5 +111,8 @@ if __name__ == '__main__':
         ),
     ).parse()
 
+
+if __name__ == '__main__':
+    configuration = get_configurations()
     trainer = Trainer(config=configuration)
     trainer.run()

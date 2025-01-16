@@ -1,11 +1,17 @@
+import json
 import os
 import random
+from datetime import datetime, timezone
 from typing import cast
 
 import pandas as pd
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer
+from tqdm import tqdm
+from unitok import BertTokenizer, TransformersTokenizer
+from unitok.tokenizer.glove_tokenizer import GloVeTokenizer
 
+from embedder.glove_embedder import GloVeEmbedder
 from processor.base_processor import BaseProcessor, Interactions
+from utils.config_init import ModelInit
 
 
 class GoodreadsProcessor(BaseProcessor):
@@ -13,6 +19,7 @@ class GoodreadsProcessor(BaseProcessor):
     UID_COL = 'uid'
     HIS_COL = 'history'
     LBL_COL = 'click'
+    DAT_COL = 'date'
 
     NUM_TEST = 20_000
     NUM_FINETUNE = 100_000
@@ -21,51 +28,89 @@ class GoodreadsProcessor(BaseProcessor):
 
     @property
     def default_attrs(self):
-        return ['title']
+        return dict(title=50)
 
     def config_item_tokenization(self):
         bert_tokenizer = BertTokenizer(vocab='bert')
-        llama1_tokenizer = TransformersTokenizer(vocab='llama1', key='huggyllama/llama-7b')
-        self.item.add_job(tokenizer=bert_tokenizer, column='title', name='title@bert', truncate=50)
-        self.item.add_job(tokenizer=bert_tokenizer, column='abstract', name='abstract@bert', truncate=200)
-        self.item.add_job(tokenizer=bert_tokenizer, column='category', name='category@bert', truncate=0)
-        self.item.add_job(tokenizer=bert_tokenizer, column='subcategory', name='subcategory@bert', truncate=0)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='title', name='title@llama1', truncate=50)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='abstract', name='abstract@llama1', truncate=200)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='category', name='category@llama1', truncate=0)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='subcategory', name='subcategory@llama1', truncate=0)
-        self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
-        self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
+        llama1_tokenizer = TransformersTokenizer(vocab='llama1', key=ModelInit.get('llama1'))
+        glove_tokenizer = GloVeTokenizer(vocab=GloVeEmbedder.get_glove_vocab())
+
+        self.add_item_tokenizer(bert_tokenizer)
+        self.add_item_tokenizer(llama1_tokenizer)
+        self.add_item_tokenizer(glove_tokenizer)
 
     def load_items(self) -> pd.DataFrame:
         path = os.path.join(self.data_dir, 'goodreads_book_works.json')
-        items = pd.read_json(path, lines=True)
-        items = items[['best_book_id', 'original_title']]
+        item_df = pd.read_json(path, lines=True)
+        item_df = item_df[['best_book_id', 'original_title']]
         # if original title strip is empty, then skip
-        items = items[items['original_title'].str.strip() != '']
-        items.columns = [self.IID_COL, 'title']
-        return items
+        item_df = item_df[item_df['original_title'].str.strip() != '']
+        item_df.columns = [self.IID_COL, 'title']
 
-    def _load_users(self, path: str) -> pd.DataFrame:
-        return pd.read_csv(
-            filepath_or_buffer=cast(str, path),
-            sep='\t',
-            names=['imp', self.UID_COL, 'time', self.HIS_COL, 'predict'],
-            usecols=[self.UID_COL, self.HIS_COL]
-        )
+        item_df['prompt'] = 'Here is a book. '
+        item_df['prompt_title'] = 'Title: '
+
+        return item_df
+
+    @staticmethod
+    def _str_to_ts(date_string):
+        date_format = "%a %b %d %H:%M:%S %z %Y"
+        dt = datetime.strptime(date_string, date_format)
+        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
+        return timestamp
+
+    def _extract_pos_samples(self, users):
+        users = users[users[self.HIS_COL].apply(len) > self.POS_COUNT]
+
+        pos_inters = []
+        for index, row in users.iterrows():
+            for i in range(self.POS_COUNT):
+                pos_inters.append({
+                    self.UID_COL: row[self.UID_COL],
+                    self.IID_COL: row[self.HIS_COL][-(i + 1)],
+                    self.LBL_COL: 1
+                })
+        self._pos_inters = pd.DataFrame(pos_inters)
+
+        users.loc[:, self.HIS_COL] = users[self.HIS_COL].apply(lambda x: x[-self.MAX_HISTORY_PER_USER - self.POS_COUNT: -self.POS_COUNT])
+
+        return users
+
+    def _load_users(self, interactions):
+        item_set = set(self.item_df[self.IID_COL].unique())
+
+        interactions = interactions[interactions[self.IID_COL].isin(item_set)]
+        interactions = interactions.groupby(self.UID_COL)
+        interactions = interactions.filter(lambda x: x[self.LBL_COL].nunique() == 2)
+        self._interactions = interactions
+
+        pos_inters = interactions[interactions[self.LBL_COL] == 1]
+
+        users = pos_inters.sort_values(
+            [self.UID_COL, self.DAT_COL]
+        ).groupby(self.UID_COL)[self.IID_COL].apply(list).reset_index()
+        users.columns = [self.UID_COL, self.HIS_COL]
+
+        return self._extract_pos_samples(users)
 
     def load_users(self) -> pd.DataFrame:
         item_set = set(self.item_df[self.IID_COL].unique())
 
-        train_df = self._load_users(os.path.join(self.data_dir, 'train', 'behaviors.tsv'))
-        valid_df = self._load_users(os.path.join(self.data_dir, 'dev', 'behaviors.tsv'))
-        users = pd.concat([train_df, valid_df]).drop_duplicates([self.UID_COL])
-        users[self.HIS_COL] = users[self.HIS_COL].str.split()
-        users = users.dropna(subset=[self.HIS_COL])
+        path = os.path.join(self.data_dir, 'goodreads_interactions_dedup.json')
+        interactions = []
+        with open(path, 'r') as f:
+            for index, line in tqdm(enumerate(f)):
+                data = json.loads(line.strip())
+                user_id, book_id, is_read, date = data['user_id'], data['book_id'], data['is_read'], data['date_added']
+                interactions.append([user_id, book_id, is_read, date])
 
-        users[self.HIS_COL] = users[self.HIS_COL].apply(lambda x: [item for item in x if item in item_set])
-        users = users[users[self.HIS_COL].map(lambda x: len(x) > 0)]
-        return users
+        interactions = pd.DataFrame(interactions, columns=[self.UID_COL, self.IID_COL, self.LBL_COL, self.DAT_COL])
+        interactions = self._stringify(interactions)
+        interactions[self.DAT_COL] = interactions[self.DAT_COL].apply(lambda x: self._str_to_ts(x))
+        interactions[self.LBL_COL] = interactions[self.LBL_COL].apply(int)
+        interactions = interactions[interactions[self.IID_COL].isin(item_set)]
+        return self._load_users(interactions)
+
 
     def _load_interactions(self, path):
         user_set = set(self.user_df[self.UID_COL].unique())

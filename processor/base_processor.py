@@ -4,7 +4,8 @@ from typing import Optional
 
 import pandas as pd
 from pigmento import pnt
-from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol, VocabularyHub
+from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol, VocabularyHub, \
+    BaseTokenizer
 
 
 class Interactions(dict):
@@ -65,12 +66,20 @@ class BaseProcessor(abc.ABC):
         return os.path.join(self.save_dir, mode.name)
 
     @property
-    def default_attrs(self) -> list:
+    def attrs(self) -> dict:
         raise NotImplemented
 
     @classmethod
     def get_name(cls):
         return cls.__name__.replace('Processor', '').lower()
+
+    def add_item_tokenizer(self, tokenizer: BaseTokenizer):
+        name = tokenizer.vocab.name
+
+        self.item.add_job(tokenizer=tokenizer, column='prompt', name=f'prompt@{name}')
+        for attr in self.attrs:
+            self.item.add_job(tokenizer=tokenizer, column=attr, name=f'{attr}@{name}', truncate=self.attrs[attr])
+            self.item.add_job(tokenizer=tokenizer, column=f'prompt_{attr}', name=f'prompt_{attr}@{name}')
 
     def config_item_tokenization(self):
         pass

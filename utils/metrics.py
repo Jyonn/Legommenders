@@ -46,13 +46,29 @@ class GAUC(AUC):
     minimize = False
 
 
+class LRAP(Metric):
+    name = 'LRAP'
+    group = True
+    minimize = False
+
+    def calculate(self, scores: list, labels: list):
+        return label_ranking_average_precision_score([labels], [scores])
+
+
 class MRR(Metric):
     name = 'MRR'
     group = True
     minimize = False
 
     def calculate(self, scores: list, labels: list):
-        return label_ranking_average_precision_score([labels], [scores])
+        # ranked_indices = np.argsort(-np.array(scores))
+        # do not use numpy or torch
+        ranked_indices = sorted(range(len(scores)), key=lambda x: scores[x], reverse=True)
+
+        for rank, idx in enumerate(ranked_indices, start=1):  # type: int, int
+            if labels[idx] == 1:
+                return 1 / rank
+        return 0
 
 
 class F1(Metric):
@@ -125,7 +141,7 @@ class NDCG(Metric):
 
 
 class MetricPool:
-    metric_list = [LogLoss, AUC, GAUC, F1, Recall, NDCG, HitRatio, MRR]
+    metric_list = [LogLoss, AUC, GAUC, F1, Recall, NDCG, HitRatio, LRAP, MRR]
     metric_dict = {m.name.upper(): m for m in metric_list}
 
     def __init__(self, metrics):

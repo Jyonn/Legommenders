@@ -3,9 +3,10 @@ import random
 from typing import cast
 
 import pandas as pd
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer, Vocab
+from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer, BaseTokenizer
 from unitok.tokenizer.glove_tokenizer import GloVeTokenizer
 
+from embedder.glove_embedder import GloVeEmbedder
 from processor.base_processor import BaseProcessor, Interactions
 from utils.config_init import ModelInit
 
@@ -20,39 +21,25 @@ class MINDProcessor(BaseProcessor):
     REQUIRE_STRINGIFY = False
 
     @property
-    def default_attrs(self):
-        return ['title', 'abstract', 'category', 'subcategory']
+    def attrs(self) -> dict:
+        return dict(
+            title=50,
+            abstract=200,
+            category=0,
+            subcategory=0,
+        )
 
     def config_item_tokenization(self):
         bert_tokenizer = BertTokenizer(vocab='bert')
         llama1_tokenizer = TransformersTokenizer(vocab='llama1', key=ModelInit.get('llama1'))
+        glove_tokenizer = GloVeTokenizer(vocab=GloVeEmbedder.get_glove_vocab())
 
-        self.item.add_job(tokenizer=bert_tokenizer, column='title', name='title@bert', truncate=50)
-        self.item.add_job(tokenizer=bert_tokenizer, column='abstract', name='abstract@bert', truncate=200)
-        self.item.add_job(tokenizer=bert_tokenizer, column='category', name='category@bert', truncate=0)
-        self.item.add_job(tokenizer=bert_tokenizer, column='subcategory', name='subcategory@bert', truncate=0)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='title', name='title@llama1', truncate=50)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='abstract', name='abstract@llama1', truncate=200)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='category', name='category@llama1', truncate=0)
-        self.item.add_job(tokenizer=llama1_tokenizer, column='subcategory', name='subcategory@llama1', truncate=0)
+        self.add_item_tokenizer(bert_tokenizer)
+        self.add_item_tokenizer(llama1_tokenizer)
+        self.add_item_tokenizer(glove_tokenizer)
+
         self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
         self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
-
-        self.item.add_job(tokenizer=bert_tokenizer, column='prompt', name='prompt@bert')
-        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_title', name='prompt_title@bert')
-        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_abstract', name='prompt_abstract@bert')
-        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_category', name='prompt_category@bert')
-        self.item.add_job(tokenizer=bert_tokenizer, column='prompt_subcategory', name='prompt_subcategory@bert')
-
-        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt', name='prompt@llama1')
-        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_title', name='prompt_title@llama1')
-        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_abstract', name='prompt_abstract@llama1')
-        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_category', name='prompt_category@llama1')
-        self.item.add_job(tokenizer=llama1_tokenizer, column='prompt_subcategory', name='prompt_subcategory@llama1')
-
-
-
-
 
     def config_user_tokenization(self):
         self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=100)
@@ -121,31 +108,6 @@ class MINDProcessor(BaseProcessor):
     def load_interactions(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         train_df = self._load_interactions(os.path.join(self.data_dir, 'train', 'behaviors.tsv'))
         test_df = self._load_interactions(os.path.join(self.data_dir, 'dev', 'behaviors.tsv'))
-
-        # inter_df = pd.concat([train_df, test_df], ignore_index=True)
-        #
-        # # group the entire interactions by UID_COL, for each user,
-        # # select 10% interactions as valid_df and another 10% interactions as test_df
-        # # make sure that both valid and test data should have both positive and negative samples
-        #
-        # groups = inter_df.groupby(self.UID_COL)
-        # valid_df = []
-        # test_df = []
-        #
-        # for _, group in groups:
-        #     # if less than 2 negative samples or 2 positive samples, skip this group
-        #     pos_group = group[group[self.LBL_COL] == 1]
-        #     neg_group = group[group[self.LBL_COL] == 0]
-        #     if len(pos_group) == 0 or len(neg_group) == 0:
-        #         continue
-        #     valid_pos = pos_group.sample(frac=0.1)
-        #     valid_neg = neg_group.sample(frac=0.1)
-        #     valid_df.append(valid_pos)
-        #     valid_df.append(valid_neg)
-        #     test_pos = pos_group.drop(valid_pos.index)
-        #     test_neg = neg_group.drop(valid_neg.index)
-        #     test_df.append(test_pos)
-        #     test_df.append(test_neg)
 
         # group train_df by UID_COL, select 10% users as valid_df
         users = list(train_df[self.UID_COL].unique())

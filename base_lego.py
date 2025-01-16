@@ -22,11 +22,6 @@ from utils.metrics import MetricPool
 from utils.path_hub import PathHub
 
 
-# torch.autograd.set_detect_anomaly(True)
-# torch.backends.cuda.matmul.allow_tf32 = True
-# torch.backends.cudnn.allow_tf32 = True
-
-
 class BaseLego:
     def __init__(self, config):
         self.config = config

@@ -52,3 +52,11 @@ class GloVeEmbedder(BaseEmbedder):
             f"along with the vocabulary file {vocab.filepath(self.FILE_DIR)}")
 
         return nn.Embedding.from_pretrained(embeddings, freeze=True)
+
+    @classmethod
+    def get_glove_vocab(cls):
+        vocab = Vocab(name='glove')
+        if not os.path.exists(vocab.filepath(cls.FILE_DIR)):
+            raise FileNotFoundError(f"GloVe vocabulary not found in {cls.FILE_DIR}, "
+                                    f"please run `python embedder.py --model glove` to generate it first.")
+        return vocab.load(cls.FILE_DIR)

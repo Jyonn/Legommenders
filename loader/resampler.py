@@ -24,7 +24,6 @@ class Resampler:
         self.column_map = self.lego_config.column_map
         self.history_col = self.column_map.history_col
         self.item_col = self.column_map.item_col
-        self.click_col = self.column_map.label_col
         self.user_col = self.column_map.user_col
         self.neg_col = self.column_map.neg_col
         self.mask_col = self.column_map.mask_col

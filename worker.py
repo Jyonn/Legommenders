@@ -24,97 +24,128 @@ In the stdout of the trainer, first several lines will indicate the training sig
 import sys
 import time
 import os
-import uuid
-from subprocess import Popen, PIPE
-
+from subprocess import Popen
 from pigmento import pnt
 
+from trainer import get_configurations
+from utils import function
 from utils.config_init import AuthInit
+from utils.path_hub import PathHub
 from utils.server import Server
 
 
 class Worker:
-    def __init__(self):
-        self.command = self.get_trainer_command()
-        os.makedirs("log", exist_ok=True)
+    def __init__(self, config):
+        self.config = config
+        self.data, self.model, self.embed, self.exp = \
+            config.data, config.model, config.embed, config.exp
+        self.signature = function.get_signature(
+            data=self.data,
+            model=self.model,
+            embed=self.embed,
+            exp=self.exp
+        )
 
-        self.log_file = os.path.join("log", f"log_{uuid.uuid4().hex}.log")
-        self.pid_file = "worker.pid"
+        self.path_hub = PathHub(
+            data_name=self.data.name,
+            model_name=self.model.name,
+            signature=self.signature
+        )
+
+        self.metric = self.exp.store.metric
+
+        self.command_args = self.get_trainer_command_args()
+
+        os.makedirs("log", exist_ok=True)
+        self.log_file = os.path.join("log", f"{self.signature}.log")
 
     @staticmethod
-    def get_trainer_command():
+    def get_trainer_command_args():
+        """
+        Convert user arguments into a list:
+        sys.argv[0] is worker.py, so skip it,
+        then combine the rest into a trainer command.
+        """
         argv = sys.argv
         assert argv[0] == 'worker.py'
-        argv = ' '.join(argv[1:])
-        return f'python trainer.py {argv}'
+        # e.g., if user runs:
+        #   python worker.py --data config/data/mind.yaml --model config/model/naml.yaml
+        # then argv is ["worker.py", "--data", "config/data/mind.yaml", "--model", "config/model/naml.yaml"]
+        trainer_argv = argv[1:]
+        # We build a list: ["python", "trainer.py", "--data", "config/data/mind.yaml", "--model", ...]
+        return ["python", "trainer.py"] + trainer_argv
 
     def run(self):
-        """Run the trainer using nohup and save to a log file."""
-        command = f"nohup {self.command} > {self.log_file} 2>&1 &"
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        """Run the trainer in the background with Python as the parent."""
+        with open(self.log_file, "wb") as lf:
+            # Use a list of args instead of shell=True to avoid an extra shell.
+            process = Popen(
+                self.command_args,
+                stdout=lf,     # send stdout to log file
+                stderr=lf,     # send stderr to log file
+                preexec_fn=os.setpgrp  # detach from controlling terminal if needed
+            )
         pid = process.pid
 
-        # Save the PID for monitoring
-        with open(self.pid_file, "w") as f:
-            f.write(str(pid))
-        pnt(f"Worker started with PID: {pid}. Log file: {self.log_file}")
-        return pid
+        pnt(f"Worker started with PID: {pid}. Writing logs to: {self.log_file}")
+        return process
 
-    def is_process_running(self):
-        """Check if the process is still running using the saved PID."""
-        try:
-            with open(self.pid_file, "r") as f:
-                pid = int(f.read().strip())
-            # Check if the process is running
-            os.kill(pid, 0)
-            return True
-        except (ValueError, ProcessLookupError):
-            return False
+    def monitor(self, process):
+        """Monitor the process until completion."""
+        while True:
+            # poll() returns None if process is still running
+            if process.poll() is None:
+                pnt("Training in progress. Checking again in 1 minute...")
+                time.sleep(60)
+            else:
+                pnt(f"Training process (PID {process.pid}) has finished.")
+                break
 
-    def monitor_and_upload(self):
-        """Monitor the process until completion and upload results."""
-        while self.is_process_running():
-            pnt("Training in progress. Checking again in 1 minute...")
-            time.sleep(60)  # Check every minute
+    def read(self, path):
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return f.read()
+        return {'error': 'file not found'}
 
-        pnt("Training completed. Parsing log and uploading results.")
-        base_dir, signature, log = self.parse_log()
+    def upload(self):
+        """Parse log for BASE DIR and SIGNATURE, then upload results."""
+        pnt("Parsing log and uploading results.")
+        log_content = self.parse_log()
 
-        # Upload results after training is complete
         server = Server(
             auth=AuthInit.get('auth'),
             uri=AuthInit.get('uri'),
         )
-        with open(self.log_file, "r") as f:
-            server.post(
-                signature=signature,
-                command=self.command,
-                log=log,
-                base_dir=base_dir
-            )
+        server.post(
+            signature=self.signature,
+            command=" ".join(self.command_args),  # store the command
+            log=log_content,
+            config=self.read(self.path_hub.cfg_path),
+            performance=self.read(self.path_hub.result_path),
+        )
         pnt("Results uploaded successfully.")
 
     def parse_log(self):
         """Parse the log file to retrieve the base saving directory and signature."""
-        base_dir = None
-        signature = None
+        # Read the entire log file as binary
+        with open(self.log_file, 'rb') as f:
+            log_bin = f.read()
 
-        with open(self.log_file, "r") as file:
-            log = file.read()
+        # Clean up progress lines: if there's a \r in a line, keep only what's after the last \r
+        lines = log_bin.split(b'\n')
+        cleaned_lines = []
+        for line in lines:
+            if b'\r' in line:
+                # Keep content after the last carriage return
+                line = line[line.rfind(b'\r') + 1:]
+            cleaned_lines.append(line)
 
-        log = log.split('\n')
-        log = [line for line in log if '\r' not in line]
+        log_bin = b'\n'.join(cleaned_lines)
+        log_str = log_bin.decode('utf-8', errors='replace')
 
-        for line in log:
-            if 'BASE DIR' in line:
-                base_dir = line.split('BASE DIR: ')[1].strip()
-            if 'SIGNATURE' in line:
-                signature = line.split('SIGNATURE: ')[1].strip()
-
-        return base_dir, signature, '\n'.join(log)
+        return log_str
 
 
 if __name__ == "__main__":
-    worker = Worker()
-    worker.run()
-    worker.monitor_and_upload()
+    worker = Worker(config=get_configurations())
+    worker.upload()
