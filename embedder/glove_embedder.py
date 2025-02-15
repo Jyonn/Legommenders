@@ -58,5 +58,5 @@ class GloVeEmbedder(BaseEmbedder):
         vocab = Vocab(name='glove')
         if not os.path.exists(vocab.filepath(cls.FILE_DIR)):
             raise FileNotFoundError(f"GloVe vocabulary not found in {cls.FILE_DIR}, "
-                                    f"please run `python embedder.py --model glove` to generate it first.")
+                                    f"please run `python embed.py --model glove` to generate it first.")
         return vocab.load(cls.FILE_DIR)

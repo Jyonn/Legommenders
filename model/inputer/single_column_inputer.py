@@ -27,7 +27,7 @@ class SingleColumnInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        embedding = self.embedding_hub(self.vocab)(batched_samples.to(Env.device))
+        embedding = self.embedding_hub(self.vocab, col_name=self.column)(batched_samples.to(Env.device))
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):

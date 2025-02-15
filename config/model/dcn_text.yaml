@@ -6,7 +6,7 @@ meta:
 config:
   use_neg_sampling: false
   use_item_content: true
-  hidden_size: 64
+  hidden_size: ${hidden_size}$
   item_config:
     flatten: false
     max_pooling: false

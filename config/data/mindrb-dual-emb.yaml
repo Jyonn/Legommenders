@@ -1,0 +1,23 @@
+column_map:
+  group_col: user_id
+  history_col: history
+  item_col: item_id
+  label_col: click
+  neg_col: neg
+  user_col: user_id
+inter:
+  dev: data/recbench/mindrb/valid
+  filters:
+    history:
+    - 'lambda x: x'
+  test: data/recbench/mindrb/test
+  train: data/recbench/mindrb/train
+item:
+  inputs:
+  - item_id
+  - item_id -> item_embeds
+  ut: data/recbench/mindrb/items
+name: mindrb
+user:
+  truncate: 50
+  ut: data/recbench/mindrb/users

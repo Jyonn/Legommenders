@@ -41,9 +41,6 @@ class MINDProcessor(BaseProcessor):
         self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
         self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
 
-    def config_user_tokenization(self):
-        self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=100)
-
     def _load_items(self, path: str) -> pd.DataFrame:
         return pd.read_csv(
             filepath_or_buffer=cast(str, path),

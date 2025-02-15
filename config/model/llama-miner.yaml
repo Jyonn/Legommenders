@@ -1,6 +1,6 @@
-name: LLAMA-MINER
+name: LLAMA${llama}-MINER
 meta:
-  item: Llama
+  item: Llama${llama}
   user: PolyAttention
   predictor: Dot
 config:

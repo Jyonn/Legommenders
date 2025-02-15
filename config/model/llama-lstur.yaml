@@ -1,6 +1,6 @@
-name: LLAMA-LSTUR
+name: LLAMA${llama}-LSTUR
 meta:
-  item: Llama
+  item: Llama${llama}
   user: GRU
   predictor: Dot
 config:

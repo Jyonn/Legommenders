@@ -34,14 +34,15 @@ class BaseProcessor(abc.ABC):
     UID_COL: str
     HIS_COL: str
     LBL_COL: str
+    NEG_COL: str
 
     IID_JOB = 'item_id'
     UID_JOB = 'user_id'
     HIS_JOB = 'history'
     LBL_JOB = 'click'
 
-    MAX_HISTORY_PER_USER: int = 100
     REQUIRE_STRINGIFY: bool
+    NEG_TRUNCATE: int
 
     BASE_STORE_DIR = 'data'
 
@@ -84,9 +85,6 @@ class BaseProcessor(abc.ABC):
     def config_item_tokenization(self):
         pass
 
-    def config_user_tokenization(self):
-        pass
-
     def load_items(self) -> pd.DataFrame:
         raise NotImplemented
 
@@ -117,15 +115,6 @@ class BaseProcessor(abc.ABC):
             return (self._stringify(df) for df in dfs)
         return wrapper
 
-    def after_load_items(self):
-        pass
-
-    def after_load_users(self):
-        pass
-
-    def after_load_interactions(self):
-        pass
-
     def load(self, regenerate=False):
         pnt(f'load {self.get_name()} processor')
 
@@ -144,18 +133,21 @@ class BaseProcessor(abc.ABC):
         self.item_df = self.load_items()
         pnt(f'loaded {len(self.item_df)} items')
 
-        self.after_load_items()
-
         self.user_df = self.load_users()
         pnt(f'loaded {len(self.user_df)} users')
-
-        self.after_load_users()
 
         self.interactions = self.load_interactions()
         for mode in Interactions.modes:
             pnt(f'loaded {len(self.interactions[mode])} {mode.name} interactions')
 
-        self.after_load_interactions()
+        if self.NEG_COL:  # add negative samples to user_df
+            df = pd.concat([self.interactions.train_df, self.interactions.valid_df])
+            neg_df = df[df[self.LBL_COL] == 0]
+            neg_df = neg_df.groupby(self.UID_COL)[self.IID_COL].apply(list).reset_index()
+            neg_df.columns = [self.UID_COL, self.NEG_COL]
+            self.user_df = self.user_df.merge(neg_df, on=self.UID_COL, how='left')
+            self.user_df[self.NEG_COL] = self.user_df[self.NEG_COL].apply(
+                lambda x: x if isinstance(x, list) else [])
 
         user_vocab = Vocab(name=self.UID_COL)
         user_vocab.extend(list(self.user_df[self.UID_COL]))
@@ -195,12 +187,13 @@ class BaseProcessor(abc.ABC):
             pnt(f'tokenized {len(self.item)} items')
 
         with UniTok() as self.user:
-            VocabularyHub.add(item_vocab.name, item_vocab)
+            VocabularyHub.add(item_vocab)
 
             user_vocab = Vocab(name=self.UID_COL)
             self.user.add_job(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_JOB, key=True)
             self.user.add_job(tokenizer=EntitiesTokenizer(vocab=item_vocab), column=self.HIS_COL, name=self.HIS_JOB, truncate=0)
-            self.config_user_tokenization()
+            if self.NEG_COL:
+                self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=self.NEG_TRUNCATE)
             self.user.tokenize(self.user_df).save(self.user_save_dir)
             pnt(f'tokenized {len(self.user)} users')
 

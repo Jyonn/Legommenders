@@ -57,7 +57,7 @@ class SimpleInputer(BaseInputer):
             mask = attention_mask[col].to(Env.device)
             seq *= mask
 
-            embedding = self.embedding_hub(vocab)(seq)  # batch_size, content_len, embedding_dim
+            embedding = self.embedding_hub(vocab, col_name=col)(seq)  # batch_size, content_len, embedding_dim
             mask = mask.unsqueeze(-1)  # batch_size, (content_len,) 1
 
             embedding *= mask  # batch_size, content_len, embedding_dim

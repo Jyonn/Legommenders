@@ -29,7 +29,8 @@ class Legommender(nn.Module):
 
         self.embedding_hub = self.config.embedding_hub
         # do not delete this line, the trainable parameters will be displayed
-        self.embedding_table = self.embedding_hub.table
+        self.embedding_vocab_table = self.embedding_hub.vocab_table
+        self.embedding_job_table = self.embedding_hub.job_table
 
         self.user_hub = self.config.user_ut
         self.item_hub = self.config.item_ut
@@ -128,7 +129,7 @@ class Legommender(nn.Module):
             item_embeddings = self.get_item_content(batch, self.cm.item_col)
         else:
             vocab = self.config.user_ut.meta.jobs[self.cm.history_col].tokenizer.vocab.name
-            item_embeddings = self.embedding_hub(vocab)(batch[self.cm.item_col].to(Env.device))
+            item_embeddings = self.embedding_hub(vocab, col_name=self.cm.history_col)(batch[self.cm.item_col].to(Env.device))
         # print(item_embeddings.shape)
 
         user_embeddings = self.get_user_content(batch)

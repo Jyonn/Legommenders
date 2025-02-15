@@ -1,8 +1,8 @@
-from typing import Dict, cast, Iterable, Optional
+from typing import Dict, cast, Iterable
 
 import numpy as np
 import torch
-from unitok import Vocab
+from unitok import Vocab, Job
 from pigmento import pnt
 from torch import nn
 
@@ -65,24 +65,33 @@ class EmbeddingHub:
         self.transformation_dropout = transformation_dropout
 
         self._vocab_size = dict()
-        self.table = nn.ModuleDict()
+        self.vocab_table = nn.ModuleDict()
+        self.job_table = nn.ModuleDict()
 
-        self._pretrained_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
+        self._pretrained_vocab_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
+        self._pretrained_job_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
 
     def load_pretrained_embedding(
             self,
-            vocab_name,
             path,
+            vocab_name=None,
+            col_name=None,
             transformation=DEFAULT,
             transformation_dropout=None,
             frozen=True,
     ):
+        if vocab_name is None and col_name is None:
+            raise ValueError('vocab_name or col_name must be specified')
+        if vocab_name is not None and col_name is not None:
+            raise ValueError('only one of vocab_name and col_name can be specified')
+        name = cast(str, vocab_name or col_name)
+
         embedding = np.load(path)
         embedding = torch.tensor(embedding, dtype=torch.float32)
         embedding = nn.Embedding.from_pretrained(embedding)
-        pnt(f'load pretrained embedding {vocab_name} of {embedding.weight.shape}')
+        pnt(f'load pretrained embedding {name} of {embedding.weight.shape}')
 
-        if vocab_name == '<vocab_name>':
+        if name == '<vocab_name>':
             raise ValueError(f'please specify the vocab name for the pretrained embedding in the embed config')
 
         if transformation not in self.pretrained_types:
@@ -96,46 +105,67 @@ class EmbeddingHub:
         pnt(f'pretrained transformation type: {transformation}')
         pnt(f'pretrained transformation dropout: {transformation_dropout}')
 
-        self._pretrained_embeddings[vocab_name] = PretrainedEmbedding(
+        if vocab_name is not None:
+            target = self._pretrained_vocab_embeddings
+        else:
+            target = self._pretrained_job_embeddings
+        target[name] = PretrainedEmbedding(
             embedder=embedding,
             transformation=transformation,
             transformation_dropout=transformation_dropout,
             frozen=frozen,
         )
 
-    def build_vocab_embedding(self, vocab: Vocab):
-        if vocab.name in self.table:
-            return
-
-        if vocab.name not in self._pretrained_embeddings:
-            pnt(f'create vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
-            self.table.add_module(vocab.name, nn.Embedding(
-                num_embeddings=vocab.size,
-                embedding_dim=self.embedding_dim
-            ).to(Env.device))
-            return
-
-        pe = self._pretrained_embeddings[vocab.name]
-
+    def _process_pretrained_embedding(self, name, size, pe: PretrainedEmbedding):
         frozen_str = "frozen" if pe.frozen else "unfrozen"
-        pnt(f'load {frozen_str} vocab: {vocab.name} {pe.embedder.weight.shape}')
+        pnt(f'load {frozen_str} vocab: {name} {pe.embedder.weight.shape}')
 
-        if int(pe.embedder.weight.shape[0]) != vocab.size:
-            raise ValueError(f'{vocab.name} not meet the expected vocab size {vocab.size}')
+        if int(pe.embedder.weight.shape[0]) != size:
+            raise ValueError(f'{name} not meet the expected vocab size {size}')
 
         pe.embedder.weight.requires_grad = not pe.frozen
 
         embedding_size = int(pe.embedder.weight.data.shape[1])
 
         if embedding_size != self.embedding_dim or self.transformation == self.LINEAR:
-            pnt(f'transform {vocab.name} embedding from size {embedding_size} to {self.embedding_dim}')
+            pnt(f'transform {name} embedding from size {embedding_size} to {self.embedding_dim}')
             pe.embedder = Transformation(
                 embedding=cast(nn.Embedding, pe.embedder),
                 to_dimension=self.embedding_dim,
                 transformation_dropout=pe.transformation_dropout,
             )
 
-        self.table.add_module(vocab.name, pe.embedder.to(Env.device))
+    def build_job_embedding(self, job: Job):
+        if job.name in self.job_table:
+            return
+
+        if job.name not in self._pretrained_job_embeddings:
+            return
+
+        pnt(f'--- build pretrained embedding for job {job.name} ({job.tokenizer.vocab.size}, {self.embedding_dim})')
+
+        pe = self._pretrained_job_embeddings[job.name]
+        self._process_pretrained_embedding(job.name, job.tokenizer.vocab.size, pe)
+
+        self.job_table.add_module(job.name, pe.embedder.to(Env.device))
+
+    def build_vocab_embedding(self, vocab: Vocab):
+        if vocab.name in self.vocab_table:
+            return
+
+        if vocab.name not in self._pretrained_vocab_embeddings:
+            pnt(f'--- create vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
+            self.vocab_table.add_module(vocab.name, nn.Embedding(
+                num_embeddings=vocab.size,
+                embedding_dim=self.embedding_dim
+            ).to(Env.device))
+            return
+
+        pnt(f'--- build pretrained embedding for vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
+        pe = self._pretrained_vocab_embeddings[vocab.name]
+        self._process_pretrained_embedding(vocab.name, vocab.size, pe)
+
+        self.vocab_table.add_module(vocab.name, pe.embedder.to(Env.device))
 
     def register_vocab(self, vocab: Vocab):
         if vocab.name in self._vocab_size:
@@ -147,27 +177,13 @@ class EmbeddingHub:
 
     def register_ut(self, ut: LegoUT, used_cols: Iterable):
         for col in used_cols:
-            vocab = ut.meta.jobs[col].tokenizer.vocab
+            job = ut.meta.jobs[col]
+            self.build_job_embedding(job)
+
+            vocab = job.tokenizer.vocab
             self.register_vocab(vocab)
 
-    def __call__(self, vocab_name):
-        return self.table[vocab_name]
-
-    # def register_depot(self, nrd: DataHub, skip_cols=None):
-    #     depot, order = nrd.ut, nrd.input_cols
-    #     skip_cols = skip_cols or []
-    #     skip_vocabs = [depot.meta.jobs[col].tokenizer.vocab.name for col in skip_cols]
-    #
-    #     for col in order:
-    #         vocab = depot.meta.jobs[col].tokenizer.vocab
-    #
-    #         if vocab.name in skip_vocabs:
-    #             pnt(f'skip col {col}')
-    #             continue
-    #
-    #         pnt(f'build mapping {col} -> {vocab.name}')
-    #         if vocab.name in self._vocab_size:
-    #             assert self._vocab_size[vocab.name] == vocab.size, f'conflict vocab {vocab.key}'
-    #             continue
-    #         self._vocab_size[vocab.name] = vocab.size
-    #         self.build_vocab_embedding(vocab)
+    def __call__(self, vocab_name, col_name=None):
+        if col_name in self.job_table:
+            return self.job_table[col_name]
+        return self.vocab_table[vocab_name]

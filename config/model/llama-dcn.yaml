@@ -1,10 +1,10 @@
-name: LLAMA${llama}-NRMS
+name: LLAMA${llama}-DCN
 meta:
   item: Llama${llama}
-  user: Attention
-  predictor: Dot
+  user: Ada
+  predictor: DCN
 config:
-  use_neg_sampling: true
+  use_neg_sampling: false
   use_item_content: true
   item_page_size: ${item_page_size:128}$
   item_hidden_size: 4096
@@ -19,7 +19,13 @@ config:
       use_cls_token: false
       use_sep_token: false
   user_config:
-    num_attention_heads: ${num_user_heads:8}$
+    num_attention_heads: 16
     inputer_config:
       use_cls_token: false
       use_sep_token: false
+  predictor_config:
+    dnn_hidden_units: [ 1000, 1000, 1000 ]
+    dnn_activations: ReLU
+    dnn_dropout: 0.1
+    dnn_batch_norm: false
+    cross_num: ${cross_num:3}$

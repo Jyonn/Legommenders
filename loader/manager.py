@@ -73,6 +73,18 @@ class Manager:
                 col, truncate = list(value.items())[0]
             else:
                 col, truncate = value, None
+
+            with ut:
+                current_col = None
+                if '->' in col:
+                    current_col, col = list(map(str.strip, col.split('->')))
+                    ut.replicate(current_col, col, lazy=False)
+                elif '-->' in col:
+                    current_col, col = list(map(str.strip, col.split('-->')))
+                    ut.replicate(current_col, col, lazy=True)
+                if current_col is not None:
+                    pnt(f'Replicated {current_col} to {col}')
+
             selected_attrs[col] = truncate
             input_cols.append(col)
 
