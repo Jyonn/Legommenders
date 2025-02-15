@@ -18,6 +18,7 @@ class MINDProcessor(BaseProcessor):
     LBL_COL = 'click'
     NEG_COL = 'neg'
 
+    NEG_TRUNCATE = 100
     REQUIRE_STRINGIFY = False
 
     @property
