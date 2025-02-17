@@ -1,25 +1,5 @@
 name: OPT-NAML
-meta:
-  item: OptBase
-  user: Ada
-  predictor: Dot
-config:
-  use_neg_sampling: true
-  use_item_content: true
-  use_fast_eval: ${fast_eval:true}$
-  item_page_size: ${item_page_size:128}$
-  item_hidden_size: 512
-  hidden_size: ${hidden_size}$
-  neg_count: 4
-  item_config:
-    tune_from: ${tune_from:0}$
-    use_lora: ${use_lora:false}$
-    lora_r: ${lora_r:null}$
-    lora_alpha: ${lora_alpha:null}$
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
-  user_config:
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
+$$import:
+  - common/operators/item-opt.yaml
+  - common/operators/user-ada.yaml
+  - common/predictors/dot.yaml

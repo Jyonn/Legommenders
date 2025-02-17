@@ -1,14 +1,7 @@
+$$import:
+  - common/operators/user-ada.yaml
+  - common/predictors/dot.yaml
 name: NAML_id
-meta:
-  user: Ada
-  predictor: Dot
 config:
-  use_neg_sampling: true
   use_item_content: false
   hidden_size: ${hidden_size}$
-  item_hidden_size: ${item_hidden_size}$
-  neg_count: 4
-  user_config:
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false

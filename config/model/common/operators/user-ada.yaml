@@ -1,0 +1,8 @@
+meta:
+  user: Ada
+config:
+  user_config:
+    use_fast_eval: ${fast_eval:true}$
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

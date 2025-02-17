@@ -5,6 +5,7 @@ import os
 import random
 import string
 import sys
+from typing import Optional
 
 import numpy as np
 import torch
@@ -32,7 +33,7 @@ def argparse():
     arguments = sys.argv[1:]
     kwargs = {}
 
-    key = None
+    key: Optional[str] = None
     for arg in arguments:
         if key is not None:
             kwargs[key] = arg
@@ -74,3 +75,15 @@ def get_signature(data, embed, model, exp):
 def get_random_string(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
+
+def package_require(name, version=None):
+    import pkg_resources
+
+    try:
+        installed_version = pkg_resources.get_distribution(name).version
+    except pkg_resources.DistributionNotFound:
+        raise ImportError(f"Package {name} not found. Please use 'pip install {name}' to install.")
+
+    if version is not None:
+        if installed_version < version:
+            raise ImportError(f"Package {name} version is {installed_version}, but require version {version}. Please use 'pip install {name} -U' to upgrade.")

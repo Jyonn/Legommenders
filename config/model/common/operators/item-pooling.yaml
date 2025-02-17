@@ -1,0 +1,10 @@
+meta:
+  item: Pooling
+config:
+  use_item_content: true
+  use_fast_eval: ${fast_eval:true}$
+  hidden_size: ${hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
+  item_config:
+    dropout: 0.1
+    kernel_size: 3

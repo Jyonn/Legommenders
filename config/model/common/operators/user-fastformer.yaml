@@ -1,0 +1,9 @@
+meta:
+  user: Fastformer
+config:
+  user_config:
+    num_attention_heads: 16
+    num_hidden_layers: 1
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

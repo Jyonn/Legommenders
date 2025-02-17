@@ -3,10 +3,10 @@ smartdict
 pandas
 scikit-learn
 termcolor
-refconfig
+refconfig>=0.1.0
 oba
 numpy
-unitok
+unitok>=4.0.0
 transformers
 tqdm
 peft

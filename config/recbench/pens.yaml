@@ -1,0 +1,8 @@
+$$import: base.yaml
+item:
+  inputs:
+  - title@${lm}: 30
+  - body@${lm}: 50
+  - category@${lm}
+  - topic@${lm}
+name: pensrb

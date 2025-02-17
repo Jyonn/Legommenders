@@ -1,0 +1,8 @@
+$$import: base.yaml
+item:
+  inputs:
+  - title@${lm}: 30
+  - abs@${lm}: 50
+  - cat@${lm}
+  - subcat@${lm}
+name: mindrb

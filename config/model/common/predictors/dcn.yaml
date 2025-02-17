@@ -1,0 +1,10 @@
+meta:
+  predictor: DCN
+config:
+  use_neg_sampling: false
+  predictor_config:
+    dnn_hidden_units: [ 1000, 1000, 1000 ]
+    dnn_activations: ReLU
+    dnn_dropout: 0.1
+    dnn_batch_norm: false
+    cross_num: ${cross_num:3}$

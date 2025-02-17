@@ -1,0 +1,9 @@
+meta:
+  user: PolyAttention
+config:
+  user_config:
+    num_context_codes: ${num_context_codes:32}$
+    context_code_dim: ${context_code_dim:256}$
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

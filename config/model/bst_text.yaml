@@ -1,20 +1,5 @@
-name: BST
-meta:
-  item: Pooling
-  user: Transformer
-  predictor: Dot
-config:
-  use_neg_sampling: true
-  use_item_content: true
-  hidden_size: ${hidden_size}$
-  item_hidden_size: ${item_hidden_size}$
-  neg_count: 4
-  item_config:
-    dropout: 0.1
-    kernel_size: 3
-  user_config:
-    num_attention_heads: 4
-    num_hidden_layers: 3
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
+$$import:
+  - common/operators/item-pooling.yaml
+  - common/operators/user-transformer.yaml
+  - common/predictors/dot.yaml
+name: BST_text

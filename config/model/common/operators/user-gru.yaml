@@ -1,0 +1,7 @@
+meta:
+  user: GRU
+config:
+  user_config:
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

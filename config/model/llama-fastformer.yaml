@@ -1,26 +1,5 @@
+$$import:
+  - common/operators/item-llama.yaml
+  - common/operators/user-fastformer.yaml
+  - common/predictors/dot.yaml
 name: LLAMA-Fastformer
-meta:
-  item: Llama
-  user: Fastformer
-  predictor: Dot
-config:
-  use_neg_sampling: true
-  use_item_content: true
-  item_page_size: ${item_page_size:128}$
-  item_hidden_size: 4096
-  hidden_size: ${hidden_size}$
-  neg_count: 4
-  item_config:
-    tune_from: ${tune_from}$
-    use_lora: ${use_lora:false}$
-    lora_r: ${lora_r:null}$
-    lora_alpha: ${lora_alpha:null}$
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
-  user_config:
-    num_attention_heads: ${num_attention_heads:16}$
-    num_hidden_layers: ${num_hidden_layers:1}$
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false

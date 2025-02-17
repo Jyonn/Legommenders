@@ -7,7 +7,11 @@ import refconfig
 from oba import Obj
 from refconfig import RefConfig
 
-from utils.function import argparse
+from utils.function import argparse, package_require
+
+package_require('refconfig', '0.1.0')
+package_require('smartdict', '0.2.1')
+package_require('unitok', '4.3.6')
 
 
 class CommandInit:

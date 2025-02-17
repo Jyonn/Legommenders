@@ -1,31 +1,8 @@
+$$import:
+  - common/operators/item-llama.yaml
+  - common/operators/user-ada.yaml
+  - common/predictors/dcn.yaml
 name: LLAMA${llama}-DCN
-meta:
-  item: Llama${llama}
-  user: Ada
-  predictor: DCN
 config:
   use_neg_sampling: false
-  use_item_content: true
-  item_page_size: ${item_page_size:128}$
-  item_hidden_size: 4096
-  hidden_size: ${hidden_size}$
   neg_count: 4
-  item_config:
-    tune_from: ${tune_from}$
-    use_lora: ${use_lora:false}$
-    lora_r: ${lora_r:null}$
-    lora_alpha: ${lora_alpha:null}$
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
-  user_config:
-    num_attention_heads: 16
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
-  predictor_config:
-    dnn_hidden_units: [ 1000, 1000, 1000 ]
-    dnn_activations: ReLU
-    dnn_dropout: 0.1
-    dnn_batch_norm: false
-    cross_num: ${cross_num:3}$

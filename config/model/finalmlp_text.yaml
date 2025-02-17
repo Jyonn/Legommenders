@@ -1,14 +1,6 @@
+$$import:
+  - common/operator/item-pooling.yaml
+  - common/operator/user-pooling.yaml
 name: FinalMLP_text
 meta:
-  item: Pooling
-  user: Pooling
   predictor: FinalMLP
-config:
-  use_item_content: true
-  hidden_size: 64
-  item_config:
-    flatten: false
-    max_pooling: false
-  user_config:
-    flatten: false
-    max_pooling: false

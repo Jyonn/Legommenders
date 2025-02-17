@@ -1,15 +1,7 @@
+$$import:
+  - common/operators/user-attention.yaml
+  - common/predictors/dot.yaml
 name: NRMS_id
-meta:
-  user: Attention
-  predictor: Dot
 config:
-  use_neg_sampling: true
   use_item_content: false
   hidden_size: ${hidden_size}$
-  item_hidden_size: ${item_hidden_size}$
-  neg_count: 4
-  user_config:
-    num_attention_heads: 16
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false

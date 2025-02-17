@@ -1,0 +1,6 @@
+$$import: base.yaml
+item:
+  inputs:
+  - track_name@${lm}: 50
+  - artist_name@${lm}: 20
+name: lastfmrb

@@ -1,0 +1,8 @@
+meta:
+  user: Attention
+config:
+  user_config:
+    num_attention_heads: ${num_user_heads:8}$
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

@@ -1,20 +1,14 @@
+$$import:
+  - common/operators/user-gru.yaml
+  - common/predictors/dot.yaml
 name: LSTUR
 meta:
   item: CNNCat
-  user: GRU
-  predictor: Dot
 config:
-  use_neg_sampling: true
+  use_fast_eval: ${fast_eval:true}$
   use_item_content: true
   hidden_size: ${hidden_size}$
   item_hidden_size: ${item_hidden_size}$
-  neg_count: 4
   item_config:
     dropout: 0.1
     kernel_size: 3
-  user_config:
-    columns: ${data.item.order}$
-    use_item_content: ${model.config.use_item_content}$
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false

@@ -1,0 +1,6 @@
+meta:
+  user: Pooling
+config:
+  user_config:
+    flatten: false
+    max_pooling: false

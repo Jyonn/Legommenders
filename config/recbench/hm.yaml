@@ -1,0 +1,5 @@
+$$import: base.yaml
+item:
+  inputs:
+  - detail_desc@${lm}: 50
+name: hmrb

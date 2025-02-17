@@ -1,0 +1,7 @@
+$$import: base.yaml
+item:
+  inputs:
+  - title@${lm}: 30
+  - subtitle@${lm}: 50
+  - category@${lm}
+name: ebnerdrb

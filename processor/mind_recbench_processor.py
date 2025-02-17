@@ -12,4 +12,4 @@ class MINDRBProcessor(RecBenchProcessor):
 
     @property
     def attrs(self) -> dict:
-        return dict(title=0)
+        return dict(title=0, cat=0, subcat=0, abs=0)

@@ -1,0 +1,5 @@
+meta:
+  predictor: Dot
+config:
+  use_neg_sampling: true
+  neg_count: 4
