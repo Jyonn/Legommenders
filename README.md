@@ -103,3 +103,11 @@ If you find Legommenders useful in your research, please consider citing our pro
 ## Acknowledgement
 
 We would like to thank Jieming Zhu and his [FuxiCTR](https://github.com/reczoo/FuxiCTR) project for providing multiple useful CTR predictors.
+
+We would like to thank [transformers](https://huggingface.co/transformers/) for providing the pre-trained language models.
+
+We would like to thank [UniTok V4](https://unitok.qijiong.work/) for providing the unified data tokenization service.
+
+We would like to thank [RecBench](https://github.com/RecBench) for providing unified recommendation dataset preprocessing framework.
+
+We would like to thank [Oba](https://pypi.org/project/oba/), [RefConfig](https://pypi.org/project/refconfig/), and [SmartDict](https://pypi.org/project/smartdict/) for providing useful tools for our project.
