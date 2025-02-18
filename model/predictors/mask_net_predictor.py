@@ -1,3 +1,26 @@
+# =========================================================================
+# Copyright (C) 2024. The FuxiCTR Library. All rights reserved.
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modifications for Legommenders Project:
+# The following code has been modified and extended as part of the Legommenders project.
+# Changes were made by Qijiong Liu (2025) to adapt the original implementation for
+# new functionality related to content-based recommender systems.
+#
+# =========================================================================
+
 import torch
 from torch import nn
 
@@ -159,7 +182,7 @@ class MaskNetPredictor(BasePredictor):
     def predict(self, user_embeddings, item_embeddings):
         input_embeddings = torch.cat([user_embeddings, item_embeddings], dim=1)  # [batch_size, 2 * hidden_size]
         if self.emb_norm is not None:
-            feat_list = input_embeddings.chunk(self.num_fields, dim=1)
+            feat_list = input_embeddings.chunk(2, dim=1)
             hidden_states = torch.cat([self.emb_norm[i](feat) for i, feat in enumerate(feat_list)], dim=1)
         else:
             hidden_states = input_embeddings

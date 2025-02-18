@@ -1,0 +1,5 @@
+config:
+  use_neg_sampling: false
+  use_item_content: false
+  hidden_size: ${hidden_size:64}$
+  use_fast_eval: ${fast_eval:true}$

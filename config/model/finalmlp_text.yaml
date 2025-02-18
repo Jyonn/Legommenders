@@ -1,6 +1,4 @@
 $$import:
-  - common/operator/item-pooling.yaml
-  - common/operator/user-pooling.yaml
+  - finalmlp_id.yaml
+  - common/operators/item-pooling.yaml
 name: FinalMLP_text
-meta:
-  predictor: FinalMLP

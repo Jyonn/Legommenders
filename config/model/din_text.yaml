@@ -1,13 +1,4 @@
 $$import:
-  - common/operator/item-pooling.yaml
-  - common/predictor/din.yaml
+  - din_id.yaml
+  - common/operators/item-pooling.yaml
 name: DIN_text
-meta:
-  user: NullConcat
-config:
-  user_config:
-    inputer_config:
-      use_cls_token: false
-      use_sep_token: false
-    flatten: false
-    max_pooling: false

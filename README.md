@@ -78,31 +78,13 @@ More documentations will be available soon.
 
 ## Updates
 
-### Jan. 6, 2025
-
-- Legommenders v2.0 beta is released!
-
-### Dec. 5, 2024
-
-- LSTUR model is now re-added to the Legommenders package, which was not compatible from Jan. 2024.
-- LLMs can be used for item encoder.
-
-### Jan. 23, 2024
-
-- Legommenders partially supports the flatten sequential recommendation model.
-- New models are added, including: MaskNet, GDCN, etc.
-
-### Oct. 16, 2023
-
-- We clean the code and convert names of the item-side parameters. 
-
-### Oct. 5, 2023
-
-- The first recommender system package, Legommenders, with a modular-design is released!
-- Legommenders involves a set of recommender system algorithms, including:
-    - Matching based methods: NAML, NRMS, LSTUR, etc.
-    - Ranking based methods: DCN, DeepFM, PNN, etc.
-
+- **2025-02-18**: Legommenders v2.0, with multiple LLMs support, simplified configuration, more CTR predictors, and recbench-based datasets is released!
+- **2025-01-06**: Legommenders v2.0 beta is released!
+- **2024-12-05**: LSTUR model is now re-added to the Legommenders package, which was not compatible from Jan. 2024.
+- **2024-01-23**: Legommenders partially supports the flatten sequential recommendation model. New models are added, including: MaskNet, GDCN, etc.
+- **2023-10-16**: We clean the code and convert names of the item-side parameters.
+- **2023-10-05**: The first recommender system package, Legommenders, with a modular-design is released!
+- **2022-10-22**: Legommenders project is initiated.
 
 ## Citations
 
@@ -117,3 +99,7 @@ If you find Legommenders useful in your research, please consider citing our pro
   year={2024}
 }
 ```
+
+## Acknowledgement
+
+We would like to thank Jieming Zhu and his [FuxiCTR](https://github.com/reczoo/FuxiCTR) project for providing multiple useful CTR predictors.

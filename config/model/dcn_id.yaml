@@ -1,8 +1,5 @@
 $$import:
+  - common/operators/item-null.yaml
   - common/operators/user-pooling.yaml
   - common/predictors/dcn.yaml
 name: DCN
-config:
-  use_neg_sampling: false
-  use_item_content: false
-  hidden_size: ${hidden_size:64}$

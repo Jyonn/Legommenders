@@ -1,5 +1,5 @@
-name: PNN
 $$import:
   - common/operators/item-null.yaml
   - common/operators/user-pooling.yaml
-  - common/predictors/pnn.yaml
+  - common/predictors/dnn.yaml
+name: DNN

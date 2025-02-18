@@ -1,0 +1,9 @@
+$$import:
+  - common/operators/item-null.yaml
+  - common/operators/user-pooling.yaml
+name: MaskNet
+meta:
+  predictor: MaskNet
+config:
+  predictor_config:
+    hidden_units: [1000, 1000, 1000]

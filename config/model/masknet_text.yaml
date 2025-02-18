@@ -1,4 +1,4 @@
 $$import:
-  - dcn_id.yaml
+  - masknet_id.yaml
   - common/operators/item-pooling.yaml
-name: DCN_text
+name: MaskNet_text

@@ -1,0 +1,10 @@
+$$import:
+  - common/operators/item-null.yaml
+  - common/operators/user-pooling.yaml
+name: FinalMLP
+meta:
+  predictor: FinalMLP
+config:
+  predictor_config:
+    mlp1_hidden_units: [1000, 1000, 1000]
+    mlp2_hidden_units: [1000, 1000, 1000]

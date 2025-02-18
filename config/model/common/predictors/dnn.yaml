@@ -1,5 +1,5 @@
 meta:
-  predictor: PNN
+  predictor: DNN
 config:
   use_neg_sampling: false
   predictor_config:

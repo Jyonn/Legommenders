@@ -1,11 +1,10 @@
 $$import:
-  - common/predictor/din.yaml
+  - common/operators/item-null.yaml
+  - common/predictors/din.yaml
 name: DIN
 meta:
   user: NullConcat
 config:
-  use_item_content: false
-  hidden_size: ${hidden_size}$
   user_config:
     inputer_config:
       use_cls_token: false

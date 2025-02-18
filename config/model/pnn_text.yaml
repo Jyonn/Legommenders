@@ -1,5 +1,4 @@
 name: PNN_text
 $$import:
+  - pnn_id.yaml
   - common/operators/item-pooling.yaml
-  - common/operators/user-pooling.yaml
-  - common/predictors/pnn.yaml

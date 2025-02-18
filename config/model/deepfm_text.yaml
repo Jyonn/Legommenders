@@ -1,5 +1,4 @@
 $$import:
+  - deepfm_id.yaml
   - common/operators/item-pooling.yaml
-  - common/operators/user-pooling.yaml
-  - common/predictors/deepfm.yaml
 name: DeepFM_text

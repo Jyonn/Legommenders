@@ -1,4 +1,4 @@
 $$import:
-  - dcn_id.yaml
+  - gdcn_id.yaml
   - common/operators/item-pooling.yaml
-name: DCN_text
+name: GDCN_text
