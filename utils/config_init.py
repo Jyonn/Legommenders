@@ -7,11 +7,12 @@ import refconfig
 from oba import Obj
 from refconfig import RefConfig
 
-from utils.function import argparse, package_require
+from utils import function
 
-package_require('refconfig', '0.1.0')
-package_require('smartdict', '0.2.1')
-package_require('unitok', '4.3.6')
+
+function.package_require('refconfig', '0.1.0')
+function.package_require('smartdict', '0.2.1')
+function.package_require('unitok', '4.3.6')
 
 
 class CommandInit:
@@ -19,8 +20,8 @@ class CommandInit:
         self.required_args = required_args
         self.default_args = default_args or {}
 
-    def parse(self):
-        kwargs = argparse()
+    def parse(self, kwargs=None):
+        kwargs = kwargs or function.argparse()
 
         for arg in self.required_args:
             if arg not in kwargs:
@@ -30,9 +31,7 @@ class CommandInit:
             if arg not in kwargs:
                 kwargs[arg] = self.default_args[arg]
 
-        config = RefConfig().add(refconfig.CType.SMART, **kwargs)
-        config = config.add(refconfig.CType.RAW).parse()
-
+        config = RefConfig().add(refconfig.CType.SMART, **kwargs).parse()
         config = Obj(config)
 
         return config

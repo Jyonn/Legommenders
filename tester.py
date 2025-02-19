@@ -15,6 +15,7 @@ class Tester(BaseLego):
             for metric in results:
                 pnt(f'{metric}: {results[metric]:.4f}')
                 f.write(f'{metric},{results[metric]:.4f}\n')
+        return results
 
     def run(self):
         self.load()

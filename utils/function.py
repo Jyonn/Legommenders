@@ -29,14 +29,14 @@ def seeding(seed=2023):
     # tensorflow.random.set_seed(seed)
 
 
-def argparse():
-    arguments = sys.argv[1:]
+def argparse(arguments=None):
+    arguments = arguments or sys.argv[1:]
     kwargs = {}
 
     key: Optional[str] = None
     for arg in arguments:
         if key is not None:
-            kwargs[key] = arg
+            kwargs[key] = arg                                          
             key = None
         else:
             assert arg.startswith('--')

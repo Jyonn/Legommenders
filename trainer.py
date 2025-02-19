@@ -1,5 +1,7 @@
+import psutil
 import torch
 from pigmento import pnt
+from unitok import JsonHandler
 
 from loader.env import Env
 from loader.symbols import Symbols
@@ -9,9 +11,34 @@ from utils.config_init import CommandInit
 from utils.meaner import Meaner
 from utils.metrics import MetricPool
 from utils.monitor import Monitor
+from utils.server import Server, ExperimentBody
 
 
 class Trainer(Tester):
+    server: Server
+
+    def prepare_live_experiment(self):
+        if self.config.session is None:
+            return
+
+        self.server = Server.auto_auth()
+        experiment = self.server.get_experiment_info(session=self.config.session)
+        experiment = ExperimentBody(experiment.body)
+        if experiment.signature != Env.path_hub.signature:
+            pnt(f"Signature mismatch: {Env.path_hub.signature} != {experiment.signature}, the live experiment will be terminated.")
+            raise ValueError(f"Signature mismatch")
+        if experiment.seed != self.config.seed:
+            pnt(f"Seed mismatch: {self.config.seed} != {experiment.seed}, the live experiment will be terminated.")
+            raise ValueError(f"Seed mismatch")
+        if experiment.is_completed:
+            pnt(f"Experiment {Env.path_hub.signature} is already completed, the live experiment will be terminated.")
+            raise ValueError("Experiment is already completed")
+        if experiment.pid is not None:
+            if psutil.pid_exists(experiment.pid):
+                pnt(f"Experiment {Env.path_hub.signature} is already running, the live experiment will be terminated.")
+                raise ValueError("Experiment is already running")
+        self.server.register_experiment(session=self.config.session)
+
     def simple_evaluate(self, dev_bar: bars.Bar):
         loader = self.manager.get_dev_loader()
         meaner = Meaner()
@@ -90,6 +117,41 @@ class Trainer(Tester):
 
         pnt('Training Ended')
 
+    def test(self):
+        results = super().test()
+        self.complete_live_experiment(results)
+
+    @staticmethod
+    def get_pured_log():
+        with open(Env.path_hub.log_path, 'rb') as f:
+            log_bin = f.read()
+
+        # Clean up progress lines: if there's a \r in a line, keep only what's after the last \r
+        lines = log_bin.split(b'\n')
+        cleaned_lines = []
+        for line in lines:
+            if b'\r' in line:
+                # Keep content after the last carriage return
+                line = line[line.rfind(b'\r') + 1:]
+            cleaned_lines.append(line)
+
+        log_bin = b'\n'.join(cleaned_lines)
+        return log_bin.decode('utf-8', errors='replace')
+
+    def complete_live_experiment(self, results):
+        if self.config.session is None:
+            return
+
+        log = self.get_pured_log()
+
+        performance = JsonHandler.dumps(results)
+        self.server.complete_experiment(
+            session=self.config.session,
+            log=log,
+            performance=performance
+        )
+        pnt(f"Experiment {Env.path_hub.signature} is completed and uploaded to the lego server.")
+
     def run(self):
         self.init_optimizer()
         self.init_scheduler()
@@ -99,7 +161,7 @@ class Trainer(Tester):
         self.test()
 
 
-def get_configurations():
+def get_configurations(kwargs=None):
     return CommandInit(
         required_args=['data', 'model'],
         default_args=dict(
@@ -109,7 +171,7 @@ def get_configurations():
             item_hidden_size='${hidden_size}$',
             item_page_size=64,
         ),
-    ).parse()
+    ).parse(kwargs=kwargs)
 
 
 if __name__ == '__main__':

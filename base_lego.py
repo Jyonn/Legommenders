@@ -40,6 +40,7 @@ class BaseLego:
         Env.set_path_hub(path_hub)
 
         self.init_pigmento()
+        self.prepare_live_experiment()
 
         JsonHandler.save(Obj.raw(self.config), Env.path_hub.cfg_path)
 
@@ -67,6 +68,9 @@ class BaseLego:
 
         self.optimizer: Optional[torch.optim.Optimizer] = None
         self.scheduler = None
+
+    def prepare_live_experiment(self):
+        pass
 
     @staticmethod
     def init_pigmento():

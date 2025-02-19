@@ -24,6 +24,12 @@ class GPU:
         return [cls.parse_gpu_info(line, args) for line in results]
 
     @classmethod
+    def get_maximal_free_gpu(cls):
+        gpus = cls.get_gpus()
+        gpu = sorted(gpus, key=lambda d: d['memory.free'], reverse=True)[0]
+        return int(gpu['memory.free'])
+
+    @classmethod
     def auto_choose(cls, torch_format=False):
         if not torch.cuda.is_available():
             pnt('not support cuda')
