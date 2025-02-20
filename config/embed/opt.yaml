@@ -1,0 +1,7 @@
+embeddings:
+- frozen: true
+  path: data/embeddings/opt${opt}.npy
+  vocab_name: opt
+name: opt${opt}
+transformation: auto
+transformation_dropout: 0.1

@@ -1,0 +1,7 @@
+embeddings:
+- frozen: true
+  path: data/embeddings/glm4th9b.npy
+  vocab_name: glm
+name: glm
+transformation: auto
+transformation_dropout: 0.1

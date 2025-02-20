@@ -1,0 +1,14 @@
+meta:
+  predictor: AutoInt
+config:
+  predictor_config:
+    dnn_hidden_units: [ 1000, 1000, 1000 ]
+    dnn_activations: ReLU
+    dnn_dropout: 0.1
+    dnn_batch_norm: false
+    num_attention_layers: ${autoint_attention_layers:3}$
+    num_attention_heads: ${autoint_attention_heads:8}$
+    attention_dim: ${autoint_attention_dim:64}$
+    attention_dropout: 0.1
+    use_residual: true
+    use_wide: true

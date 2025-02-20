@@ -1,0 +1,6 @@
+embeddings:
+- frozen: true
+  path: data/recbench/mindrb/llama1-embeds.npy
+  col_name: item_embeds
+transformation: auto
+transformation_dropout: 0.1

@@ -24,7 +24,7 @@ class Worker:
         self.jobs = self.load_jobs(config.jobs)
         self.replicate = config.replicate
         self.seeds = self.get_seeds(config.seeds, self.replicate)
-        self.num_workers = len(GPU.get_gpus())
+        self.num_workers = config.num_workers or len(GPU.get_gpus())
 
     @staticmethod
     def load_jobs(job_file):
@@ -36,6 +36,7 @@ class Worker:
         if seeds is not None:
             if len(seeds) != replicate:
                 raise ValueError('seeds should have a length of replicate')
+            seeds = [int(seed) for seed in seeds.split('+')]
             return seeds
         return list(range(Worker.SEED_START, Worker.SEED_START + replicate))
 
@@ -136,6 +137,7 @@ if __name__ == "__main__":
         default_args=dict(
             replicate=5,
             seeds=None,
+            num_workers=None,
         ),
     ).parse()
 

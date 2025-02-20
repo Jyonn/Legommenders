@@ -38,8 +38,9 @@ class CNNCatOperator(CNNOperator):
         outputs = torch.cat(output_list, dim=-1).to(Env.device)
         return outputs
 
+    @property
     def output_dim(self):
         return self.config.hidden_size * self.num_columns
 
     def get_full_placeholder(self, sample_size):
-        return torch.zeros(sample_size, self.output_dim(), dtype=torch.float)
+        return torch.zeros(sample_size, self.output_dim, dtype=torch.float)

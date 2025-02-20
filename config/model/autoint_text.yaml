@@ -1,0 +1,4 @@
+$$import:
+  - autoint_id.yaml
+  - common/operators/item-pooling.yaml
+name: AutoInt_text
