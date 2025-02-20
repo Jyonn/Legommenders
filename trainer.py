@@ -139,7 +139,7 @@ class Trainer(Tester):
         return log_bin.decode('utf-8', errors='replace')
 
     def complete_live_experiment(self, results):
-        if self.config.session is None:
+        if not self.config.session:
             return
 
         log = self.get_pured_log()
