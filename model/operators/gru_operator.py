@@ -8,12 +8,10 @@ from model.inputer.concat_inputer import ConcatInputer
 class GRUOperatorConfig(BaseOperatorConfig):
     def __init__(
             self,
-            columns: list,
             num_layers: int = 1,
             **kwargs,
     ):
         super().__init__(**kwargs)
-        self.num_columns = len(columns)
         self.num_layers = num_layers
 
 

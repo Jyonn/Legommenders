@@ -1,0 +1,13 @@
+meta:
+  item: Transformer
+config:
+  use_item_content: true
+  use_fast_eval: ${fast_eval:true}$
+  hidden_size: ${hidden_size}$
+  item_hidden_size: ${item_hidden_size}$
+  item_config:
+    num_attention_heads: 8
+    num_hidden_layers: 3
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: true

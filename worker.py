@@ -85,7 +85,7 @@ class Worker:
         if 'llama' in command.lower():
             return 70_000
         if 'bert' in command.lower():
-            return 30_000
+            return 24_000
         return 10_000
 
     def run_evaluation(self, job: str):
