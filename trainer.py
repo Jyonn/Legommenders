@@ -18,7 +18,7 @@ class Trainer(Tester):
     server: Server
 
     def prepare_live_experiment(self):
-        if self.config.session is None:
+        if not self.config.session:
             return
 
         self.server = Server.auto_auth()

@@ -92,11 +92,13 @@ Legommenders have served as a fundamental framework for several research project
 If you find Legommenders useful in your research, please consider citing our project:
 
 ```
-@article{legommenders,
+@misc{legommenders,
   title={Legommenders: A Comprehensive Content-Based Recommendation Library with LLM Support},
   author={Liu, Qijiong and Fan, Lu and Wu, Xiao-Ming},
-  journal={arXiv preprint arXiv:2412.15973},
-  year={2024}
+  booktitle = {Proceedings of the ACM Web Conference 2025},
+  month = {may},
+  year = {2025},
+  address = {Australia, Sydney},
 }
 ```
 
