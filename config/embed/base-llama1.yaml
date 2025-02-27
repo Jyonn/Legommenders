@@ -1,0 +1,6 @@
+embeddings:
+- col_name: item_id
+  frozen: true
+  path: data/recbench/${rbname}/llama1-embeds.npy
+transformation: auto
+transformation_dropout: 0.1
