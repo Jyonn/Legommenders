@@ -33,12 +33,18 @@ class StatusTimer:
 
 
 class Timer:
-    def __init__(self, activate=True):
+    def __init__(self, activate=False):
         self.status_dict = dict()  # type: dict[str, StatusTimer]
-        self.activate = activate
+        self._activate = activate
+
+    def activate(self):
+        self._activate = True
+
+    def deactivate(self):
+        self._activate = False
 
     def run(self, status: str):
-        if not self.activate:
+        if not self._activate:
             return
         if status not in self.status_dict:
             self.status_dict[status] = StatusTimer()

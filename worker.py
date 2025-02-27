@@ -12,7 +12,7 @@ import trainer
 from utils import function
 from utils.config_init import CommandInit
 from utils.gpu import GPU
-from utils.server import Server, ExperimentBody
+from utils.server import Server, ExperimentBody, EvaluationBody
 
 
 class Worker:
@@ -26,10 +26,23 @@ class Worker:
         self.seeds = self.get_seeds(config.seeds, self.replicate)
         self.num_workers = config.num_workers or len(GPU.get_gpus())
 
+        self.all_evaluations = self.get_all_evaluations()
+
     @staticmethod
     def load_jobs(job_file):
         with open(job_file) as f:
             return f.read().strip().split('\n')
+
+    def get_all_evaluations(self):
+        evaluations = self.server.get_all_evaluations()
+        evaluation_dict = dict()
+        for evaluation in evaluations.body:
+            evaluation = EvaluationBody(evaluation)
+            evaluation_dict[evaluation.command] = []
+            for experiment in evaluation.experiments:  # type: ExperimentBody
+                if experiment.is_completed:
+                    evaluation_dict[evaluation.command].append(experiment.seed)
+        return evaluation_dict
 
     @staticmethod
     def get_seeds(seeds, replicate):
@@ -72,7 +85,7 @@ class Worker:
 
         required_memory = self.get_memory_required(command)
         while True:
-            time.sleep(random.randint(10, 300))
+            time.sleep(random.randint(60, 300))
             free_memory = GPU.get_maximal_free_gpu()
             if free_memory >= required_memory:
                 break
@@ -104,6 +117,7 @@ class Worker:
         )
         command = f'python trainer.py {job}'
         configuration = JsonHandler.dumps(Obj.raw(configuration))
+
         evaluation = self.server.create_or_get_evaluation(
             signature=signature,
             command=command,
@@ -113,6 +127,12 @@ class Worker:
             raise ValueError(f'failed to create evaluation: {evaluation.msg}')
 
         for seed in self.seeds:
+            if command in self.all_evaluations:
+                evaluation = self.all_evaluations[command]
+                if seed in evaluation:
+                    pnt(f"Experiment ({signature}, {seed}) is already done.")
+                    continue
+
             self.run_experiment(command, signature, seed)
 
     def run(self):

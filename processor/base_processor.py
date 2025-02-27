@@ -85,6 +85,12 @@ class BaseProcessor(abc.ABC):
     def config_item_tokenization(self):
         pass
 
+    def config_user_tokenization(self):
+        pass
+
+    def config_inter_tokenization(self, ut: UniTok):
+        pass
+
     def load_items(self) -> pd.DataFrame:
         raise NotImplemented
 
@@ -194,6 +200,7 @@ class BaseProcessor(abc.ABC):
             self.user.add_job(tokenizer=EntitiesTokenizer(vocab=item_vocab), column=self.HIS_COL, name=self.HIS_JOB, truncate=0)
             if self.NEG_COL:
                 self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=self.NEG_TRUNCATE)
+            self.config_user_tokenization()
             self.user.tokenize(self.user_df).save(self.user_save_dir)
             pnt(f'tokenized {len(self.user)} users')
 
@@ -204,6 +211,7 @@ class BaseProcessor(abc.ABC):
                 ut.add_job(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_JOB)
                 ut.add_job(tokenizer=EntityTokenizer(vocab=item_vocab), column=self.IID_COL, name=self.IID_JOB)
                 ut.add_job(tokenizer=DigitTokenizer(vocab=self.LBL_COL, vocab_size=2), column=self.LBL_COL, name=self.LBL_JOB)
+                self.config_inter_tokenization(ut)
                 ut.tokenize(self.interactions[mode]).save(self.get_save_dir(mode))
                 pnt(f'tokenized {len(ut)} {mode.name} interactions')
 

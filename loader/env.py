@@ -22,6 +22,7 @@ class Env:
 
     # timer
     timer = Timer()  # used for debug
+    latency_timer = Timer()  # used for latency
 
     @classmethod
     def train(cls):

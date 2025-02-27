@@ -93,6 +93,9 @@ class Server:
         ) as response:
             return BaseResp(response.json())
 
+    def get_all_evaluations(self):
+        return self.get(f'{self.uri}/evaluations/', {})
+
     def get_experiment_info(self, session):
         query = {
             'session': session

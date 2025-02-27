@@ -2,8 +2,10 @@ from pigmento import pnt
 
 from base_lego import BaseLego
 from loader.env import Env
+from loader.symbols import Symbols
 from utils import bars
 from utils.config_init import CommandInit
+from utils.timer import StatusTimer
 
 
 class Tester(BaseLego):
@@ -17,9 +19,23 @@ class Tester(BaseLego):
                 f.write(f'{metric},{results[metric]:.4f}\n')
         return results
 
+    def latency(self):
+        Env.latency_timer.activate()
+        Env.latency_timer.clear()
+
+        try:
+            self.test()
+        except KeyboardInterrupt:
+            st = Env.latency_timer.status_dict[Symbols.test]  # type: StatusTimer
+            pnt(f'Total {st.count} steps, avg ms {st.avgms():.4f}')
+
     def run(self):
         self.load()
-        self.test()
+
+        if self.config.latency:
+            self.latency()
+        else:
+            self.test()
 
 
 if __name__ == '__main__':
@@ -30,6 +46,7 @@ if __name__ == '__main__':
             embed='config/embed/null.yaml',
             hidden_size=256,
             item_hidden_size='${hidden_size}$',
+            latency=False,
         ),
     ).parse()
 

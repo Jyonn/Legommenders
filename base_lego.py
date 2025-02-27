@@ -183,10 +183,12 @@ class BaseLego:
 
         index = 0
         for step, batch in enumerate(bar := bar(loader, disable=self.disable_tqdm)):
+            Env.latency_timer.run(Symbols.test)
             with torch.no_grad():
                 scores = self.legommender(batch=batch)
                 if scores.dim() == 2:
                     scores = scores.squeeze(1)
+            Env.latency_timer.run(Symbols.test)
 
             batch_size = scores.size(0)
             for col in cols:

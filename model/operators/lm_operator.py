@@ -106,8 +106,15 @@ class BaseLMOperator(BaseOperator):
         attention_mask = np.load(self._get_mask_path())
         self.attention_mask = torch.from_numpy(attention_mask).to(Env.device)
         self.hidden_weights = self.hidden_weights.view(*self.attention_mask.shape[:2], self.hidden_weights.shape[-1])
-        pnt(f'hidden_weights.shape: {self.hidden_weights.shape}')
-        pnt(f'attention_mask.shape: {self.attention_mask.shape}')
+        pnt(f'hidden_weights.shape: {self.hidden_weights.shape}')  # [N, L, D]
+        pnt(f'attention_mask.shape: {self.attention_mask.shape}')  # [N, L]
+
+        nan_mask = torch.isnan(self.hidden_weights).any(dim=-1)  # [N, L]
+        self.hidden_weights[nan_mask] = torch.rand_like(self.hidden_weights[nan_mask])
+        nan_mask_ = nan_mask.any(dim=-1)  # [N]
+        template_mask = torch.zeros_like(self.attention_mask[0], dtype=torch.float, device=Env.device)
+        template_mask[0] = 1  # Set the first position to 1
+        self.attention_mask[nan_mask_] = template_mask
 
         self.transformer = self.transformer.to(self.dtype)
         pnt(f'switched transformer dtype to {self.dtype}')
@@ -175,6 +182,9 @@ class BaseLMOperator(BaseOperator):
 
         outputs = self.linear(outputs)  # [B, L, D]
         outputs = self.additive_attention(outputs, mask)  # [B, D]
+
+        # nan_mask = torch.isnan(outputs).any(dim=-1)
+        # outputs[nan_mask] = self.nan_embedding
 
         return outputs
 

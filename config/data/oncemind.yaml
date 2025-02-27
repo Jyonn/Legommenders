@@ -21,4 +21,4 @@ column_map:
   history_col: history
   neg_col: neg
   label_col: click
-  group_col: user_id
+  group_col: imp
