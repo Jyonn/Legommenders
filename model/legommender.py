@@ -130,10 +130,8 @@ class Legommender(nn.Module):
         else:
             vocab = self.config.user_ut.meta.jobs[self.cm.history_col].tokenizer.vocab.name
             item_embeddings = self.embedding_hub(vocab, col_name=self.cm.history_col)(batch[self.cm.item_col].to(Env.device))
-        # print(item_embeddings.shape)
 
         user_embeddings = self.get_user_content(batch)
-        # print(user_embeddings.shape)
 
         if self.use_neg_sampling:
             scores = self.predict_for_neg_sampling(item_embeddings, user_embeddings)

@@ -7,7 +7,6 @@ import numpy as np
 import pigmento
 import torch
 from pigmento import pnt
-from oba import Obj
 from transformers import get_linear_schedule_with_warmup
 from unitok import JsonHandler
 
@@ -42,7 +41,7 @@ class BaseLego:
         self.init_pigmento()
         self.prepare_live_experiment()
 
-        JsonHandler.save(Obj.raw(self.config), Env.path_hub.cfg_path)
+        JsonHandler.save(self.config(), Env.path_hub.cfg_path)
 
         pnt('START TIME:', datetime.datetime.now())
         pnt('SIGNATURE:', Env.path_hub.signature)

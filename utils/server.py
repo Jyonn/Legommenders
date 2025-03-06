@@ -94,7 +94,18 @@ class Server:
             return BaseResp(response.json())
 
     def get_all_evaluations(self):
-        return self.get(f'{self.uri}/evaluations/', {})
+        total_page = None
+        current_page = 1
+        while total_page is None or current_page <= total_page:
+            query = {
+                'page': current_page
+            }
+            response = self.get(f'{self.uri}/evaluations/', query)
+            if response.ok:
+                total_page = response.body['total_page']
+                for evaluation in response.body['evaluations']:
+                    yield EvaluationBody(evaluation)
+                current_page += 1
 
     def get_experiment_info(self, session):
         query = {

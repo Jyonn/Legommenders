@@ -4,7 +4,6 @@ import sys
 import time
 from subprocess import Popen
 
-from oba import Obj
 from pigmento import pnt
 from unitok import JsonHandler
 
@@ -36,8 +35,7 @@ class Worker:
     def get_all_evaluations(self):
         evaluations = self.server.get_all_evaluations()
         evaluation_dict = dict()
-        for evaluation in evaluations.body:
-            evaluation = EvaluationBody(evaluation)
+        for evaluation in evaluations:  # type: EvaluationBody
             evaluation_dict[evaluation.command] = []
             for experiment in evaluation.experiments:  # type: ExperimentBody
                 if experiment.is_completed:
@@ -100,7 +98,9 @@ class Worker:
             return 70_000
         if 'bert' in command.lower():
             return 24_000
-        return 10_000
+        if 'miner' in command.lower():
+            return 24_000
+        return 15_000
 
     def run_evaluation(self, job: str):
         time.sleep(random.randint(0, 10))
@@ -116,7 +116,7 @@ class Worker:
             exp=configuration.exp,
         )
         command = f'python trainer.py {job}'
-        configuration = JsonHandler.dumps(Obj.raw(configuration))
+        configuration = JsonHandler.dumps(configuration())
 
         evaluation = self.server.create_or_get_evaluation(
             signature=signature,

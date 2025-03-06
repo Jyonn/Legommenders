@@ -1,6 +1,5 @@
 from typing import Type, Optional
 
-from oba import Obj
 from pigmento import pnt
 from torch.utils.data import DataLoader
 from unitok import Symbol
@@ -62,7 +61,7 @@ class Manager:
 
     def load_items(self):
         ut = UTHub.get(self.data.item.ut)
-        inputs = Obj.raw(self.data.item.inputs)
+        inputs = self.data.item.inputs()
 
         input_cols = []
         selected_attrs = dict()
@@ -124,7 +123,7 @@ class Manager:
         return ut
 
     def load_data(self):
-        self.cm = ColumnMap(**Obj.raw(self.data.column_map))
+        self.cm = ColumnMap(**self.data.column_map())
 
         self.item_ut, self.item_inputs = self.load_items()
         self.user_ut = self.load_users()
@@ -161,7 +160,7 @@ class Manager:
         pnt(f'Selected User Encoder: {str(self.user_operator_class.__name__)}')
         pnt(f'Selected Predictor: {str(self.predictor_class.__name__)}')
 
-        self.lego_config = LegoConfig(**Obj.raw(self.model.config))
+        self.lego_config = LegoConfig(**self.model.config())
         self.lego_config.set_component_classes(
             item_operator_class=self.item_operator_class,
             user_operator_class=self.user_operator_class,
@@ -181,7 +180,7 @@ class Manager:
             transformation_dropout=self.embed.transformation_dropout,
         )
         for info in self.embed.embeddings:
-            self.embedding_hub.load_pretrained_embedding(**Obj.raw(info))
+            self.embedding_hub.load_pretrained_embedding(**info())
         if self.lego_config.use_item_content:
             self.embedding_hub.register_ut(self.item_ut, self.item_inputs)
         else:

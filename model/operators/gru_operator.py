@@ -34,7 +34,7 @@ class GRUOperator(BaseOperator):
 
         self.linear = nn.Linear(
             in_features=self.config.hidden_size,
-            out_features=self.config.hidden_size,
+            out_features=self.config.input_dim,
         )
 
     def forward(self, embeddings, mask=None, **kwargs):

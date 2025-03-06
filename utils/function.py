@@ -61,10 +61,10 @@ def argparse(arguments=None):
 
 def get_signature(data, embed, model, exp):
     configuration = {
-        'data': Obj.raw(data),
-        'embed': Obj.raw(embed),
-        'model': Obj.raw(model),
-        'exp': Obj.raw(exp),
+        'data': data(),
+        'embed': embed(),
+        'model': model(),
+        'exp': exp(),
     }
     canonical_str = json.dumps(configuration, sort_keys=True, ensure_ascii=False)
     md5_digest = hashlib.md5(canonical_str.encode('utf-8')).digest()

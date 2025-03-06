@@ -1,5 +1,3 @@
-from oba import Obj
-
 from base_lego import BaseLego
 from model.operators.lm_operator import BaseLMOperator
 from utils.config_init import CommandInit
