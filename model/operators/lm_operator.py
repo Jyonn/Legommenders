@@ -129,8 +129,8 @@ class BaseLMOperator(BaseOperator):
             pnt(f'sliced transformer layers, '
                 f'{self.num_hidden_layers} -> {self.num_hidden_layers - self.config.tune_from - 1}')
 
-        if (self.config.tune_from is not None
-                and self.config.tune_from < self.num_hidden_layers - 1
+        if ((self.config.tune_from is None
+                or self.config.tune_from < self.num_hidden_layers - 1)
                 and self.config.use_lora):
             if not isinstance(self.config.lora_r, int):
                 raise ValueError('lora_r should be an integer')
