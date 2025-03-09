@@ -84,7 +84,7 @@ class Server:
             return BaseResp(response.json())
 
     def get(self, uri, query):
-        pnt(f'Sending query request to {uri}')
+        pnt(f'Sending query request to {uri} with {query}')
 
         with requests.get(
             uri,
@@ -106,6 +106,8 @@ class Server:
                 for evaluation in response.body['evaluations']:
                     yield EvaluationBody(evaluation)
                 current_page += 1
+            else:
+                raise ValueError('Unable to fetch the evaluations:' + response.msg)
 
     def get_experiment_info(self, session):
         query = {

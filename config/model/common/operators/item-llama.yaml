@@ -7,7 +7,7 @@ config:
   item_hidden_size: 4096
   hidden_size: ${hidden_size}$
   item_config:
-    tune_from: ${tune_from}$
+    tune_from: ${tune_from:null}$
     use_lora: ${use_lora:false}$
     lora_r: ${lora_r:null}$
     lora_alpha: ${lora_alpha:null}$

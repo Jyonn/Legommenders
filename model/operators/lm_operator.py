@@ -51,7 +51,7 @@ class BaseLMOperator(BaseOperator):
         self.num_hidden_layers = self.get_layer_nums()
         os.makedirs(self._cache_base_dir, exist_ok=True)
 
-        if self.config.tune_from < 0:
+        if self.config.tune_from and self.config.tune_from < 0:
             self.config.tune_from = self.num_hidden_layers + self.config.tune_from
 
         self.hidden_weights = None  # [N, L, D]
@@ -95,24 +95,26 @@ class BaseLMOperator(BaseOperator):
         self.transformer.print_trainable_parameters()
 
     def _load_hidden_states(self):
-        if not self._cache_exists(self.config.tune_from):
-            if self.config.tune_from >= self.num_hidden_layers:
+        if self._cache_exists(self.config.tune_from):
+            pnt(f'loading cached hidden states from {self._get_cache_path(self.config.tune_from)}')
+        else:
+            if self.config.tune_from > self.num_hidden_layers:
                 raise ValueError(f'tune_from should be less than {self.num_hidden_layers}')
             pnt(f'caching item hidden states from layer {self.config.tune_from} at runtime')
             pnt('to accelerate this process, please consider to use splitter.py to cache all required layers at once')
             self.cache([self.config.tune_from])
         hidden_weights = np.load(self._get_cache_path(self.config.tune_from))
-        self.hidden_weights = torch.from_numpy(hidden_weights).to(Env.device)
+        self.hidden_weights = torch.from_numpy(hidden_weights)
         attention_mask = np.load(self._get_mask_path())
-        self.attention_mask = torch.from_numpy(attention_mask).to(Env.device)
+        self.attention_mask = torch.from_numpy(attention_mask)
         self.hidden_weights = self.hidden_weights.view(*self.attention_mask.shape[:2], self.hidden_weights.shape[-1])
         pnt(f'hidden_weights.shape: {self.hidden_weights.shape}')  # [N, L, D]
         pnt(f'attention_mask.shape: {self.attention_mask.shape}')  # [N, L]
 
         nan_mask = torch.isnan(self.hidden_weights).any(dim=-1)  # [N, L]
-        self.hidden_weights[nan_mask] = torch.rand_like(self.hidden_weights[nan_mask])
+        self.hidden_weights[nan_mask] = torch.rand_like(self.hidden_weights[nan_mask]).to(self.hidden_weights.dtype)
         nan_mask_ = nan_mask.any(dim=-1)  # [N]
-        template_mask = torch.zeros_like(self.attention_mask[0], dtype=torch.float, device=Env.device)
+        template_mask = torch.zeros_like(self.attention_mask[0], dtype=self.attention_mask.dtype)
         template_mask[0] = 1  # Set the first position to 1
         self.attention_mask[nan_mask_] = template_mask
 
@@ -120,13 +122,16 @@ class BaseLMOperator(BaseOperator):
         pnt(f'switched transformer dtype to {self.dtype}')
 
     def _prepare_network(self):
-        if self.config.tune_from:
+        if self.config.tune_from is not None:
             self._load_hidden_states()
             self._slice_transformer_layers()
+            torch.cuda.empty_cache()
             pnt(f'sliced transformer layers, '
                 f'{self.num_hidden_layers} -> {self.num_hidden_layers - self.config.tune_from - 1}')
 
-        if self.config.tune_from < self.num_hidden_layers - 1 and self.config.use_lora:
+        if (self.config.tune_from is not None
+                and self.config.tune_from < self.num_hidden_layers - 1
+                and self.config.use_lora):
             if not isinstance(self.config.lora_r, int):
                 raise ValueError('lora_r should be an integer')
             if not isinstance(self.config.lora_alpha, int):
@@ -170,9 +175,9 @@ class BaseLMOperator(BaseOperator):
                 output_hidden_states=False,
             )
         else:
-            indices = embeddings  # [B]
-            hidden_states = self.hidden_weights[indices].to(self.dtype)  # [B, L, D]
-            mask = self.attention_mask[indices].to(self.dtype)  # [B, L, L]
+            indices = embeddings.cpu()  # [B]
+            hidden_states = self.hidden_weights[indices].to(self.dtype).to(Env.device)  # [B, L, D]
+            mask = self.attention_mask[indices].to(self.dtype).to(Env.device)  # [B, L, L]
             outputs = self._loop_forward(
                 hidden_states=hidden_states,
                 attention_mask=mask,
