@@ -1,4 +1,5 @@
 import datetime
+import multiprocessing
 import os
 import sys
 from typing import Optional
@@ -38,6 +39,7 @@ class BaseLego:
         )
         Env.set_path_hub(path_hub)
 
+        multiprocessing.set_start_method('fork')
         self.init_pigmento()
         self.prepare_live_experiment()
 
