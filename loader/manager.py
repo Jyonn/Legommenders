@@ -61,7 +61,7 @@ class Manager:
 
     def load_items(self):
         ut = UTHub.get(self.data.item.ut)
-        inputs = self.data.item.inputs()
+        inputs = self.data.item.inputs
 
         input_cols = []
         selected_attrs = dict()
