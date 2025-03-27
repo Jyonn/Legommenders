@@ -13,13 +13,13 @@ from loader.env import Env
 from loader.pager.lm_layer_pager import LMLayerPager
 from model.common.attention import AdditiveAttention
 from model.inputer.concat_inputer import ConcatInputer
-from model.operators.attention_operator import AttentionOperatorConfig
+from model.operators.ada_operator import AdaOperatorConfig
 from model.operators.base_operator import BaseOperator
 from utils import bars
 from utils.config_init import ModelInit
 
 
-class BaseLMOperatorConfig(AttentionOperatorConfig):
+class BaseLMOperatorConfig(AdaOperatorConfig):
     def __init__(
             self,
             tune_from: int = 0,  # number of layer, such as 0, 30, 31, etc.

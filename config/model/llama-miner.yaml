@@ -1,5 +1,6 @@
 $$import:
   - common/operators/item-llama.yaml
   - common/operators/user-polyattention.yaml
-  - common/predictors/dot.yaml
 name: LLAMA${llama}-MINER
+meta:
+  predictor: MINER

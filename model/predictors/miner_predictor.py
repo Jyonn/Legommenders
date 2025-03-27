@@ -51,7 +51,7 @@ class MINERPredictor(BasePredictor):
         # user_embeddings: batch_size, num_context_codes, hidden_size
         scores = torch.matmul(item_embeddings, user_embeddings.permute(0, 2, 1))  # batch_size, K+1, num_context_codes
         if self.config.score_type == 'weighted':
-            return self.target_aware_attention.forward(
+            return self.target_aware_attention(
                 query=user_embeddings,
                 key=item_embeddings,
                 value=scores
