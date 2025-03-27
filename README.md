@@ -12,7 +12,11 @@ pip install -r requirements.txt
 
 ## Quick Start with Three Steps
 
-### Data Preprocessing
+### Download Preprocessed Data
+
+You can download the data from [here](https://drive.google.com/drive/folders/1PP2PMqg4Fxe8Qb2haob8eJy7g8bgw6tC?usp=sharing).
+
+### Data Preprocessing (Optional)
 
 ```bash
 python process.py --data mind
