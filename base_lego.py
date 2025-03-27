@@ -81,7 +81,7 @@ class BaseLego:
         pnt.set_display_mode(
             display_method_name=False,
             display_class_name=True,
-            use_instance_class=True,
+            use_instance_class='both',
         )
 
     def init_optimizer(self):
@@ -148,16 +148,14 @@ class BaseLego:
             return torch.cuda.device(cuda)
         return GPU.auto_choose(torch_format=True)
 
-    @staticmethod
-    def log_interval(epoch, step, loss):
+    def log_interval(self, epoch, step, loss):
         # pnt(f'[epoch {epoch}] step {step}, loss {loss:.4f}')
         # with open(self.log_file, 'a+') as f:
         #     f.write(f'{prefix_s} {text}\n')
         with open(Env.path_hub.log_path, 'a+') as f:
             f.write(f'[epoch {epoch}] step {step}, loss {loss:.4f}\n')
 
-    @staticmethod
-    def log_epoch(epoch, results):
+    def log_epoch(self, epoch, results):
         line = ', '.join([f'{metric} {results[metric]:.4f}' for metric in results])
         pnt(f'[epoch {epoch}] {line}')
 

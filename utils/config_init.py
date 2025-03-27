@@ -14,6 +14,7 @@ function.package_require('refconfig', '0.1.2')
 function.package_require('smartdict', '0.2.1')
 function.package_require('unitok', '4.3.6')
 function.package_require('oba', '0.1.0')
+function.package_require('pigmento', '0.2.3')
 
 
 class CommandInit:
