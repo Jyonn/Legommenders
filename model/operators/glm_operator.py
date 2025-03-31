@@ -5,10 +5,10 @@ from transformers.modeling_outputs import BaseModelOutputWithPast
 
 from loader.env import Env
 from model.common.glm_interface import ChatGLMModel
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.once_operator import OnceOperator
 
 
-class GLMOperator(BaseLMOperator, abc.ABC):
+class GLMOperator(OnceOperator, abc.ABC):
     dtype = torch.bfloat16
     transformer: ChatGLMModel
 

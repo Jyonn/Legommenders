@@ -3,10 +3,10 @@ import abc
 import torch
 from transformers import LlamaModel
 
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.once_operator import OnceOperator
 
 
-class LlamaOperator(BaseLMOperator, abc.ABC):
+class LlamaOperator(OnceOperator, abc.ABC):
     dtype = torch.bfloat16
 
     def __init__(self, **kwargs):

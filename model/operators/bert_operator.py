@@ -4,10 +4,10 @@ import torch
 from peft import get_peft_model, PeftConfig
 from transformers import BertModel
 
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.once_operator import OnceOperator
 
 
-class BertOperator(BaseLMOperator, abc.ABC):
+class BertOperator(OnceOperator, abc.ABC):
     transformer: BertModel
 
     def __init__(self, **kwargs):

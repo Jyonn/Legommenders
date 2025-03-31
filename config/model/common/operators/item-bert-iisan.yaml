@@ -1,0 +1,12 @@
+meta:
+  item: BertBaseIISAN
+config:
+  use_item_content: true
+  use_fast_eval: ${fast_eval:true}$
+  item_page_size: ${item_page_size:128}$
+  item_hidden_size: 768
+  hidden_size: ${hidden_size}$
+  item_config:
+    inputer_config:
+      use_cls_token: false
+      use_sep_token: false

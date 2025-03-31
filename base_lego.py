@@ -81,7 +81,7 @@ class BaseLego:
         pnt.set_display_mode(
             display_method_name=False,
             display_class_name=True,
-            use_instance_class='both',
+            use_instance_class=True,
         )
 
     def init_optimizer(self):

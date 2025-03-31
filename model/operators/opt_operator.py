@@ -3,10 +3,10 @@ import abc
 import torch
 from transformers import OPTModel
 
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.once_operator import OnceOperator
 
 
-class OPTOperator(BaseLMOperator, abc.ABC):
+class OPTOperator(OnceOperator, abc.ABC):
     dtype = torch.bfloat16
     transformer: OPTModel
 

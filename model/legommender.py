@@ -6,7 +6,7 @@ from loader.env import Env
 from model.lego_config import LegoConfig
 from loader.cacher.repr_cacher import ReprCacher
 from loader.column_map import ColumnMap
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.lm_operator import LMOperator
 from utils.shaper import Shaper
 
 
@@ -47,9 +47,8 @@ class Legommender(nn.Module):
         # special cases for llama
         Env.set_lm_cache(False)
         if self.config.use_item_content:
-            if isinstance(self.item_op, BaseLMOperator):
-                if self.item_op.config.tune_from:
-                    Env.set_lm_cache(True)
+            if isinstance(self.item_op, LMOperator):
+                Env.set_lm_cache(self.item_op.use_lm_cache())
         pnt(f'set llm cache: {Env.lm_cache}')
 
         self.shaper = Shaper()

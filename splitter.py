@@ -1,12 +1,12 @@
 from base_lego import BaseLego
-from model.operators.lm_operator import BaseLMOperator
+from model.operators.once_operator import OnceOperator
 from utils.config_init import CommandInit
 
 
 class Splitter(BaseLego):
     def run(self):
         item_op = self.legommender.item_op
-        if not isinstance(item_op, BaseLMOperator):
+        if not isinstance(item_op, OnceOperator):
             raise ValueError('item encoder is not a LMOperator')
 
         layers = map(int, self.config.layers.split('+'))
