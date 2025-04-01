@@ -1,17 +1,19 @@
 import abc
 
-from transformers import BertModel
+import torch
+from transformers import LlamaModel
 
 from model.operators.iisan_operator import IISANOperator
 
 
-class BertIISANOperator(IISANOperator, abc.ABC):
-    transformer: BertModel
+class LlamaIISANOperator(IISANOperator, abc.ABC):
+    dtype = torch.bfloat16
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer.embeddings.word_embeddings = None
+        self.transformer: LlamaModel
+        self.transformer.embed_tokens = None
 
         if self.transformer.config.hidden_size != self.config.input_dim:
             raise ValueError(f'In {self.classname}, hidden_size of transformer ({self.transformer.config.hidden_size}) '
@@ -20,9 +22,13 @@ class BertIISANOperator(IISANOperator, abc.ABC):
         self._load_hidden_states()
 
 
-class BertBaseIISANOperator(BertIISANOperator):
+class Llama1IISANOperator(LlamaIISANOperator):
     pass
 
 
-class BertLargeIISANOperator(BertIISANOperator):
+class Llama2IISANOperator(LlamaIISANOperator):
+    pass
+
+
+class Llama3IISANOperator(LlamaIISANOperator):
     pass

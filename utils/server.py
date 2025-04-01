@@ -83,6 +83,14 @@ class Server:
         ) as response:
             return BaseResp(response.json())
 
+    def delete(self, uri):
+        pnt(f'Sending delete request to {uri}')
+        with requests.delete(
+            uri,
+            headers={'Authentication': self.auth},
+        ) as response:
+            return BaseResp(response.json())
+
     def get(self, uri, query):
         pnt(f'Sending query request to {uri} with {query}')
 
@@ -122,6 +130,9 @@ class Server:
             'configuration': configuration,
         }
         return self.post(f'{self.uri}/evaluations/', data)
+
+    def delete_evaluation(self, signature):
+        return self.delete(f'{self.uri}/evaluations/{signature}')
 
     def create_or_get_experiment(self, signature, seed):
         data = {

@@ -1,10 +1,12 @@
+from typing import Optional
+
 from torch import nn
 
 from model.operators.base_operator import BaseOperator
 
 
 class LMOperator(BaseOperator):
-    transformer: nn.Module
+    transformer: Optional[nn.Module]
 
     def use_lm_cache(self):
         raise NotImplementedError

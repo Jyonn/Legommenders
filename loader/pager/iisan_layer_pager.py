@@ -12,7 +12,7 @@ class IISANLayerPager(BasePager):
             hidden_size: int,
             **kwargs
     ):
-        super().__init__(desc='Language Model Layer Caching', **kwargs)
+        super().__init__(desc='Language Model Layer Caching for IISAN', **kwargs)
 
         self.inputer = inputer
         self.num_layers = num_layers

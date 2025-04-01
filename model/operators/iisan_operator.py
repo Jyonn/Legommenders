@@ -80,8 +80,8 @@ class IISANOperator(LMOperator):
         nan_mask = torch.isnan(self.hidden_states).any(dim=-1)  # [N, L]
         self.hidden_states[nan_mask] = torch.rand_like(self.hidden_states[nan_mask]).to(self.hidden_states.dtype)
 
-        self.transformer = self.transformer.to(self.dtype)
-        pnt(f'switched transformer dtype to {self.dtype}')
+        self.transformer = None
+        torch.cuda.empty_cache()
 
     @property
     def _cache_base_dir(self):
@@ -118,7 +118,7 @@ class IISANOperator(LMOperator):
 
     def forward(self, embeddings, mask=None, **kwargs):
         indices = embeddings.cpu()  # [B]
-        hidden_states = self.hidden_states[indices].to(self.dtype).to(Env.device)  # [B, H, D]
+        hidden_states = self.hidden_states[indices].to(Env.device)  # [B, H, D]
 
         current_state = hidden_states[:, 0, :]
 

@@ -1,17 +1,20 @@
 import abc
 
-from transformers import BertModel
+import torch
 
+from model.common.glm_interface import ChatGLMModel
 from model.operators.iisan_operator import IISANOperator
 
 
-class BertIISANOperator(IISANOperator, abc.ABC):
-    transformer: BertModel
+class GLMIISANOperator(IISANOperator, abc.ABC):
+    dtype = torch.bfloat16
+    transformer: ChatGLMModel
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer.embeddings.word_embeddings = None
+        self.transformer: ChatGLMModel = self.transformer.transformer
+        self.transformer.set_input_embeddings(None)
 
         if self.transformer.config.hidden_size != self.config.input_dim:
             raise ValueError(f'In {self.classname}, hidden_size of transformer ({self.transformer.config.hidden_size}) '
@@ -20,9 +23,5 @@ class BertIISANOperator(IISANOperator, abc.ABC):
         self._load_hidden_states()
 
 
-class BertBaseIISANOperator(BertIISANOperator):
-    pass
-
-
-class BertLargeIISANOperator(BertIISANOperator):
+class GLM4TH9BIISANOperator(GLMIISANOperator):
     pass

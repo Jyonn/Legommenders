@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 from pigmento import pnt
 from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol, VocabularyHub, \
-    BaseTokenizer
+    BaseTokenizer, Job
 
 
 class Interactions(dict):
@@ -155,6 +155,9 @@ class BaseProcessor(abc.ABC):
             self.user_df[self.NEG_COL] = self.user_df[self.NEG_COL].apply(
                 lambda x: x if isinstance(x, list) else [])
 
+        self.generate()
+
+    def generate(self):
         user_vocab = Vocab(name=self.UID_COL)
         user_vocab.extend(list(self.user_df[self.UID_COL]))
         user_vocab.counter.activate()
@@ -167,12 +170,16 @@ class BaseProcessor(abc.ABC):
         self.user_df = self.user_df.reset_index(drop=True)
         pnt(f'compressed to {len(self.user_df)} users')
 
+        slicer = Job.get_slice(self.NEG_TRUNCATE)
+
         item_vocab = Vocab(name=self.IID_COL)
         item_vocab.extend(list(self.item_df[self.IID_COL]))
+        item_vocab.counter.initialize()
         item_vocab.counter.activate()
         for df in self.interactions.values():
             item_vocab.extend(list(df[self.IID_COL]))
         self.user_df[self.HIS_COL].map(item_vocab.extend)
+        self.user_df[self.NEG_COL].map(lambda h: item_vocab.extend(h[slicer]))
         used_items = item_vocab.counter.trim(min_count=1)
         used_items = set([item_vocab[i] for i in used_items])
         self.item_df = self.item_df[self.item_df[self.IID_COL].isin(used_items)]
@@ -218,3 +225,5 @@ class BaseProcessor(abc.ABC):
             uts.append(ut)
 
         self.interactions = Interactions(*uts)
+
+

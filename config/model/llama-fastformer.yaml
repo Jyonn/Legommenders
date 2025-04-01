@@ -2,4 +2,4 @@ $$import:
   - common/operators/item-llama.yaml
   - common/operators/user-fastformer.yaml
   - common/predictors/dot.yaml
-name: LLAMA-Fastformer
+name: LLAMA${llama}-Fastformer
