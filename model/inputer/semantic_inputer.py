@@ -26,10 +26,10 @@ class SemanticInputer(BaseInputer):
         self.max_sequence_len = self.get_max_sequence_len()  # matrix height
 
     def get_max_content_len(self):
-        return self.item_ut.meta.jobs[self.semantic_col].max_len
+        return self.item_ut.meta.features[self.semantic_col].max_len
 
     def get_max_sequence_len(self):
-        return self.user_ut.meta.jobs[self.history_col].max_len
+        return self.user_ut.meta.features[self.history_col].max_len
 
     def get_empty_input(self):
         return torch.zeros(self.max_sequence_len, self.max_content_len, dtype=torch.long)
@@ -60,7 +60,7 @@ class SemanticInputer(BaseInputer):
             self,
             batched_samples: Dict[str, torch.Tensor],
     ):
-        vocab = self.item_ut.meta.jobs[self.semantic_col].tokenizer.vocab
+        vocab = self.item_ut.meta.features[self.semantic_col].tokenizer.vocab
         input_ids = batched_samples['input_ids'].to(Env.device)
-        embedding = self.embedding_hub(vocab)(input_ids)
+        embedding = self.eh(vocab)(input_ids)
         return embedding

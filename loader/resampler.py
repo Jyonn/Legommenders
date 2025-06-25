@@ -21,12 +21,12 @@ class Resampler:
         self.lego_config = lego_config  # type: LegoConfig
         self.use_item_content = self.lego_config.use_item_content
 
-        self.column_map = self.lego_config.column_map
-        self.history_col = self.column_map.history_col
-        self.item_col = self.column_map.item_col
-        self.user_col = self.column_map.user_col
-        self.neg_col = self.column_map.neg_col
-        self.mask_col = self.column_map.mask_col
+        self.cm = self.lego_config.cm
+        self.history_col = self.cm.history_col
+        self.item_col = self.cm.item_col
+        self.user_col = self.cm.user_col
+        self.neg_col = self.cm.neg_col
+        self.mask_col = self.cm.mask_col
 
         # item manager and cache
         self.item_dataset = None
@@ -42,11 +42,11 @@ class Resampler:
 
         # clicks
         self.user_inputer = self.lego_config.user_operator.inputer
-        self.max_click_num = self.user_inputer.ut.meta.jobs[self.history_col].max_len
+        self.max_click_num = self.user_inputer.ut.meta.features[self.history_col].max_len
 
         # negative sampling
         self.use_neg_sampling = self.lego_config.use_neg_sampling
-        self.item_size = self.lego_config.item_ut.meta.jobs[self.item_col].tokenizer.vocab.size
+        self.item_size = self.lego_config.item_ut.meta.features[self.item_col].tokenizer.vocab.size
 
     def _build_item_cache(self):
         item_cache = []

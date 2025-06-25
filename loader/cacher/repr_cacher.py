@@ -13,7 +13,7 @@ class ReprCacher:
         config = legommender.config
 
         self.use_item_content = config.use_item_content
-        self.user_size = config.user_ut.meta.jobs[legommender.cm.user_col].tokenizer.vocab.size
+        self.user_size = config.user_ut.meta.features[legommender.cm.user_col].tokenizer.vocab.size
         self._activate = True
 
         self.item = ItemCacher(

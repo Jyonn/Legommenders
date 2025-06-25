@@ -23,7 +23,7 @@ class ONCEMINDProcessor(MINDProcessor):
         super().__init__(data_dir=data_dir)
 
     def config_inter_tokenization(self, ut: UniTok):
-        ut.add_job(tokenizer=EntityTokenizer(vocab='imp_id'), column=self.IMP_COL)
+        ut.add_feature(tokenizer=EntityTokenizer(vocab='imp_id'), column=self.IMP_COL)
 
     def _load_interactions(self, path):
         user_set = set(self.user_df[self.UID_COL].unique())

@@ -27,7 +27,7 @@ class ColumnMap:
 
     def set_column_vocab(self, inter_ut: UniTok):
         def col_to_vocab(col: str):
-            return inter_ut.meta.jobs[col].tokenizer.vocab.name
+            return inter_ut.meta.features[col].tokenizer.vocab.name
 
         self.history_vocab = col_to_vocab(self.history_col)
         self.item_vocab = col_to_vocab(self.item_col)

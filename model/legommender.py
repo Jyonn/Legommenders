@@ -27,15 +27,15 @@ class Legommender(nn.Module):
         self.use_neg_sampling = self.config.use_neg_sampling
         self.neg_count = self.config.neg_count
 
-        self.embedding_hub = self.config.embedding_hub
+        self.eh = self.config.eh
         # do not delete this line, the trainable parameters will be displayed
-        self.embedding_vocab_table = self.embedding_hub.vocab_table
-        self.embedding_job_table = self.embedding_hub.job_table
+        self.embedding_vocab_table = self.eh.vocab_table
+        self.embedding_feature_table = self.eh.feature_table
 
         self.user_hub = self.config.user_ut
         self.item_hub = self.config.item_ut
 
-        self.cm = self.config.column_map  # type: ColumnMap
+        self.cm = self.config.cm  # type: ColumnMap
 
         """initializing core components"""
         self.flatten_mode = self.user_operator_class.flatten_mode
@@ -127,8 +127,8 @@ class Legommender(nn.Module):
         if self.config.use_item_content:
             item_embeddings = self.get_item_content(batch, self.cm.item_col)
         else:
-            vocab = self.config.user_ut.meta.jobs[self.cm.history_col].tokenizer.vocab.name
-            item_embeddings = self.embedding_hub(vocab, col_name=self.cm.history_col)(batch[self.cm.item_col].to(Env.device))
+            vocab = self.config.user_ut.meta.features[self.cm.history_col].tokenizer.vocab.name
+            item_embeddings = self.eh(vocab, col_name=self.cm.history_col)(batch[self.cm.item_col].to(Env.device))
 
         user_embeddings = self.get_user_content(batch)
 

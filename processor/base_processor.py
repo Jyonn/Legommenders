@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 from pigmento import pnt
 from unitok import Vocab, UniTok, EntityTokenizer, EntitiesTokenizer, DigitTokenizer, Symbol, VocabularyHub, \
-    BaseTokenizer, Job
+    BaseTokenizer, Feature
 
 
 class Interactions(dict):
@@ -36,10 +36,10 @@ class BaseProcessor(abc.ABC):
     LBL_COL: str
     NEG_COL: str
 
-    IID_JOB = 'item_id'
-    UID_JOB = 'user_id'
-    HIS_JOB = 'history'
-    LBL_JOB = 'click'
+    IID_FEAT = 'item_id'
+    UID_FEAT = 'user_id'
+    HIS_FEAT = 'history'
+    LBL_FEAT = 'click'
 
     REQUIRE_STRINGIFY: bool
     NEG_TRUNCATE: int
@@ -77,10 +77,10 @@ class BaseProcessor(abc.ABC):
     def add_item_tokenizer(self, tokenizer: BaseTokenizer):
         name = tokenizer.vocab.name
 
-        self.item.add_job(tokenizer=tokenizer, column='prompt', name=f'prompt@{name}')
+        self.item.add_feature(tokenizer=tokenizer, column='prompt', name=f'prompt@{name}')
         for attr in self.attrs:
-            self.item.add_job(tokenizer=tokenizer, column=attr, name=f'{attr}@{name}', truncate=self.attrs[attr])
-            self.item.add_job(tokenizer=tokenizer, column=f'prompt_{attr}', name=f'prompt_{attr}@{name}')
+            self.item.add_feature(tokenizer=tokenizer, column=attr, name=f'{attr}@{name}', truncate=self.attrs[attr])
+            self.item.add_feature(tokenizer=tokenizer, column=f'prompt_{attr}', name=f'prompt_{attr}@{name}')
 
     def config_item_tokenization(self):
         pass
@@ -170,7 +170,7 @@ class BaseProcessor(abc.ABC):
         self.user_df = self.user_df.reset_index(drop=True)
         pnt(f'compressed to {len(self.user_df)} users')
 
-        slicer = Job.get_slice(self.NEG_TRUNCATE)
+        slicer = Feature.get_slice(self.NEG_TRUNCATE)
 
         item_vocab = Vocab(name=self.IID_COL)
         item_vocab.extend(list(self.item_df[self.IID_COL]))
@@ -194,7 +194,7 @@ class BaseProcessor(abc.ABC):
 
         with UniTok() as self.item:
             item_vocab = Vocab(name=self.IID_COL)
-            self.item.add_job(tokenizer=EntityTokenizer(vocab=item_vocab), column=self.IID_COL, name=self.IID_JOB, key=True)
+            self.item.add_feature(tokenizer=EntityTokenizer(vocab=item_vocab), column=self.IID_COL, name=self.IID_FEAT, key=True)
             self.config_item_tokenization()
             self.item.tokenize(self.item_df).save(self.item_save_dir)
             pnt(f'tokenized {len(self.item)} items')
@@ -203,10 +203,10 @@ class BaseProcessor(abc.ABC):
             VocabularyHub.add(item_vocab)
 
             user_vocab = Vocab(name=self.UID_COL)
-            self.user.add_job(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_JOB, key=True)
-            self.user.add_job(tokenizer=EntitiesTokenizer(vocab=item_vocab), column=self.HIS_COL, name=self.HIS_JOB, truncate=0)
+            self.user.add_feature(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_FEAT, key=True)
+            self.user.add_feature(tokenizer=EntitiesTokenizer(vocab=item_vocab), column=self.HIS_COL, name=self.HIS_FEAT, truncate=0)
             if self.NEG_COL:
-                self.user.add_job(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=self.NEG_TRUNCATE)
+                self.user.add_feature(tokenizer=EntitiesTokenizer(vocab=self.IID_COL), column=self.NEG_COL, truncate=self.NEG_TRUNCATE)
             self.config_user_tokenization()
             self.user.tokenize(self.user_df).save(self.user_save_dir)
             pnt(f'tokenized {len(self.user)} users')
@@ -214,10 +214,10 @@ class BaseProcessor(abc.ABC):
         uts = []
         for mode in Interactions.modes:
             with UniTok() as ut:
-                ut.add_index_job()
-                ut.add_job(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_JOB)
-                ut.add_job(tokenizer=EntityTokenizer(vocab=item_vocab), column=self.IID_COL, name=self.IID_JOB)
-                ut.add_job(tokenizer=DigitTokenizer(vocab=self.LBL_COL, vocab_size=2), column=self.LBL_COL, name=self.LBL_JOB)
+                ut.add_index_feature()
+                ut.add_feature(tokenizer=EntityTokenizer(vocab=user_vocab), column=self.UID_COL, name=self.UID_FEAT)
+                ut.add_feature(tokenizer=EntityTokenizer(vocab=item_vocab), column=self.IID_COL, name=self.IID_FEAT)
+                ut.add_feature(tokenizer=DigitTokenizer(vocab=self.LBL_COL, vocab_size=2), column=self.LBL_COL, name=self.LBL_FEAT)
                 self.config_inter_tokenization(ut)
                 ut.tokenize(self.interactions[mode]).save(self.get_save_dir(mode))
                 pnt(f'tokenized {len(ut)} {mode.name} interactions')

@@ -42,7 +42,7 @@ class BaseOperator(nn.Module):
         self.inputer = self.inputer_class(
             ut=ut,
             inputs=inputs,
-            embedding_hub=self.lego_config.embedding_hub,
+            eh=self.lego_config.eh,
             **self.config.inputer_config,
         )
 

@@ -59,7 +59,7 @@ if __name__ == '__main__':
     if embeddings.shape[0] != len(item_vocab):
         raise ValueError(f'Embedding shape {embeddings.shape} does not match item vocab size {len(item_vocab)}')
 
-    current_vocab = processor.item.meta.jobs[processor.IID_JOB].tokenizer.vocab  # type: Vocab
+    current_vocab = processor.item.meta.features[processor.IID_FEAT].tokenizer.vocab  # type: Vocab
     current_embeddings = []
     for item in current_vocab:
         current_embeddings.append(embeddings[item_vocab[item]])

@@ -28,13 +28,13 @@ class FlattenSeqInputer(ConcatInputer):
         self.item_inputs = inputs
         self.use_attr_sep_token = use_attr_sep_token
 
-        self.max_history_len = self.user_ut.meta.jobs[self.history_col].max_len
+        self.max_history_len = self.user_ut.meta.features[self.history_col].max_len
         super().__init__(**kwargs)
 
     def get_max_content_len(self):
         item_length = 0
         for col in self.inputs:
-            item_length += self.item_ut.meta.jobs[col].max_len or 1
+            item_length += self.item_ut.meta.features[col].max_len or 1
         return self.max_history_len * item_length
 
     def get_max_sequence_len(self):

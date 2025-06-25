@@ -15,7 +15,7 @@ class SingleColumnInputer(BaseInputer):
 
         assert len(self.inputs) == 1, 'single column inputer only support one column in order'
         self.column = self.inputs[0]
-        self.vocab = self.ut.meta.jobs[self.column].tokenizer.vocab.name
+        self.vocab = self.ut.meta.features[self.column].tokenizer.vocab.name
 
     def sample_rebuilder(self, sample: OrderedDict):
         value = sample[self.column]
@@ -27,7 +27,7 @@ class SingleColumnInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        embedding = self.embedding_hub(self.vocab, col_name=self.column)(batched_samples.to(Env.device))
+        embedding = self.eh(self.vocab, col_name=self.column)(batched_samples.to(Env.device))
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):

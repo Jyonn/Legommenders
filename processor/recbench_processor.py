@@ -80,12 +80,12 @@ class RecBenchProcessor(BaseProcessor):
                 )
             ),
             column_map=dict(
-                item_col=self.IID_JOB,
-                user_col=self.UID_JOB,
-                history_col=self.HIS_JOB,
+                item_col=self.IID_FEAT,
+                user_col=self.UID_FEAT,
+                history_col=self.HIS_FEAT,
                 neg_col=self.NEG_COL,
-                label_col=self.LBL_JOB,
-                group_col=self.UID_JOB,
+                label_col=self.LBL_FEAT,
+                group_col=self.UID_FEAT,
             )
         )
 

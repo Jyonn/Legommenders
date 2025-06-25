@@ -1,7 +1,7 @@
 embeddings:
 - frozen: true
   path: data/embeddings/glove.npy
-  vocab_name: glove
+  vocab_name: <vocab_name>
 name: glove
 transformation: auto
 transformation_dropout: 0.1

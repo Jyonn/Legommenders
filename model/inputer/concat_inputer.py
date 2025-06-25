@@ -43,7 +43,7 @@ class ConcatInputer(BaseInputer):
     def get_max_content_len(self):
         length = 0
         for col in self.inputs:
-            length += self.ut.meta.jobs[col].max_len or 1
+            length += self.ut.meta.features[col].max_len or 1
         return length
 
     def get_max_sequence_len(self):
@@ -98,16 +98,16 @@ class ConcatInputer(BaseInputer):
 
         input_embeddings = torch.zeros(
             *shape,
-            self.embedding_hub.embedding_dim,
+            self.eh.embedding_dim,
             dtype=torch.float
         ).to(Env.device)
 
         for col in input_ids:
-            vocab = col if col == self.vocab.name else self.ut.meta.jobs[col].tokenizer.vocab.name
+            vocab = col if col == self.vocab.name else self.ut.meta.features[col].tokenizer.vocab.name
             seq = input_ids[col].to(Env.device)  # type: torch.Tensor # [B, L]
             mask = cast(torch.Tensor, (seq > Env.UNSET)).long().to(Env.device)  # type: torch.Tensor  # [B, L]
             seq *= mask
-            embedding = self.embedding_hub(vocab)(seq)
+            embedding = self.eh(vocab)(seq)
             embedding *= mask.unsqueeze(-1)
 
             input_embeddings += embedding

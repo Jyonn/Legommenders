@@ -9,8 +9,8 @@ from utils.function import combine_config
 
 
 class LegoConfig:
-    column_map: ColumnMap
-    embedding_hub: EmbeddingHub
+    cm: ColumnMap
+    eh: EmbeddingHub
 
     item_ut: LegoUT
     item_inputs: list
@@ -76,11 +76,11 @@ class LegoConfig:
         self.user_ut = user_ut
         self.user_inputs = user_inputs
 
-    def set_column_map(self, column_map: ColumnMap):
-        self.column_map = column_map
+    def set_column_map(self, cm: ColumnMap):
+        self.cm = cm
 
-    def set_embedding_hub(self, embedding_hub: EmbeddingHub):
-        self.embedding_hub = embedding_hub
+    def set_embedding_hub(self, eh: EmbeddingHub):
+        self.eh = eh
 
     def build_components(self):
         self.item_operator = None
@@ -134,8 +134,8 @@ class LegoConfig:
         if self.use_item_content:
             item_vocabs = self.item_operator.inputer.get_vocabs()
             for vocab in item_vocabs:
-                self.embedding_hub.register_vocab(vocab)
+                self.eh.register_vocab(vocab)
 
         user_vocabs = self.user_operator.inputer.get_vocabs()
         for vocab in user_vocabs:
-            self.embedding_hub.register_vocab(vocab)
+            self.eh.register_vocab(vocab)

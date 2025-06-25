@@ -1,5 +1,7 @@
 import os.path
 import pickle
+from pyexpat import features
+
 from unitok import Symbol
 from typing import Protocol, cast, Union
 
@@ -37,14 +39,14 @@ class LegoUT(UniTok):
 
     _use_filter_cache: bool
     _general_filters: list
-    _job_specific_filters: dict
+    _feature_specific_filters: dict
     _filter_cache_dir: str
     _filter_cache_meta_path: str
     _caches: list
     _selected_attrs: tuple
 
     gft = Symbol('general_filters')
-    jft = Symbol('job_specific_filters')
+    fft = Symbol('feature_specific_filters')
     pth = Symbol('path')
 
     @classmethod
@@ -54,7 +56,7 @@ class LegoUT(UniTok):
 
         # current status
         ut._general_filters = list()
-        ut._job_specific_filters = dict()
+        ut._feature_specific_filters = dict()
 
         ut._filter_cache_dir = os.path.join(save_dir, 'filters')
         os.makedirs(ut._filter_cache_dir, exist_ok=True)
@@ -68,11 +70,11 @@ class LegoUT(UniTok):
         return ut
 
     def _filter_equals(self, other: dict):
-        if self.gft.name not in other or self.jft.name not in other or self.pth.name not in other:
+        if self.gft.name not in other or self.fft.name not in other or self.pth.name not in other:
             return False
 
         general_filters = other[self.gft.name]
-        job_specific_filters = other[self.jft.name]
+        feature_specific_filters = other[self.fft.name]
 
         if len(general_filters) != len(self._general_filters):
             return False
@@ -81,15 +83,15 @@ class LegoUT(UniTok):
             if func not in self._general_filters:
                 return False
 
-        if len(job_specific_filters) != len(self._job_specific_filters):
+        if len(feature_specific_filters) != len(self._feature_specific_filters):
             return False
-        for job_name, func_list in job_specific_filters.items():
-            if job_name not in self._job_specific_filters:
+        for feature_name, func_list in feature_specific_filters.items():
+            if feature_name not in self._feature_specific_filters:
                 return False
-            if len(func_list) != len(self._job_specific_filters[job_name]):
+            if len(func_list) != len(self._feature_specific_filters[feature_name]):
                 return False
             for func in func_list:
-                if func not in self._job_specific_filters[job_name]:
+                if func not in self._feature_specific_filters[feature_name]:
                     return False
 
         return True
@@ -103,7 +105,7 @@ class LegoUT(UniTok):
         # json.dump(self._legal_indices, cast(SupportsWrite, open(filter_path, 'w')))
         self._caches.append({
             self.gft.name: self._general_filters,
-            self.jft.name: self._job_specific_filters,
+            self.fft.name: self._feature_specific_filters,
             self.pth.name: filter_name
         })
         # json.dump(self.cached_filters, cast(SupportsWriteStr, open(self.cached_filters_path, 'w')))
@@ -125,10 +127,10 @@ class LegoUT(UniTok):
                 if func not in self._general_filters:
                     self._general_filters.append(func)
             else:
-                if col not in self._job_specific_filters:
-                    self._job_specific_filters[col] = list()
-                if func not in self._job_specific_filters[col]:
-                    self._job_specific_filters[col].append(func)
+                if col not in self._feature_specific_filters:
+                    self._feature_specific_filters[col] = list()
+                if func not in self._feature_specific_filters[col]:
+                    self._feature_specific_filters[col].append(func)
 
             for cached_filter in self._caches:
                 if self._filter_equals(cached_filter):

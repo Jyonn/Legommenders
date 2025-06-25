@@ -17,10 +17,10 @@ class BaseInputer:
     3. user clicks (item ids) -> 20 x 64
     4. user clicks (title, category) -> 20 x 64 -> 64
     """
-    def __init__(self, ut, inputs, embedding_hub: EmbeddingHub, **kwargs):
+    def __init__(self, ut, inputs, eh: EmbeddingHub, **kwargs):
         self.ut: UniTok = ut
         self.inputs: list = inputs
-        self.embedding_hub: EmbeddingHub = embedding_hub
+        self.eh: EmbeddingHub = eh
 
     def get_vocabs(self) -> Optional[List[Vocab]]:
         return []

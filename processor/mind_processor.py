@@ -3,7 +3,7 @@ import random
 from typing import cast
 
 import pandas as pd
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, EntitiesTokenizer, BaseTokenizer
+from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer
 from unitok.tokenizer.glove_tokenizer import GloVeTokenizer
 
 from embedder.glove_embedder import GloVeEmbedder
@@ -39,8 +39,8 @@ class MINDProcessor(BaseProcessor):
         self.add_item_tokenizer(llama1_tokenizer)
         self.add_item_tokenizer(glove_tokenizer)
 
-        self.item.add_job(tokenizer=EntityTokenizer(vocab='category'), column='category')
-        self.item.add_job(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
+        self.item.add_feature(tokenizer=EntityTokenizer(vocab='category'), column='category')
+        self.item.add_feature(tokenizer=EntityTokenizer(vocab='subcategory'), column='subcategory')
 
     def _load_items(self, path: str) -> pd.DataFrame:
         return pd.read_csv(

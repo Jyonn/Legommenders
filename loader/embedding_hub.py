@@ -2,7 +2,7 @@ from typing import Dict, cast, Iterable
 
 import numpy as np
 import torch
-from unitok import Vocab, Job
+from unitok import Vocab, Feature
 from pigmento import pnt
 from torch import nn
 
@@ -66,10 +66,10 @@ class EmbeddingHub:
 
         self._vocab_size = dict()
         self.vocab_table = nn.ModuleDict()
-        self.job_table = nn.ModuleDict()
+        self.feature_table = nn.ModuleDict()
 
         self._pretrained_vocab_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
-        self._pretrained_job_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
+        self._pretrained_feature_embeddings = dict()  # type: Dict[str, PretrainedEmbedding]
 
     def load_pretrained_embedding(
             self,
@@ -108,7 +108,7 @@ class EmbeddingHub:
         if vocab_name is not None:
             target = self._pretrained_vocab_embeddings
         else:
-            target = self._pretrained_job_embeddings
+            target = self._pretrained_feature_embeddings
         target[name] = PretrainedEmbedding(
             embedder=embedding,
             transformation=transformation,
@@ -135,19 +135,19 @@ class EmbeddingHub:
                 transformation_dropout=pe.transformation_dropout,
             )
 
-    def build_job_embedding(self, job: Job):
-        if job.name in self.job_table:
+    def build_feature_embedding(self, feature: Feature):
+        if feature.name in self.feature_table:
             return
 
-        if job.name not in self._pretrained_job_embeddings:
+        if feature.name not in self._pretrained_feature_embeddings:
             return
 
-        pnt(f'--- build pretrained embedding for job {job.name} ({job.tokenizer.vocab.size}, {self.embedding_dim})')
+        pnt(f'--- build pretrained embedding for feature {feature.name} ({feature.tokenizer.vocab.size}, {self.embedding_dim})')
 
-        pe = self._pretrained_job_embeddings[job.name]
-        self._process_pretrained_embedding(job.name, job.tokenizer.vocab.size, pe)
+        pe = self._pretrained_feature_embeddings[feature.name]
+        self._process_pretrained_embedding(feature.name, feature.tokenizer.vocab.size, pe)
 
-        self.job_table.add_module(job.name, pe.embedder.to(Env.device))
+        self.feature_table.add_module(feature.name, pe.embedder.to(Env.device))
 
     def build_vocab_embedding(self, vocab: Vocab):
         if vocab.name in self.vocab_table:
@@ -177,13 +177,13 @@ class EmbeddingHub:
 
     def register_ut(self, ut: LegoUT, used_cols: Iterable):
         for col in used_cols:
-            job = ut.meta.jobs[col]
-            self.build_job_embedding(job)
+            feature = ut.meta.features[col]
+            self.build_feature_embedding(feature)
 
-            vocab = job.tokenizer.vocab
+            vocab = feature.tokenizer.vocab
             self.register_vocab(vocab)
 
     def __call__(self, vocab_name, col_name=None):
-        if col_name in self.job_table:
-            return self.job_table[col_name]
+        if col_name in self.feature_table:
+            return self.feature_table[col_name]
         return self.vocab_table[vocab_name]

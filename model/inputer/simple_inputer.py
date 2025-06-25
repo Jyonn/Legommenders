@@ -24,7 +24,7 @@ class SimpleInputer(BaseInputer):
         attention_mask = dict()
 
         for col in self.inputs:
-            max_len = self.ut.meta.jobs[col].max_len
+            max_len = self.ut.meta.features[col].max_len
             if not max_len:
                 sample[col] = [sample[col]]
                 max_len = 1
@@ -50,14 +50,14 @@ class SimpleInputer(BaseInputer):
         attention_mask = batched_samples['attention_mask']
         for col in input_ids:
             col_input = input_ids[col]  # batch_size, content_len
-            vocab = self.ut.meta.jobs[col].tokenizer.vocab.name
+            vocab = self.ut.meta.features[col].tokenizer.vocab.name
 
             seq = col_input.to(Env.device)  # type: torch.Tensor
             # mask = (seq > Setting.UNSET).long()  # type: torch.Tensor
             mask = attention_mask[col].to(Env.device)
             seq *= mask
 
-            embedding = self.embedding_hub(vocab, col_name=col)(seq)  # batch_size, content_len, embedding_dim
+            embedding = self.eh(vocab, col_name=col)(seq)  # batch_size, content_len, embedding_dim
             mask = mask.unsqueeze(-1)  # batch_size, (content_len,) 1
 
             embedding *= mask  # batch_size, content_len, embedding_dim

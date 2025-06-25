@@ -37,7 +37,7 @@ class Manager:
 
     modes = {Symbols.train, Symbols.dev, Symbols.test}
 
-    embedding_hub: EmbeddingHub
+    eh: EmbeddingHub
 
     checkpoint_paths: list[str]
 
@@ -87,7 +87,7 @@ class Manager:
             selected_attrs[col] = truncate
             input_cols.append(col)
 
-        selected_attrs[ut.key_job.name] = None
+        selected_attrs[ut.key_feature.name] = None
         ut.rebuild(selected_attrs)
         return ut, input_cols
 
@@ -95,7 +95,7 @@ class Manager:
         ut = UTHub.get(self.data.user.ut)
         if self.data.user.truncate:
             ut.retruncate(
-                job=ut.meta.jobs[self.cm.history_col],
+                feature=ut.meta.features[self.cm.history_col],
                 truncate=self.data.user.truncate
             )
         return ut
@@ -110,7 +110,7 @@ class Manager:
         ut: LegoUT = LegoUT.load(self.data.inter.test)
         user_num = len(self.user_ut)
         reset_data = {
-            ut.key_job.name: list(range(user_num)),
+            ut.key_feature.name: list(range(user_num)),
             self.cm.item_col: [[0] for _ in range(user_num)],
             self.cm.user_col: list(range(user_num)),
             self.cm.label_col: [[0] for _ in range(user_num)],
@@ -174,19 +174,19 @@ class Manager:
             self.negative_sampling()
 
     def load_embeddings(self):
-        self.embedding_hub = EmbeddingHub(
+        self.eh = EmbeddingHub(
             embedding_dim=self.lego_config.item_hidden_size,
             transformation=self.embed.transformation,
             transformation_dropout=self.embed.transformation_dropout,
         )
         for info in self.embed.embeddings:
-            self.embedding_hub.load_pretrained_embedding(**info())
+            self.eh.load_pretrained_embedding(**info())
         if self.lego_config.use_item_content:
-            self.embedding_hub.register_ut(self.item_ut, self.item_inputs)
+            self.eh.register_ut(self.item_ut, self.item_inputs)
         else:
-            self.embedding_hub.register_vocab(self.item_ut.key_job.tokenizer.vocab)
+            self.eh.register_vocab(self.item_ut.key_feature.tokenizer.vocab)
 
-        self.lego_config.set_embedding_hub(self.embedding_hub)
+        self.lego_config.set_embedding_hub(self.eh)
 
     def negative_sampling(self):
         modes = [Symbols.train]

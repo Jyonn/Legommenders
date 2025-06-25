@@ -30,8 +30,8 @@ class SemanticMixInputer(BaseInputer):
             self,
             batched_samples: torch.Tensor,
     ):
-        vocab = self.item_ut.meta.jobs[self.semantic_col].tokenizer.vocab
-        embedding = self.embedding_hub(vocab)(batched_samples)
+        vocab = self.item_ut.meta.features[self.semantic_col].tokenizer.vocab
+        embedding = self.eh(vocab)(batched_samples)
         return embedding
 
     def get_mask(self, batched_samples: torch.Tensor):

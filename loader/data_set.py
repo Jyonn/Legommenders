@@ -2,7 +2,6 @@ import copy
 
 from torch.utils.data import Dataset as BaseDataset
 
-from loader.env import Env
 from loader.ut.lego_ut import LegoUT
 
 
