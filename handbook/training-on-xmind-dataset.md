@@ -51,7 +51,7 @@ xmindfin = ~/PycharmProjects/xMIND/xMIND/fin
 
 ## Step 4: Preprocess the xMIND dataset
 
-Due to the multilingual nature of the xMIND dataset, we remove the BERT tokenizer and GloVe tokenizer, but only keep the Llama1 tokenizer. You can add more tokenizers if you want.
+Due to the multilingual nature of the xMIND dataset, we remove the BERT tokenizer and GloVe tokenizer, but only keep the Llama1 tokenizer. You can add more tokenizers if you want in `processors/xmind_processor.py`.
 
 ```bash
 cd /path/to/Legommenders
@@ -169,6 +169,39 @@ You are using the default legacy behaviour of the <class 'transformers.models.ll
 [00:38:23] |Trainer| [epoch 6] GAUC 0.7239                
 [00:43:46] |Trainer| [epoch 7] GAUC 0.7265                
 [00:43:46] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
-Training Epoch 8 [7% < 03:17] , loss: 1.3548
-... (To be continued)
+[00:49:10] |Trainer| [epoch 8] GAUC 0.7249                           
+[00:54:18] |Trainer| [epoch 9] GAUC 0.7287                           
+[00:54:18] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[00:59:36] |Trainer| [epoch 10] GAUC 0.7281                            
+[01:04:47] |Trainer| [epoch 11] GAUC 0.7285                            
+[01:09:56] |Trainer| [epoch 12] GAUC 0.7302                            
+[01:09:56] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[01:15:08] |Trainer| [epoch 13] GAUC 0.7296                           
+[01:20:20] |Trainer| [epoch 14] GAUC 0.7292                           
+[01:25:33] |Trainer| [epoch 15] GAUC 0.7288                           
+[01:31:04] |Trainer| [epoch 16] GAUC 0.7308                            
+[01:31:04] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[01:36:26] |Trainer| [epoch 17] GAUC 0.7312                           
+[01:36:26] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[01:41:45] |Trainer| [epoch 18] GAUC 0.7302                           
+[01:47:06] |Trainer| [epoch 19] GAUC 0.7320                            
+[01:47:06] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[01:52:30] |Trainer| [epoch 20] GAUC 0.7317                           
+[01:57:48] |Trainer| [epoch 21] GAUC 0.7330                           
+[01:57:48] |Trainer| save model to checkpoints/mind/NAML/TM2Aybyy.pt
+[02:03:04] |Trainer| [epoch 22] GAUC 0.7315                            
+[02:08:17] |Trainer| [epoch 23] GAUC 0.7323                           
+[02:13:31] |Trainer| [epoch 24] GAUC 0.7327                            
+[02:20:06] |Trainer| [epoch 25] GAUC 0.7322                           
+[02:25:23] |Trainer| [epoch 26] GAUC 0.7327                           
+[02:25:23] |Trainer| Early stop
+[02:25:23] |Trainer| Training Ended
+[02:25:23] |Trainer| load model from checkpoints/mind/NAML/TM2Aybyy.pt
+/Users/bytedance/PycharmProjects/Legommenders/utils/metrics.py:179: UserWarning: Following existing recommendation repositories, the implementation of MRR is not the same as the original one. To get the original MRR, use MRR0 instead.
+  warnings.warn('Following existing recommendation repositories, '
+[02:27:54] |Trainer| GAUC: 0.6441     
+[02:27:54] |Trainer| MRR: 0.2651
+[02:27:54] |Trainer| NDCG@1: 0.1879
+[02:27:54] |Trainer| NDCG@5: 0.2949
+[02:27:54] |Trainer| NDCG@10: 0.3564
 ```
