@@ -103,7 +103,7 @@ class MINDProcessor(BaseProcessor):
         interactions[self.LBL_COL] = interactions[self.LBL_COL].astype(int)
         return interactions
 
-    def load_interactions(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def load_interactions(self):
         train_df = self._load_interactions(os.path.join(self.data_dir, 'train', 'behaviors.tsv'))
         test_df = self._load_interactions(os.path.join(self.data_dir, 'dev', 'behaviors.tsv'))
 
