@@ -8,7 +8,7 @@ from pigmento import pnt
 from unitok import JsonHandler
 
 import trainer
-from utils import function
+from utils import function, io
 from utils.config_init import CommandInit
 from utils.gpu import GPU
 from utils.server import Server, ExperimentBody, EvaluationBody
@@ -29,8 +29,7 @@ class Worker:
 
     @staticmethod
     def load_jobs(job_file):
-        with open(job_file) as f:
-            return f.read().strip().split('\n')
+        return io.file_load(job_file).strip().split('\n')
 
     def get_all_evaluations(self):
         evaluations = self.server.get_all_evaluations()

@@ -11,7 +11,7 @@ already contain:
     • test.parquet       (inference interactions)
     • valid_user_set_*.txt (list of user-ids reserved for validation)
 
-Consequently this processor mainly needs to
+Consequently, this processor mainly needs to
 
 1. Read the parquet files,
 2. Build a TRAIN / VALID / TEST split according to `valid_user_set`,
@@ -32,6 +32,7 @@ from unitok import BertTokenizer, TransformersTokenizer, GloVeTokenizer
 
 from embedder.glove_embedder import GloVeEmbedder
 from processor.base_processor import BaseProcessor, Interactions
+from utils import io
 from utils.config_init import ModelInit
 
 
@@ -112,10 +113,12 @@ class RecBenchProcessor(BaseProcessor):
         Read the file `valid_user_set_<ratio>.txt` that contains one user
         id per line and return it as a Python `set`.
         """
-        with open(
-            os.path.join(self.data_dir, f"valid_user_set_{valid_ratio}.txt"), "r"
-        ) as f:
-            return {line.strip() for line in f}
+        # with open(
+        #     os.path.join(self.data_dir, f"valid_user_set_{valid_ratio}.txt"), "r"
+        # ) as f:
+        #     return {line.strip() for line in f}
+        lines = io.file_load(os.path.join(self.BASE_STORE_DIR, f"valid_user_set_{valid_ratio}.txt")).split('\n')
+        return {line.strip() for line in lines}
 
     # ----------------------------- loaders ---------------------------
     def load_items(self) -> pd.DataFrame:
@@ -195,8 +198,7 @@ class RecBenchProcessor(BaseProcessor):
         # Create data-config file once; warn user where to find it
         if not os.path.exists(yaml_path) or regenerate:
             data_config = self.generate_data_configuration()
-            with open(yaml_path, "w") as f:
-                yaml.dump(data_config, f)
+            io.yaml_save(data_config, yaml_path)
 
             print(
                 f"Data configuration saved to {yaml_path}, "

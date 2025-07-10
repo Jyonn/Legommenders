@@ -22,6 +22,8 @@ The constructor will automatically:
 
 import os
 
+from utils import io
+
 
 class PathHub:
     """
@@ -49,8 +51,9 @@ class PathHub:
         # -----------------------------------------------------------------
         # “Touch” the log file (create an empty file if missing)
         # -----------------------------------------------------------------
-        with open(self.log_path, "w") as f:
-            pass
+        # with open(self.log_path, "w") as f:
+        #     pass
+        io.file_save(self.log_path, '')
 
     # ---------------------------------------------------------------------
     # Path helpers (lazy properties)

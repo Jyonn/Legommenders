@@ -5,6 +5,7 @@ import yaml
 
 from embedder.base_embedder import BaseEmbedder
 from loader.class_hub import ClassHub
+from utils import io
 from utils.config_init import CommandInit
 
 if __name__ == '__main__':
@@ -43,7 +44,8 @@ if __name__ == '__main__':
 
     config_path = os.path.join('config', 'embed', f'{model}.yaml')
 
-    with open(config_path, 'w') as f:
-        yaml.dump(embed_config, f)
+    # with open(config_path, 'w') as f:
+    #     yaml.dump(embed_config, f)
+    io.yaml_save(embed_config, config_path)
 
     print(f'Embedding configuration saved to {config_path}, please specify the vocab_name before using it')

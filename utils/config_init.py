@@ -7,8 +7,7 @@ import refconfig
 from oba import Obj
 from refconfig import RefConfig
 
-from utils import function
-
+from utils import function, io
 
 # Ensure required package versions are installed
 function.package_require('refconfig', '0.1.2')
@@ -94,8 +93,9 @@ class ConfigInit(abc.ABC):
             return cls._d
 
         # Read and parse the configuration file
-        with open(f'.{cls.classname()}') as f:
-            config = f.read()
+        # with open(f'.{cls.classname()}') as f:
+        #     config = f.read()
+        config = io.file_load(f'.{cls.classname()}')  # Load the configuration file content
 
         for line in config.strip().split('\n'):  # Process each line in the configuration file
             key, value = line.split('=')

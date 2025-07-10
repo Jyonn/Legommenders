@@ -1,35 +1,11 @@
 import os.path
-import pickle
-from pyexpat import features
 
 from unitok import Symbol
-from typing import Protocol, cast, Union
 
 from pigmento import pnt
 from unitok import UniTok
 
-from utils import function
-
-
-class SupportsWriteStr(Protocol):
-    def write(self, __s: str) -> object:
-        ...
-
-
-class SupportsWriteBytes(Protocol):
-    def write(self, __s: bytes) -> object:
-        ...
-
-
-class PickleHandler:
-    @staticmethod
-    def load(path: str):
-        return pickle.load(open(path, "rb"))
-
-    @staticmethod
-    def save(data: Union[dict, list], path: str):
-        with open(path, "wb") as f:
-            pickle.dump(data, cast(SupportsWriteBytes, f))
+from utils import function, io
 
 
 class LegoUT(UniTok):
@@ -101,15 +77,13 @@ class LegoUT(UniTok):
 
         filter_name = f'{function.get_random_string(6)}.pkl'
         filter_path = os.path.join(self._filter_cache_dir, filter_name)
-        PickleHandler.save(self._legal_indices, filter_path)
-        # json.dump(self._legal_indices, cast(SupportsWrite, open(filter_path, 'w')))
+        io.pkl_save(self._legal_indices, filter_path)
         self._caches.append({
             self.gft.name: self._general_filters,
             self.fft.name: self._feature_specific_filters,
             self.pth.name: filter_name
         })
-        # json.dump(self.cached_filters, cast(SupportsWriteStr, open(self.cached_filters_path, 'w')))
-        PickleHandler.save(self._caches, self._filter_cache_meta_path)
+        io.pkl_save(self._caches, self._filter_cache_meta_path)
         self._load_cache()
 
     def _load_cache(self):
@@ -117,8 +91,7 @@ class LegoUT(UniTok):
         if not self._use_filter_cache:
             return
         if os.path.exists(self._filter_cache_meta_path):
-            # self.cached_filters = json.load(open(self.cached_filters_path))
-            self._caches = PickleHandler.load(self._filter_cache_meta_path)
+            self._caches = io.pkl_load(self._filter_cache_meta_path)
         pnt(f'load {len(self._caches)} filter caches on {str(self)}')
 
     def filter(self, func: str, col=None):
@@ -135,7 +108,7 @@ class LegoUT(UniTok):
             for cached_filter in self._caches:
                 if self._filter_equals(cached_filter):
                     path = os.path.join(self._filter_cache_dir, cached_filter[self.pth.name])
-                    self._legal_indices = PickleHandler.load(path)
+                    self._legal_indices = io.pkl_load(path)
                     self._legal_flags = [False] * self._sample_size
                     for index in self._legal_indices:
                         self._legal_flags[index] = True

@@ -231,7 +231,7 @@ class Server:
         return self.post(f"{self.uri}/experiments/{session}/register", data)
 
     def complete_experiment(
-        self, session: str, log: str, performance: float
+        self, session: str, log: str, performance: str
     ) -> BaseResp:
         data = {
             "session": session,

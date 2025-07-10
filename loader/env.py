@@ -1,4 +1,3 @@
-from utils.path_hub import PathHub
 from utils.timer import Timer
 
 
@@ -23,6 +22,9 @@ class Env:
     # timer
     timer = Timer()  # used for debug
     latency_timer = Timer()  # used for latency
+
+    # path hub
+    ph = None
 
     @classmethod
     def train(cls):
@@ -57,7 +59,3 @@ class Env:
     @classmethod
     def set_lm_cache(cls, lm_cache):
         cls.lm_cache = lm_cache
-
-    @classmethod
-    def set_path_hub(cls, path_hub: PathHub):
-        cls.path_hub = path_hub

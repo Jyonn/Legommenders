@@ -6,7 +6,7 @@ from unitok import JsonHandler
 from loader.env import Env
 from loader.symbols import Symbols
 from tester import Tester
-from utils import bars
+from utils import bars, io
 from utils.config_init import CommandInit
 from utils.meaner import Meaner
 from utils.metrics import MetricPool
@@ -24,18 +24,18 @@ class Trainer(Tester):
         self.server = Server.auto_auth()
         experiment = self.server.get_experiment_info(session=self.config.session)
         experiment = ExperimentBody(experiment.body)
-        if experiment.signature != Env.path_hub.signature:
-            pnt(f"Signature mismatch: {Env.path_hub.signature} != {experiment.signature}, the live experiment will be terminated.")
+        if experiment.signature != Env.ph.signature:
+            pnt(f"Signature mismatch: {Env.ph.signature} != {experiment.signature}, the live experiment will be terminated.")
             raise ValueError(f"Signature mismatch")
         if experiment.seed != self.config.seed:
             pnt(f"Seed mismatch: {self.config.seed} != {experiment.seed}, the live experiment will be terminated.")
             raise ValueError(f"Seed mismatch")
         if experiment.is_completed:
-            pnt(f"Experiment {Env.path_hub.signature} is already completed, the live experiment will be terminated.")
+            pnt(f"Experiment {Env.ph.signature} is already completed, the live experiment will be terminated.")
             raise ValueError("Experiment is already completed")
         if experiment.pid is not None:
             if psutil.pid_exists(experiment.pid):
-                pnt(f"Experiment {Env.path_hub.signature} is already running, the live experiment will be terminated.")
+                pnt(f"Experiment {Env.ph.signature} is already running, the live experiment will be terminated.")
                 raise ValueError("Experiment is already running")
         self.server.register_experiment(session=self.config.session)
 
@@ -123,8 +123,9 @@ class Trainer(Tester):
 
     @staticmethod
     def get_pured_log():
-        with open(Env.path_hub.log_path, 'rb') as f:
-            log_bin = f.read()
+        # with open(Env.ph.log_path, 'rb') as f:
+        #     log_bin = f.read()
+        log_bin = io.file_load(Env.ph.log_path, binary=True)
 
         # Clean up progress lines: if there's a \r in a line, keep only what's after the last \r
         lines = log_bin.split(b'\n')
@@ -150,14 +151,14 @@ class Trainer(Tester):
             log=log,
             performance=performance
         )
-        pnt(f"Experiment {Env.path_hub.signature} is completed and uploaded to the lego server.")
+        pnt(f"Experiment {Env.ph.signature} is completed and uploaded to the lego server.")
 
     def run(self):
         self.init_optimizer()
         self.init_scheduler()
         self.load()
         self.train()
-        self.load(Env.path_hub.signature)
+        self.load(Env.ph.signature)
         self.test()
 
 

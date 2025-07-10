@@ -85,7 +85,7 @@ class IISANOperator(LMOperator):
 
     @property
     def _cache_base_dir(self):
-        return os.path.join('cache', Env.path_hub.data_name, self.operator_name)
+        return os.path.join('cache', Env.ph.data_name, self.operator_name)
 
     def _cache_exists(self):
         return os.path.exists(self._get_cache_path())

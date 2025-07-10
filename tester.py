@@ -3,7 +3,7 @@ from pigmento import pnt
 from base_lego import BaseLego
 from loader.env import Env
 from loader.symbols import Symbols
-from utils import bars
+from utils import bars, io
 from utils.config_init import CommandInit
 from utils.timer import StatusTimer
 
@@ -13,10 +13,14 @@ class Tester(BaseLego):
         loader = self.manager.get_test_loader()
         results = self.evaluate(loader, metrics=self.exp.metrics, bar=bars.TestBar())
 
-        with open(Env.path_hub.result_path, 'w') as f:
-            for metric in results:
-                pnt(f'{metric}: {results[metric]:.4f}')
-                f.write(f'{metric},{results[metric]:.4f}\n')
+        lines = []
+        # with open(Env.path_hub.result_path, 'w') as f:
+        for metric in results:
+            pnt(f'{metric}: {results[metric]:.4f}')
+            # f.write(f'{metric},{results[metric]:.4f}\n')
+            lines.append(f'{metric}: {results[metric]:.4f}')
+
+        io.file_save(Env.ph.result_path, '\n'.join(lines))
         return results
 
     def latency(self):

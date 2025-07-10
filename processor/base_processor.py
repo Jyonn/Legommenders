@@ -169,11 +169,8 @@ class BaseProcessor(abc.ABC):
         pass
 
     # ------------------------- raw-data loaders ------------------------
-    @abc.abstractmethod
     def load_items(self) -> pd.DataFrame:        ...
-    @abc.abstractmethod
     def load_users(self) -> pd.DataFrame:        ...
-    @abc.abstractmethod
     def load_interactions(self) -> Interactions: ...
 
     # ------------------------------------------------------------------

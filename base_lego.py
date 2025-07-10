@@ -14,7 +14,7 @@ from unitok import JsonHandler
 from loader.env import Env
 from loader.manager import Manager
 from loader.symbols import Symbols
-from utils import bars
+from utils import bars, io
 from utils.function import seeding, get_signature
 from utils.gpu import GPU
 from utils.meaner import Meaner
@@ -37,17 +37,17 @@ class BaseLego:
             model_name=self.model.name,
             signature=get_signature(self.data, self.embed, self.model, self.exp)
         )
-        Env.set_path_hub(path_hub)
+        Env.ph = path_hub
 
         multiprocessing.set_start_method('fork')
         self.init_pigmento()
         self.prepare_live_experiment()
 
-        JsonHandler.save(self.config(), Env.path_hub.cfg_path)
+        JsonHandler.save(self.config(), Env.ph.cfg_path)
 
         pnt('START TIME:', datetime.datetime.now())
-        pnt('SIGNATURE:', Env.path_hub.signature)
-        pnt('BASE DIR:', Env.path_hub.checkpoint_base_dir)
+        pnt('SIGNATURE:', Env.ph.signature)
+        pnt('BASE DIR:', Env.ph.checkpoint_base_dir)
         pnt('python', ' '.join(sys.argv))
 
         Env.device = self.get_device()
@@ -76,7 +76,7 @@ class BaseLego:
     @staticmethod
     def init_pigmento():
         pigmento.add_time_prefix()
-        pigmento.add_log_plugin(Env.path_hub.log_path)
+        pigmento.add_log_plugin(Env.ph.log_path)
         pigmento.add_dynamic_color_plugin()
         pnt.set_display_mode(
             display_method_name=False,
@@ -118,7 +118,7 @@ class BaseLego:
         if not sign:
             return
         sign = sign.replace('@', '')
-        path = os.path.join(Env.path_hub.checkpoint_base_dir, f'{sign}.pt')
+        path = os.path.join(Env.ph.checkpoint_base_dir, f'{sign}.pt')
         state_dict = torch.load(path, map_location=Env.device)
         # compatible to old version where each operator are wrapped with an encoder
         self.legommender.load_state_dict(state_dict['model'], strict=self.exp.load.strict)
@@ -133,8 +133,8 @@ class BaseLego:
             optimizer=self.optimizer.state_dict(),
             scheduler=self.scheduler.state_dict(),
         )
-        torch.save(state_dict, Env.path_hub.ckpt_path)
-        pnt(f'save model to {Env.path_hub.ckpt_path}')
+        torch.save(state_dict, Env.ph.ckpt_path)
+        pnt(f'save model to {Env.ph.ckpt_path}')
 
     def get_device(self):
         cuda = self.config.cuda
@@ -152,8 +152,9 @@ class BaseLego:
         # pnt(f'[epoch {epoch}] step {step}, loss {loss:.4f}')
         # with open(self.log_file, 'a+') as f:
         #     f.write(f'{prefix_s} {text}\n')
-        with open(Env.path_hub.log_path, 'a+') as f:
-            f.write(f'[epoch {epoch}] step {step}, loss {loss:.4f}\n')
+        # with open(Env.path_hub.log_path, 'a+') as f:
+        #     f.write(f'[epoch {epoch}] step {step}, loss {loss:.4f}\n')
+        io.file_save(Env.ph.log_path, f'[epoch {epoch}] step {step}, loss {loss:.4f}\n', append=True)
 
     def log_epoch(self, epoch, results):
         line = ', '.join([f'{metric} {results[metric]:.4f}' for metric in results])

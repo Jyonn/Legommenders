@@ -11,6 +11,7 @@ from unitok import Vocab
 from loader.class_hub import ClassHub
 from processor.base_processor import BaseProcessor
 from processor.recbench_processor import RecBenchProcessor
+from utils import io
 from utils.config_init import CommandInit, DataInit
 
 
@@ -81,7 +82,8 @@ if __name__ == '__main__':
     )
 
     yaml_path = os.path.join('config', 'embed', f'{processor.get_name()}-{args.model}.yaml')
-    with open(yaml_path, 'w') as f:
-        yaml.dump(embed_config, f)
+    # with open(yaml_path, 'w') as f:
+    #     yaml.dump(embed_config, f)
+    io.yaml_save(embed_config, yaml_path)
 
     print(f'Embedding configuration saved to {yaml_path}, please use `python trainer.py --embed {yaml_path}` to train')
