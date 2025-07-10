@@ -56,8 +56,6 @@ class AmzProcessor(BaseProcessor):
         with open(metadata_file) as fin:
             self.metadata = [json.loads(line) for line in fin]
 
-        self.leave_one_out = True
-
 
 
     def load_items(self) -> pd.DataFrame:
@@ -70,7 +68,10 @@ class AmzProcessor(BaseProcessor):
         """
 
         # Load data to dataframe
-        df = pd.DataFrame.from_records(self.metadata, columns=["asin", "main_cat", "title"])
+        df = pd.DataFrame.from_records(
+            self.metadata,
+            columns=["asin", "main_cat", "title"],
+        )
 
         # Remove item with title
         df = df[df.title != ""]
@@ -148,6 +149,7 @@ class AmzProcessor(BaseProcessor):
                 self.LBL_COL: 1,
             })
 
+            # Val
             new_users.append({
                 self.UID_COL: user_id + "_val",
                 self.HIS_COL: history[:-2],
@@ -165,6 +167,7 @@ class AmzProcessor(BaseProcessor):
                     self.LBL_COL: 0,
                 })
 
+            # Test
             new_users.append({
                 self.UID_COL: user_id + "_test",
                 self.HIS_COL: history[:-1],
@@ -190,17 +193,22 @@ class AmzProcessor(BaseProcessor):
         # Note: train, val, and test_inter_df is
         # calculated in load_users already
 
-        return Interactions(self.train_inter_df, self.val_inter_df, self.test_inter_df)
+        return Interactions(
+            self.train_inter_df,
+            self.val_inter_df,
+            self.test_inter_df,
+        )
 
     @property
     def attrs(self) -> dict:
         """
         Returns: Dict[str, int]
             Key is feature name
+            Value is maximum length
         """
         return dict(
             title=50,
-            main_cat=0,
+            main_cat=0, # ID-based feature, no maximum length
         )
 
     def config_item_tokenization(self):
@@ -213,7 +221,9 @@ class AmzProcessor(BaseProcessor):
         llama1_tokenizer = TransformersTokenizer(vocab='llama1', key=ModelInit.get('llama1'))
         glove_tokenizer = GloVeTokenizer(vocab=GloVeEmbedder.get_glove_vocab())
 
+        # The line below create title@bert and main_cat@bert in the feature list.
         self.add_item_tokenizer(bert_tokenizer)
+
         self.add_item_tokenizer(llama1_tokenizer)
         self.add_item_tokenizer(glove_tokenizer)
 
@@ -221,7 +231,7 @@ class AmzProcessor(BaseProcessor):
         self.item.add_feature(tokenizer=EntityTokenizer(vocab='main_cat'), column='main_cat')
 
     def add_item_tokenizer(self, tokenizer):
-        """This function is not required to be define.
+        """This function is not required to be defined.
         Here I override the original function as I don't use promp / LLM input
         """
         name = tokenizer.vocab.name
