@@ -1,4 +1,24 @@
+"""
+server.py
+
+A *very thin* HTTP client wrapper that talks to a custom backend
+(here named “Lego” in the configuration).  The module provides:
+
+    • Small data-classes that convert raw JSON dictionaries into Python
+      objects (BaseResp, ExperimentBody, EvaluationBody).
+    • Utility for automatic authentication via `utils.config_init.AuthInit`.
+    • `Server` class with helper methods covering the REST API surface:
+         – CRUD for “evaluations” and “experiments”
+         – Pagination handling for listing evaluations
+         – Convenience logging of payload size & pretty-printing with
+           `pigmento.pnt`.
+
+None of the methods perform any retry / robustness logic—this is kept
+intentionally minimal and should be extended if used in production.
+"""
+
 import os
+from typing import Dict, Any, Iterator, Optional
 
 import requests
 from pigmento import pnt
@@ -6,160 +26,239 @@ from pigmento import pnt
 from utils.config_init import AuthInit
 
 
+# =============================================================================
+#                         Lightweight response wrappers
+# =============================================================================
 class BaseResp:
-    def __init__(self, resp: dict):
-        self.msg = resp.get('msg', None)
-        self.identifier = resp.get('identifier', None)
-        self.append_msg = resp.get('append_msg', None)
-        self.debug_msg = resp.get('debug_msg', None)
-        self.code = resp.get('code', None)
-        self.body = resp.get('body', None)
-        self.http_code = resp.get('http_code', None)
+    """
+    A convenience wrapper around the plain JSON dict returned by the server.
+    Only copies a handful of well-known keys to attributes and provides an
+    `ok` property for quick success checks.
+    """
 
+    def __init__(self, resp: Dict[str, Any]):
+        self.msg: Optional[str] = resp.get("msg")
+        self.identifier: Optional[str] = resp.get("identifier")
+        self.append_msg: Optional[str] = resp.get("append_msg")
+        self.debug_msg: Optional[str] = resp.get("debug_msg")
+        self.code: Optional[int] = resp.get("code")
+        self.body: Any = resp.get("body")
+        self.http_code: Optional[int] = resp.get("http_code")
+
+    # ---------------------------------------------------------------------
+    # Helper: success flag
+    # ---------------------------------------------------------------------
     @property
-    def ok(self):
-        return self.identifier == 'OK'
+    def ok(self) -> bool:
+        """
+        According to the backend specification a successful response has
+        an identifier equal to the literal string "OK".
+        """
+        return self.identifier == "OK"
 
 
 class ExperimentBody:
-    def __init__(self, body: dict):
-        self.signature = body.get('signature', None)
-        self.seed = body.get('seed', None)
-        self.session = body.get('session', None)
-        self.log = body.get('log', None)
-        self.performance = body.get('performance', None)
-        self.is_completed = body.get('is_completed', None)
-        self.created_at = body.get('created_at', None)
-        self.pid = body.get('pid', None)
+    """
+    Client-side representation of an “Experiment” object as returned by the
+    server.  All attributes are optional because the server may evolve.
+    """
+
+    def __init__(self, body: Dict[str, Any]):
+        self.signature = body.get("signature")
+        self.seed = body.get("seed")
+        self.session = body.get("session")
+        self.log = body.get("log")
+        self.performance = body.get("performance")
+        self.is_completed = body.get("is_completed")
+        self.created_at = body.get("created_at")
+        self.pid = body.get("pid")
 
 
 class EvaluationBody:
-    def __init__(self, body: dict):
-        self.signature = body.get('signature', None)
-        self.command = body.get('command', None)
-        self.configuration = body.get('configuration', None)
-        self.created_at = body.get('created_at', None)
-        self.modified_at = body.get('modified_at', None)
-        self.comment = body.get('comment', None)
-        self.experiments = body.get('experiments', [])
-        for i, experiment in enumerate(self.experiments):
-            self.experiments[i] = ExperimentBody(experiment)
+    """
+    Client-side representation of an “Evaluation” + its nested experiments.
+    """
+
+    def __init__(self, body: Dict[str, Any]):
+        self.signature = body.get("signature")
+        self.command = body.get("command")
+        self.configuration = body.get("configuration")
+        self.created_at = body.get("created_at")
+        self.modified_at = body.get("modified_at")
+        self.comment = body.get("comment")
+
+        # Convert nested experiment dictionaries into ExperimentBody objects
+        self.experiments = [ExperimentBody(e) for e in body.get("experiments", [])]
 
 
+# =============================================================================
+#                                 Server
+# =============================================================================
 class Server:
-    def __init__(self, uri, auth):
+    """
+    Very small wrapper around `requests` that handles authentication headers,
+    logging and convenience methods for the specific API endpoints used by
+    this project.
+
+    Parameters
+    ----------
+    uri  : str
+        Base URI of the Lego server, e.g. "https://api.lego.ai".
+    auth : str
+        Authentication token that the server expects in the "Authentication"
+        header.
+    """
+
+    def __init__(self, uri: str, auth: str):
         self.uri = uri
         self.auth = auth
-        self.pid = os.getpid()
+        self.pid = os.getpid()  # process identifier of the current Python worker
 
+    # ---------------------------------------------------------------------
+    # Automatic authentication from config file
+    # ---------------------------------------------------------------------
     @classmethod
-    def auto_auth(cls):
-        uri, auth = AuthInit.get('lego_uri'), AuthInit.get('lego_auth')
+    def auto_auth(cls) -> "Server":
+        """
+        Construct a `Server` instance by pulling `lego_uri` and `lego_auth`
+        values from the project's configuration system.
+        """
+        uri = AuthInit.get("lego_uri")
+        auth = AuthInit.get("lego_auth")
         return cls(uri=uri, auth=auth)
 
+    # ---------------------------------------------------------------------
+    # Helper: compute rough payload size (bytes)
+    # ---------------------------------------------------------------------
     @staticmethod
-    def calculate_bytes(data: dict):
-        return sum(len(key) + len(str(value)) for key, value in data.items())
+    def calculate_bytes(data: Dict[str, Any]) -> int:
+        """
+        Naively approximates the byte size of the JSON payload by summing the
+        string length of keys and values.  Good enough for logging purposes.
+        """
+        return sum(len(str(key)) + len(str(value)) for key, value in data.items())
 
-    def post(self, uri, data):
+    # ---------------------------------------------------------------------
+    # Low-level HTTP wrappers
+    # ---------------------------------------------------------------------
+    def post(self, uri: str, data: Dict[str, Any]) -> BaseResp:
         total_bytes = self.calculate_bytes(data)
-        pnt(f'Uploading {total_bytes} bytes of data to {uri}')
+        pnt(f"Uploading {total_bytes} bytes of data to {uri}")
 
         with requests.post(
             uri,
-            headers={'Authentication': self.auth},
+            headers={"Authentication": self.auth},
             json=data,
         ) as response:
             return BaseResp(response.json())
 
-    def put(self, uri, data):
+    def put(self, uri: str, data: Dict[str, Any]) -> BaseResp:
         total_bytes = self.calculate_bytes(data)
-        pnt(f'Uploading {total_bytes} bytes of data to {uri}')
+        pnt(f"Uploading {total_bytes} bytes of data to {uri}")
 
         with requests.put(
             uri,
-            headers={'Authentication': self.auth},
+            headers={"Authentication": self.auth},
             json=data,
         ) as response:
             return BaseResp(response.json())
 
-    def delete(self, uri):
-        pnt(f'Sending delete request to {uri}')
+    def delete(self, uri: str) -> BaseResp:
+        pnt(f"Sending delete request to {uri}")
         with requests.delete(
             uri,
-            headers={'Authentication': self.auth},
+            headers={"Authentication": self.auth},
         ) as response:
             return BaseResp(response.json())
 
-    def get(self, uri, query):
-        pnt(f'Sending query request to {uri} with {query}')
-
+    def get(self, uri: str, query: Dict[str, Any]) -> BaseResp:
+        pnt(f"Sending query request to {uri} with {query}")
         with requests.get(
             uri,
-            headers={'Authentication': self.auth},
-            params=query
+            headers={"Authentication": self.auth},
+            params=query,
         ) as response:
             return BaseResp(response.json())
 
-    def get_all_evaluations(self):
+    # ---------------------------------------------------------------------
+    # High-level domain-specific helpers
+    # ---------------------------------------------------------------------
+    def get_all_evaluations(self) -> Iterator[EvaluationBody]:
+        """
+        Yields *all* evaluations using the server's pagination.  The server is
+        expected to return a JSON with keys 'total_page' and 'evaluations'.
+        """
         total_page = None
         current_page = 1
+
         while total_page is None or current_page <= total_page:
-            query = {
-                'page': current_page
-            }
-            response = self.get(f'{self.uri}/evaluations/', query)
+            query = {"page": current_page}
+            response = self.get(f"{self.uri}/evaluations/", query)
+
             if response.ok:
-                total_page = response.body['total_page']
-                for evaluation in response.body['evaluations']:
+                total_page = response.body["total_page"]
+                for evaluation in response.body["evaluations"]:
                     yield EvaluationBody(evaluation)
                 current_page += 1
             else:
-                raise ValueError('Unable to fetch the evaluations:' + response.msg)
+                raise ValueError("Unable to fetch evaluations: " + (response.msg or ""))
 
-    def get_experiment_info(self, session):
-        query = {
-            'session': session
-        }
-        return self.get(f'{self.uri}/experiments/', query)
+    def get_experiment_info(self, session: str) -> BaseResp:
+        query = {"session": session}
+        return self.get(f"{self.uri}/experiments/", query)
 
-    def create_or_get_evaluation(self, signature, command, configuration):
+    # --------------- CRUD for Evaluations ----------------------------------
+    def create_or_get_evaluation(
+        self, signature: str, command: str, configuration: str
+    ) -> BaseResp:
         data = {
-            'signature': signature,
-            'command': command,
-            'configuration': configuration,
+            "signature": signature,
+            "command": command,
+            "configuration": configuration,
         }
-        return self.post(f'{self.uri}/evaluations/', data)
+        return self.post(f"{self.uri}/evaluations/", data)
 
-    def delete_evaluation(self, signature):
-        return self.delete(f'{self.uri}/evaluations/{signature}')
+    def delete_evaluation(self, signature: str) -> BaseResp:
+        return self.delete(f"{self.uri}/evaluations/{signature}")
 
-    def create_or_get_experiment(self, signature, seed):
+    # --------------- CRUD for Experiments ----------------------------------
+    def create_or_get_experiment(self, signature: str, seed: int) -> BaseResp:
+        data = {"signature": signature, "seed": seed}
+        return self.post(f"{self.uri}/experiments/", data)
+
+    def register_experiment(self, session: str) -> BaseResp:
+        data = {"pid": self.pid}
+        return self.post(f"{self.uri}/experiments/{session}/register", data)
+
+    def complete_experiment(
+        self, session: str, log: str, performance: float
+    ) -> BaseResp:
         data = {
-            'signature': signature,
-            'seed': seed,
+            "session": session,
+            "log": log,
+            "performance": performance,
         }
-        return self.post(f'{self.uri}/experiments/', data)
-
-    def register_experiment(self, session):
-        data = {
-            'pid': self.pid,
-        }
-        return self.post(f'{self.uri}/experiments/{session}/register', data)
-
-    def complete_experiment(self, session, log, performance):
-        data = {
-            'session': session,
-            'log': log,
-            'performance': performance,
-        }
-        return self.put(f'{self.uri}/experiments/', data)
+        return self.put(f"{self.uri}/experiments/", data)
 
 
-if __name__ == '__main__':
+# =============================================================================
+#                                 Demo
+# =============================================================================
+if __name__ == "__main__":
+    # Fetch auth credentials from the config file
     server = Server(
-        uri=AuthInit.get('uri'),
-        auth=AuthInit.get('auth'),
+        uri=AuthInit.get("uri"),
+        auth=AuthInit.get("auth"),
     )
 
-    evaluation = server.create_or_get_evaluation('123456', 'command', '{"config": "data"}')
+    # Example usage: create or fetch an evaluation
+    evaluation_resp = server.create_or_get_evaluation(
+        signature="123456",
+        command="python train.py --model abc",
+        configuration='{"learning_rate": 1e-3}',
+    )
+
+    if evaluation_resp.ok:
+        pnt("Evaluation up-to-date:", evaluation_resp.body)
+    else:
+        pnt("Something went wrong:", evaluation_resp.msg)

@@ -197,8 +197,6 @@ You are using the default legacy behaviour of the <class 'transformers.models.ll
 [02:25:23] |Trainer| Early stop
 [02:25:23] |Trainer| Training Ended
 [02:25:23] |Trainer| load model from checkpoints/mind/NAML/TM2Aybyy.pt
-/Users/bytedance/PycharmProjects/Legommenders/utils/metrics.py:179: UserWarning: Following existing recommendation repositories, the implementation of MRR is not the same as the original one. To get the original MRR, use MRR0 instead.
-  warnings.warn('Following existing recommendation repositories, '
 [02:27:54] |Trainer| GAUC: 0.6441     
 [02:27:54] |Trainer| MRR: 0.2651
 [02:27:54] |Trainer| NDCG@1: 0.1879
