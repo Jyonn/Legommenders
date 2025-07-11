@@ -26,10 +26,15 @@ class Tester(BaseLego):
     def latency(self):
         Env.latency_timer.activate()
         Env.latency_timer.clear()
+        Env.latency_timer.set_total_count(Symbols.test, self.config.num_batches or 0)
 
         try:
             self.test()
         except KeyboardInterrupt:
+            pass
+        except StopIteration:
+            pass
+        finally:
             st = Env.latency_timer.status_dict[Symbols.test]  # type: StatusTimer
             pnt(f'Total {st.count} steps, avg ms {st.avgms():.4f}')
 
@@ -51,6 +56,7 @@ if __name__ == '__main__':
             hidden_size=256,
             item_hidden_size='${hidden_size}$',
             latency=False,
+            num_batches=1000,
         ),
     ).parse()
 

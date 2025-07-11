@@ -89,7 +89,7 @@ class EmbeddingHub:
         embedding = np.load(path)
         embedding = torch.tensor(embedding, dtype=torch.float32)
         embedding = nn.Embedding.from_pretrained(embedding)
-        pnt(f'load pretrained embedding {name} of {embedding.weight.shape}')
+        pnt(f'load pretrained embedding {name} of {embedding.weight.shape}:')
 
         if name == '<vocab_name>':
             raise ValueError(f'please specify the vocab name for the pretrained embedding in the embed config')
@@ -97,18 +97,21 @@ class EmbeddingHub:
         if transformation not in self.pretrained_types:
             raise ValueError(f'invalid transformation type {transformation}, expected {self.pretrained_types}')
         if transformation == self.DEFAULT:
-            pnt('use default transformation')
+            pnt('--- use default transformation')
             transformation = self.transformation
         if transformation_dropout is None:
-            pnt('use default transformation dropout')
+            pnt('--- use default transformation dropout')
             transformation_dropout = self.transformation_dropout
-        pnt(f'pretrained transformation type: {transformation}')
-        pnt(f'pretrained transformation dropout: {transformation_dropout}')
+        pnt(f'--- pretrained transformation type: {transformation}')
+        pnt(f'--- pretrained transformation dropout: {transformation_dropout}')
 
         if vocab_name is not None:
             target = self._pretrained_vocab_embeddings
+            pnt(f'--- saved in pretrained vocab embeddings')
         else:
             target = self._pretrained_feature_embeddings
+            pnt(f'--- saved in pretrained feature embeddings')
+
         target[name] = PretrainedEmbedding(
             embedder=embedding,
             transformation=transformation,
@@ -118,7 +121,7 @@ class EmbeddingHub:
 
     def _process_pretrained_embedding(self, name, size, pe: PretrainedEmbedding):
         frozen_str = "frozen" if pe.frozen else "unfrozen"
-        pnt(f'load {frozen_str} vocab: {name} {pe.embedder.weight.shape}')
+        pnt(f'--- load {frozen_str} vocab: {name} {pe.embedder.weight.shape}')
 
         if int(pe.embedder.weight.shape[0]) != size:
             raise ValueError(f'{name} not meet the expected vocab size {size}')
@@ -128,7 +131,7 @@ class EmbeddingHub:
         embedding_size = int(pe.embedder.weight.data.shape[1])
 
         if embedding_size != self.embedding_dim or self.transformation == self.LINEAR:
-            pnt(f'transform {name} embedding from size {embedding_size} to {self.embedding_dim}')
+            pnt(f'--- transform {name} embedding from size {embedding_size} to {self.embedding_dim}')
             pe.embedder = Transformation(
                 embedding=cast(nn.Embedding, pe.embedder),
                 to_dimension=self.embedding_dim,
@@ -137,31 +140,33 @@ class EmbeddingHub:
 
     def build_feature_embedding(self, feature: Feature):
         if feature.name in self.feature_table:
-            return
+            return False
 
         if feature.name not in self._pretrained_feature_embeddings:
-            return
+            return False
 
-        pnt(f'--- build pretrained embedding for feature {feature.name} ({feature.tokenizer.vocab.size}, {self.embedding_dim})')
+        pnt(f'build pretrained embedding for feature {feature.name} ({feature.tokenizer.vocab.size}, {self.embedding_dim})')
 
         pe = self._pretrained_feature_embeddings[feature.name]
         self._process_pretrained_embedding(feature.name, feature.tokenizer.vocab.size, pe)
 
         self.feature_table.add_module(feature.name, pe.embedder.to(Env.device))
 
+        return True
+
     def build_vocab_embedding(self, vocab: Vocab):
         if vocab.name in self.vocab_table:
             return
 
         if vocab.name not in self._pretrained_vocab_embeddings:
-            pnt(f'--- create vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
+            pnt(f'create vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
             self.vocab_table.add_module(vocab.name, nn.Embedding(
                 num_embeddings=vocab.size,
                 embedding_dim=self.embedding_dim
             ).to(Env.device))
             return
 
-        pnt(f'--- build pretrained embedding for vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
+        pnt(f'build pretrained embedding for vocab {vocab.name} ({vocab.size}, {self.embedding_dim})')
         pe = self._pretrained_vocab_embeddings[vocab.name]
         self._process_pretrained_embedding(vocab.name, vocab.size, pe)
 

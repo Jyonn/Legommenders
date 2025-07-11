@@ -1,0 +1,8 @@
+$$import: base.yaml
+item:
+  inputs:
+  - name@${lm}: 20
+  - address@${lm}: 50
+  - city@${lm}: 10
+  - state@${lm}: 10
+name: yelprb

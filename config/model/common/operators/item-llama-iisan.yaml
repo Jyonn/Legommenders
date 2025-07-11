@@ -7,6 +7,9 @@ config:
   item_hidden_size: 4096
   hidden_size: ${hidden_size}$
   item_config:
+    global_proj_size: ${global_proj_size:null}
+    local_proj_size: ${local_proj_size:null}$
+    layer_selection_step: ${layer_step:1}
     inputer_config:
       use_cls_token: false
       use_sep_token: false

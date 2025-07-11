@@ -17,6 +17,23 @@ from utils import bars
 from utils.config_init import ModelInit
 
 
+class IISANOperatorConfig(BaseOperatorConfig):
+    def __init__(
+            self,
+            global_proj_size: int = None,
+            local_proj_size: int = None,
+            layer_selection_step: int = 1,
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        if global_proj_size is not None and local_proj_size is not None and global_proj_size != local_proj_size:
+            raise ValueError('global_proj_size and local_proj_size must be equal if both are set')
+        self.global_proj_size = global_proj_size
+        self.local_proj_size = local_proj_size
+        self.layer_selection_step = layer_selection_step
+
+
 class SANBlock(nn.Module):
     def __init__(self, embedding_dim):
         super(SANBlock, self).__init__()
@@ -32,10 +49,10 @@ class SANBlock(nn.Module):
 
 
 class IISANOperator(LMOperator):
-    config_class = BaseOperatorConfig
+    config_class = IISANOperatorConfig
     inputer_class = ConcatInputer
     inputer: ConcatInputer
-    config: BaseOperatorConfig
+    config: IISANOperatorConfig
     dtype = torch.float32
 
     def __init__(self, **kwargs):
@@ -43,16 +60,44 @@ class IISANOperator(LMOperator):
 
         self.transformer = AutoModel.from_pretrained(self.transformer_key, trust_remote_code=True)
         self.num_hidden_layers = self.get_layer_nums()
+        self.selected_layers = self.get_selected_layers()
+        self.num_selected_layers = len(self.selected_layers)
+
         os.makedirs(self._cache_base_dir, exist_ok=True)
 
-        self.san_blocks = nn.ModuleList([SANBlock(self.config.input_dim) for _ in range(self.num_hidden_layers - 1)])
+        self.san_block_input_dim = self.config.input_dim
+
+        self.global_projection = None
+        if self.config.global_proj_size is not None:
+            self.san_block_input_dim = self.config.global_proj_size
+            self.global_projection = nn.Linear(self.config.input_dim, self.config.global_proj_size, bias=False)
+
+        self.local_projections = [None] * self.num_selected_layers
+        if self.config.local_proj_size is not None:
+            self.local_projections = nn.ModuleList([
+                nn.Linear(self.config.input_dim, self.config.local_proj_size, bias=False)
+                for _ in range(self.num_selected_layers)
+            ])
+            self.san_block_input_dim = self.config.local_proj_size
+
+        self.san_blocks = nn.ModuleList([SANBlock(self.san_block_input_dim) for _ in range(self.num_selected_layers - 1)])
         self.gates = nn.ParameterList([
-            nn.Parameter(torch.tensor(0.5)) for _ in range(self.num_hidden_layers - 1)
+            nn.Parameter(torch.tensor(0.5)) for _ in range(self.num_selected_layers - 1)
         ])  # gating factors
 
-        self.linear = nn.Linear(self.config.input_dim, self.config.hidden_size)
+        self.linear = nn.Linear(self.san_block_input_dim, self.config.hidden_size)
 
         self.hidden_states = None  # [N, H, D]
+
+    def get_selected_layers(self):
+        if self.config.layer_selection_step > self.num_hidden_layers:
+            raise ValueError(f'layer_selection_step {self.config.layer_selection_step} is larger than num_hidden_layers {self.num_hidden_layers}')
+        selected_layers = list(range(0, self.num_hidden_layers, self.config.layer_selection_step))
+        margin = self.num_hidden_layers - selected_layers[-1] - 1
+        selected_layers = list(map(lambda x: x + margin, selected_layers))
+        selected_layer_str = ', '.join(map(str, selected_layers))
+        pnt(f'selected_layers: {selected_layer_str}')
+        return selected_layers
 
     def use_lm_cache(self):
         return True
@@ -62,7 +107,7 @@ class IISANOperator(LMOperator):
         return ModelInit.get(self.operator_name.replace('iisan', ''))
 
     def get_layer_nums(self):
-        return self.transformer.config.num_hidden_layers
+        return int(self.transformer.config.num_hidden_layers)
 
     def __str__(self):
         return self.operator_name
@@ -74,7 +119,12 @@ class IISANOperator(LMOperator):
             pnt(f'caching item hidden states at runtime')
             self.cache()
         hidden_states = np.load(self._get_cache_path())
-        self.hidden_states = torch.from_numpy(hidden_states)
+        selected_hidden_states = []
+        for layer in self.selected_layers:
+            selected_hidden_states.append(hidden_states[:, layer, :])
+        selected_hidden_states = np.stack(selected_hidden_states, axis=1)  # [N, H, D]
+
+        self.hidden_states = torch.from_numpy(selected_hidden_states)
         pnt(f'hidden_weights.shape: {self.hidden_states.shape}')  # [N, H, D]
 
         nan_mask = torch.isnan(self.hidden_states).any(dim=-1)  # [N, L]
@@ -120,11 +170,19 @@ class IISANOperator(LMOperator):
         indices = embeddings.cpu()  # [B]
         hidden_states = self.hidden_states[indices].to(Env.device)  # [B, H, D]
 
-        current_state = hidden_states[:, 0, :]
+        if self.global_projection is not None:
+            hidden_states = self.global_projection(hidden_states)
 
-        for i in range(self.num_hidden_layers - 1):
+        current_state = hidden_states[:, 0, :]
+        if self.local_projections[0] is not None:
+            current_state = self.local_projections[0](current_state)
+
+        for i in range(self.num_selected_layers - 1):
+            hidden_state = hidden_states[:, i + 1, :]
+            if self.local_projections[i + 1] is not None:
+                hidden_state = self.local_projections[i + 1](hidden_state)
             gate = torch.sigmoid(self.gates[i])  # μ in (0,1)
-            fusion = gate * current_state + (1 - gate) * hidden_states[:, i + 1, :]
+            fusion = gate * current_state + (1 - gate) * hidden_state
             current_state = self.san_blocks[i](fusion)
 
         return self.linear(current_state)

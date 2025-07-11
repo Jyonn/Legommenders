@@ -1,0 +1,5 @@
+$$import:
+  - common/operators/item-llama-iisan.yaml
+  - common/operators/user-gru.yaml
+  - common/predictors/dot.yaml
+name: LLAMA${llama}-IISAN-LSTUR

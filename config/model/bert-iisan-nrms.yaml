@@ -1,0 +1,5 @@
+$$import:
+  - common/operators/item-bert-iisan.yaml
+  - common/operators/user-attention.yaml
+  - common/predictors/dot.yaml
+name: BERT-IISAN-NRMS

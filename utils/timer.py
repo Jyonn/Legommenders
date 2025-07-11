@@ -51,11 +51,12 @@ class StatusTimer:
     execution time for that segment.
     """
 
-    def __init__(self):
+    def __init__(self, total_count=0):
         self.total_time: float = 0.0     # seconds accumulated so far
         self.start_time: Optional[float] = None
         self.timing: bool = False        # are we currently measuring?
         self.count: int = 0              # how many completed cycles
+        self.total_count = total_count
 
     # ---------------------------------------------------------------------
     # Toggle timing
@@ -67,6 +68,9 @@ class StatusTimer:
             self.total_time += crt_time - self.start_time
             self.timing = False
             self.count += 1
+
+            if self.total_count and self.count >= self.total_count:
+                raise StopIteration
         else:
             # We are *starting* the timer
             self.timing = True
@@ -107,6 +111,7 @@ class Timer:
 
     def __init__(self, activate: bool = False):
         self.status_dict: Dict[str, StatusTimer] = {}
+        self.total_counts = dict()
         self._activate = activate
 
     # ---------------------------------------------------------------------
@@ -120,14 +125,18 @@ class Timer:
         """Disable timing globally (no-ops thereafter)."""
         self._activate = False
 
+    def set_total_count(self, status, count):
+        self.total_counts[status] = count
+
     # ---------------------------------------------------------------------
     # Start / stop timing for a given status
     # ---------------------------------------------------------------------
+
     def run(self, status: str):
         if not self._activate:
             return
         if status not in self.status_dict:
-            self.status_dict[status] = StatusTimer()
+            self.status_dict[status] = StatusTimer(total_count=self.total_counts.get(status, 0))
         self.status_dict[status].run()
 
     # Allow `Timer` object to be called like a function -------------------
