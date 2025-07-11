@@ -152,6 +152,7 @@ The supported datasets can be categorized into three groups:
 | [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | automotive | automotiverb | Automotive | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/automotive_recbench_processor.py)         |
 | [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | cds        | cdsrb        | Music      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/cds_recbench_processor.py)                |
 | [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | games      | games        | Game       | ✅ Community | Processor Coming Soon!                                                                                                 |
+
 Datasets can be processed into Legommenders format using built-in scripts based on RecBench. You can directly download the data from [here](https://drive.google.com/drive/folders/1PP2PMqg4Fxe8Qb2haob8eJy7g8bgw6tC?usp=sharing).
 
 ## 🏗️ Model Architecture & Algorithms
