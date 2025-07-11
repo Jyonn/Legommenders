@@ -23,11 +23,10 @@ Concrete RecBench domains (Automotive, Beauty, …) inherit from
 `RecBenchProcessor` and only customise column names (`UID_COL`, …),
 prompt prefix (`PROMPT`) and textual attributes (`attrs`).
 """
-
+import abc
 import os.path
 
 import pandas as pd
-import yaml
 from unitok import BertTokenizer, TransformersTokenizer, GloVeTokenizer
 
 from embedder.glove_embedder import GloVeEmbedder
@@ -36,7 +35,7 @@ from utils import io
 from utils.config_init import ModelInit
 
 
-class RecBenchProcessor(BaseProcessor):
+class RecBenchProcessor(BaseProcessor, abc.ABC):
     """
     Base class reused by all individual RecBench *domains*.
     """
