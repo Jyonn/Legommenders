@@ -4,11 +4,12 @@ from pigmento import pnt
 
 
 class StatusTimer:
-    def __init__(self):
+    def __init__(self, total_count=0):
         self.total_time = 0
         self.start_time = None
         self.timing = False
         self.count = 0
+        self.total_count = total_count
 
     def run(self):
         crt_time = time.time()
@@ -16,6 +17,9 @@ class StatusTimer:
             self.total_time += crt_time - self.start_time
             self.timing = False
             self.count += 1
+
+            if self.total_count and self.count >= self.total_count:
+                raise StopIteration
         else:
             self.timing = True
             self.start_time = crt_time
@@ -35,6 +39,7 @@ class StatusTimer:
 class Timer:
     def __init__(self, activate=False):
         self.status_dict = dict()  # type: dict[str, StatusTimer]
+        self.total_counts = dict()
         self._activate = activate
 
     def activate(self):
@@ -43,11 +48,14 @@ class Timer:
     def deactivate(self):
         self._activate = False
 
+    def set_total_count(self, status, count):
+        self.total_counts[status] = count
+
     def run(self, status: str):
         if not self._activate:
             return
         if status not in self.status_dict:
-            self.status_dict[status] = StatusTimer()
+            self.status_dict[status] = StatusTimer(total_count=self.total_counts.get(status, 0))
         self.status_dict[status].run()
 
     def __call__(self, status: str):
