@@ -39,7 +39,7 @@ Legommenders supports 15+ datasets across domains like news, books, movies, musi
 
 - 📰 MIND: Large-scale Microsoft news data for CTR prediction.
 - 📰 PENS: Personalized news recommendation dataset.
-- 📰 Adressa: News reading logs from Norway.
+~~- 📰 Adressa: News reading logs from Norway.~~
 - 📰 EB-NeRD: RecSys Challenge 2024 news dataset.
 - 📚 Goodreads: Book reviews and metadata.
 - 📚 Amazon Books: Subset of Amazon product reviews.
@@ -54,6 +54,94 @@ Legommenders supports 15+ datasets across domains like news, books, movies, musi
 - 🎮 Steam: Video game reviews and metadata.
 - 🏨 HotelRec: Hotel recommendation dataset.
 - ️️🍽️ Yelp: Restaurant reviews and metadata.
+
+The supported datasets can be categorized into three groups:
+
+- **Native**: Legommenders provide native dataset processing scripts, i.e., `processor/mind_processor.py`.
+- **Bridge**: Other repositories (e.g., [RecBench](https://github.com/Jyonn/RecBench)) process this dataset into their format, and Legommenders provides a bridge to convert it into our format, i.e., `processor/recbench_processor.py`. Using such datasets can make cross-repository models easy to evaluate.
+- **Community**: Users can design processors to convert unsupported datasets into Legommenders format.
+
+**\* Single dataset can be supported by multiple channels.**
+
+
+
+[//]: # (\begin{tabular}{llllllllll})
+
+[//]: # (\toprule)
+
+[//]: # (% Dataset & Type & Test & Item@T & User@T & Finetune & Item@F & User@F & Provider & Source \\)
+
+[//]: # (\multirow{2}{*}{Dataset} & \multirow{2}{*}{Type} & \multicolumn{3}{l}{Test set} & \multicolumn{3}{l}{Finetune set} & \multirow{2}{*}{Provider} & \multirow{2}{*}{Source} \\)
+
+[//]: # (\cmidrule&#40;lr&#41;{3-5} \cmidrule&#40;lr&#41;{6-8})
+
+[//]: # ( &  & \#Sample & \#Item & \#User & \#Sample & \#Item & \#User &  &  \\)
+
+[//]: # (\midrule)
+
+[//]: # (H\&M & Fashion & 20,000 & 15,305 & 5,000 & 100,000 & 50,319 & 25,000 & H\&M & \url{https://s.6-79.cn/to77vc} \\)
+
+[//]: # (% \url{https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations} \\)
+
+[//]: # (MIND & News & 20,006 & 3,088 & 1,514 & 100,000 & 5,481 & 7,606 & Microsoft & \url{https://s.6-79.cn/k2Susd} \\)
+
+[//]: # (% \url{https://msnews.github.io/} \\)
+
+[//]: # (MicroLens & Video & 20,000 & 11,073 & 5,000 & 100,000 & 18,658 & 25,000 &  Westlake Uni. & \url{https://s.6-79.cn/QRqTfh} \\)
+
+[//]: # (% \url{https://github.com/westlake-repl/MicroLens} \\)
+
+[//]: # (Goodreads & Book & 20,009 & 12,984 & 1,736 & 100,005 & 40,322 & 8,604 &  UCSD & \url{https://s.6-79.cn/D8WmWj} \\)
+
+[//]: # (% \url{https://mengtingwan.github.io/data/goodreads} \\)
+
+[//]: # (CDs & Music & 20,003 & 15,568 & 4,930 & 100,003 & 55,428 & 24,618 & Amazon & \url{https://s.6-79.cn/F2ftHB} \\)
+
+[//]: # (% \url{https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/} \\)
+
+[//]: # (\midrule)
+
+[//]: # (POG & Fashion & - & - & - & 100,002 & 15,846 & 15,734 & Alibaba & \url{https://s.6-79.cn/MRlqve} \\)
+
+[//]: # (% \url{https://drive.google.com/drive/folders/1tHCG8x1fLF18ccuXMJsEB8mNIn5n4F2l?usp=sharing} \\)
+
+[//]: # (PENS & News & - & - & - & 100,007 & 9,053 & 8,542 & Microsoft & \url{https://s.6-79.cn/6jysPT} \\)
+
+[//]: # (% \url{https://msnews.github.io/pens_data.html} \\)
+
+[//]: # (Netflix & Video & - & - & - & 100,010 & 3,645 & 13,424 & Netflix & \url{https://s.6-79.cn/ieDyxv} \\)
+
+[//]: # (% \url{https://www.kaggle.com/datasets/netflix-inc/netflix-prize-data} \\)
+
+[//]: # (Books & Book & - & - & - & 100,002 & 28,471 & 25,139 & Amazon & \url{https://s.6-79.cn/9mdMXe} \\)
+
+[//]: # (% \url{https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/} \\)
+
+[//]: # (LastFM & Music & - & - & - & 100,100 & 94,319 & 910 & LastFM & \url{https://s.6-79.cn/ryAnFq} \\)
+
+[//]: # (% \url{http://millionsongdataset.com/lastfm} \\)
+
+[//]: # (\bottomrule)
+
+[//]: # (\end{tabular})
+
+[//]: # (\end{table*})
+
+
+| Dataset                                                               | Version | Identifier   | Domain | Support  | Comment                                                                                                                |
+|-----------------------------------------------------------------------|---------|--------------|--------|----------|------------------------------------------------------------------------------------------------------------------------|
+| [MIND](https://msnews.github.io/)                                     | small   | mind         | News   | ✅ Native | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_processor.py)                        |
+| [MIND](https://msnews.github.io/)                                     | large   | mindlarge    | News   | ❌        | ❌ Call for Contribution                                                                                                |
+| [MIND](https://msnews.github.io/)                                     | small   | mindrb       | News   | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_recbench_processor.py)               |
+| [MIND](https://msnews.github.io/)                                     | small   | oncemind     | News   | ✅ Native | Used for [ONCE](https://github.com/Jyonn/ONCE) paper. [View Processor](https://github.com/Jyonn/ONCE/tree/main/LegoV2) |
+| [PENS](https://msnews.github.io/pens)                                 | N/A     | pensrb       | News   | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/pens_recbench_processor.py)               |
+| [Adressa](https://reclab.idi.ntnu.no/dataset/)                        | 1week   | adressa      | News   | ❌        | ❌ Call for Contribution                                                                                                |
+| [Adressa](https://reclab.idi.ntnu.no/dataset/)                        | 10week  | adressalarge | News   | ❌        | In Norway language. ❌ Call for Contribution                                                                            |
+| [EB-NeRD](https://recsys.eb.dk/index.html)                            | N/A     | ebnerdrb     | News   | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/ebnerd_recbench_processor.py)             |
+| [Goodreads](https://mengtingwan.github.io/data/goodreads)             | N/A     | goodreadsrb  | Book   | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/goodreads_recbench_processor.py)          |
+| [Amazon Books](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/) | N/A     | booksrb      | Book   | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/books_recbench_processor.py)              |
+| [MovieLens](https://grouplens.org/datasets/movielens/)                | Unknown | movielensrb  | Movie  | ✅ Bridge | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/movielens_recbench_processor.py)          |
+
 
 Datasets can be processed into Legommenders format using built-in scripts based on RecBench. You can directly download the data from [here](https://drive.google.com/drive/folders/1PP2PMqg4Fxe8Qb2haob8eJy7g8bgw6tC?usp=sharing).
 
@@ -178,7 +266,7 @@ python trainer.py
 - **2024-12-05**: LSTUR model is now re-added to the Legommenders package, which was not compatible from Jan. 2024.
 - **2024-01-23**: Legommenders partially supports the flatten sequential recommendation model. New models are added, including: MaskNet, GDCN, etc.
 - **2023-10-16**: We clean the code and convert names of the item-side parameters.
-- **2023-10-05**: The first recommender system package, Legommenders, with a modular-design is released!
+- **2023-10-05**: The first recommender system package with a modular-design, Legommenders, is released!
 - **2022-10-22**: Legommenders project is initiated.
 
 ## Citations
