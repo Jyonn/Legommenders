@@ -158,7 +158,7 @@ def get_signature(data, embed, model, exp) -> str:
     Parameters
     ----------
     data, embed, model, exp : Callable[[], Any]
-        Zero-argument callables that return JSON-serialisable objects
+        Zero-argument callables that return JSON-serializable objects
         representing the configuration of each component.
 
     Returns

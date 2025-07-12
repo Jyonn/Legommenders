@@ -37,7 +37,7 @@ class DataSet(BaseDataset):
     Parameters
     ----------
     ut : LegoUT
-        Tokenised dataset produced by UniTok (or a project-specific
+        Tokenized dataset produced by UniTok (or a project-specific
         subclass thereof).
     resampler : Callable[[dict], dict] | None
         Optional transformation applied to every sample after copying it

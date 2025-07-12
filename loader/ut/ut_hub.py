@@ -7,7 +7,7 @@ Loading a UniTok dataset from disk can be costly because it involves
 reading multiple pickle / numpy files and rebuilding internal indices.
 `UTHub` therefore keeps one in-memory instance **per path** so that
 subsequent calls asking for the *same* dataset receive the already
-initialised object instead of triggering another load.
+initialized object instead of triggering another load.
 
 Usage
 -----

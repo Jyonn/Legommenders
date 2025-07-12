@@ -61,7 +61,7 @@ class LlamaEmbedder(BaseEmbedder, abc.ABC):
 
         # Load model weights; `AutoModelForCausalLM` returns a wrapper
         # whose `.model` attribute holds the actual transformer
-        # (LlamaForCausalLM).  We keep the specialised type for clarity.
+        # (LlamaForCausalLM).  We keep the specialized type for clarity.
         self.transformer = cast(
             LlamaForCausalLM,
             AutoModelForCausalLM.from_pretrained(model_name)

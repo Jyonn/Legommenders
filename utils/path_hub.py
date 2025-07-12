@@ -1,7 +1,7 @@
 """
 path_hub.py
 
-Centralised *path manager* used throughout the project to keep file and
+Centralized *path manager* used throughout the project to keep file and
 directory names consistent.
 
 Given a dataset name, a model name and a unique experiment `signature`,
@@ -78,7 +78,7 @@ class PathHub:
     @property
     def cfg_path(self) -> str:
         """
-        Path where the JSON serialised configuration will be saved.
+        Path where the JSON serialized configuration will be saved.
         """
         return os.path.join(self.checkpoint_base_dir, f"{self.signature}.json")
 

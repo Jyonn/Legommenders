@@ -105,7 +105,7 @@ class BaseProcessor(abc.ABC):
         self.save_dir = os.path.join(self.BASE_STORE_DIR, self.get_name())
         os.makedirs(self.save_dir, exist_ok=True)
 
-        # Sub-dirs for the serialised UniTok objects
+        # Sub-dirs for the serialized UniTok objects
         self.item_save_dir = os.path.join(self.save_dir, "items")
         self.user_save_dir = os.path.join(self.save_dir, "users")
 
@@ -212,7 +212,7 @@ class BaseProcessor(abc.ABC):
         pnt(f"load {self.get_name()} processor")
 
         # --------------------------------------------------------------
-        # Fast path: datasets already serialised → just load them
+        # Fast path: datasets already serialized → just load them
         # --------------------------------------------------------------
         if (
             not regenerate
@@ -233,7 +233,7 @@ class BaseProcessor(abc.ABC):
             return  # early-exit
 
         # --------------------------------------------------------------
-        # Slow path: raw → processed → serialised
+        # Slow path: raw → processed → serialzsed
         # --------------------------------------------------------------
         self.item_df = self.load_items()
         pnt(f"loaded {len(self.item_df)} items")

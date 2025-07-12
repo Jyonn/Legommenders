@@ -68,7 +68,7 @@ class Extractor(BaseLego):
         Dump the cached user representations to
         `<exp.dir>/user_embeddings.npy`.
         """
-        # Ensure the cache is materialised (same mechanism used during fast
+        # Ensure the cache is materialized (same mechanism used during fast
         # evaluation). `Symbols.test` flag prevents gradient tracking, etc.
         self.manager.get_train_loader(Symbols.test)
         assert self.cacher.user.cached, 'Fast eval not enabled – user cache empty.'

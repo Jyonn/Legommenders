@@ -24,7 +24,7 @@ device selection, …) and adds three small utilities:
 Why not place the logic directly in `BaseLego`?
 ----------------------------------------------
 We keep `BaseLego` completely framework-agnostic.  
-Specialised tasks such as *only* testing or *sizing* the model are
+Specialized tasks such as *only* testing or *sizing* the model are
 implemented in a dedicated subclass so that each script has a single,
 clearly defined purpose.
 """

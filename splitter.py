@@ -15,7 +15,7 @@ through the LM required.
 
 This helper script automates exactly that workflow:
 
-1. Initialise the full experiment stack by re-using `BaseLego`
+1. Initialize the full experiment stack by re-using `BaseLego`
    (datasets, model, device, …).
 2. Assert that the model’s *item operator* is an instance of
    `OnceOperator`, i.e. an operator that supports a `.cache()` method

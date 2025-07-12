@@ -43,7 +43,7 @@ from utils.timer import Timer
 class Resampler:
     """
     Pre-processing helper that converts a raw Python dict `sample`
-    obtained from a `DataLoader` into a tensorised representation that
+    obtained from a `DataLoader` into a tensorized representation that
     fulfils the input contract of *Legommender*.
 
     Parameters

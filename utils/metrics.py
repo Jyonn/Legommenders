@@ -222,7 +222,7 @@ class Recall(Metric):
 
 class NDCG(Metric):
     """
-    Normalised Discounted Cumulative Gain @K.
+    Normalized Discounted Cumulative Gain @K.
     """
     name = "NDCG"
     group = True
@@ -378,7 +378,7 @@ class MetricPool:
     @classmethod
     def is_minimize(cls, metric: Union[str, Metric]) -> bool:
         """
-        Quick utility to learn whether a particular metric should be minimised.
+        Quick utility to learn whether a particular metric should be minimized.
 
         Accepts both a Metric object or its string representation (possibly
         with arguments, e.g. "NDCG@10").

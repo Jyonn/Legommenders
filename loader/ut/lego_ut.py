@@ -6,7 +6,7 @@ few convenience helpers tailored for the *Legommenders* project.
 
 Motivation
 ----------
-Applying complex filter pipelines to large tokenised datasets can be
+Applying complex filter pipelines to large tokenized datasets can be
 time-consuming.  
 `LegoUT` therefore persists the list of filter functions **and** the
 resulting index set (`_legal_indices`) to disk so that the same filter

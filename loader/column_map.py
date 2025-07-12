@@ -1,11 +1,11 @@
 """
 column_map.py
 
-Utility class that serves as a **centralised schema description** for  
+Utility class that serves as a **centralized schema description** for
 datasets used throughout the project.  
 It provides two complementary pieces of information:
 
-1) Column names in the raw / tokenised data frame
+1) Column names in the raw / tokenized data frame
    (`history_col`, `item_col`, …).
 
 2) Names of the *vocabularies* that belong to those columns
@@ -91,7 +91,7 @@ class ColumnMap:
         Parameters
         ----------
         inter_ut : unitok.UniTok
-            A fully initialised / fitted UniTok object for the dataset.
+            A fully initialized / fitted UniTok object for the dataset.
         """
 
         def col_to_vocab(col: str) -> str:

@@ -12,7 +12,7 @@ Workflow
 1) The client calls `ItemCacher.cache(contents)`.
 2) `_cache()` is invoked (template method pattern inherited from
    `BaseCacher`).
-3) `_cache()` creates an appropriately initialised `FastItemPager`,
+3) `_cache()` creates an appropriately initialized `FastItemPager`,
    runs it, and finally returns the tensor that the pager produced.
 4) `BaseCacher` stores that tensor in `self.repr` and marks the cache as
    valid (`self.cached = True`).
@@ -53,7 +53,7 @@ class ItemCacher(BaseCacher):
         Build the item cache for the given *contents*.
 
         The method
-          1) requests a zero-initialised placeholder from `self.operator`
+          1) requests a zero-initialized placeholder from `self.operator`
              with the correct first dimension,
           2) instantiates a `FastItemPager` that will fill this buffer,
           3) executes the pager, and

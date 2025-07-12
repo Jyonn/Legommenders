@@ -13,7 +13,7 @@ project.  It solves three practical problems:
 
 2) Pre-trained vectors
    --------------------
-   Vocabularies or columns can be initialised from a `.npy` file that
+   Vocabularies or columns can be initialized from a `.npy` file that
    stores pre-trained weights.  The user can decide whether those weights
    should be kept *frozen* or be fine-tuned (`frozen=True / False`).
    Optionally a projection layer (`Transformation`) is inserted so the
@@ -240,7 +240,7 @@ class EmbeddingHub:
         self, name: str, size: int, pe: PretrainedEmbedding
     ) -> None:
         """
-        Finalise a `PretrainedEmbedding` so that it can be inserted into a
+        Finalize a `PretrainedEmbedding` so that it can be inserted into a
         `ModuleDict`:
 
         • check size consistency

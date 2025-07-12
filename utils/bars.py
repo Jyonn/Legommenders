@@ -17,7 +17,7 @@ Bar
     first time the instance receives enough information, it returns an
     actual `tqdm` iterator.
 
-Specialised subclasses
+Specialized subclasses
 ----------------------
 TrainBar(epoch)
     Progress bar for the training loop of a given *epoch*.

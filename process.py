@@ -131,5 +131,5 @@ if __name__ == '__main__':
         processor.add_item_tokenizer(tokenizer)
         processor.item.tokenize().save(processor.item_save_dir)
 
-        pnt(f'Successfully tokenised items using {args.tokenizer} '
+        pnt(f'Successfully tokenized items using {args.tokenizer} '
             f'and saved output to {processor.item_save_dir}')

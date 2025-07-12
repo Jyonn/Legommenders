@@ -95,7 +95,7 @@ class ClassHub:
             (e.g. `BaseOperator`, `BasePredictor`, …)
         module_dir : str
             Package / directory that contains the concrete implementations.
-            May use “/” on any platform; will be normalised via `Path`.
+            May use “/” on any platform; will be normalized via `Path`.
         module_type : str
             Readable suffix used in the file- and class-name convention,
             e.g.  "Operator"  → files like *xyz_operator.py* and classes like *XYZOperator*.
@@ -103,7 +103,7 @@ class ClassHub:
         self.base_class = base_class
         self.module_dir = module_dir
         self.module_type = module_type.lower()      # e.g. "operator"
-        # Capitalised form (first letter upper, rest identical) → "Operator"
+        # Capitalized form (first letter upper, rest identical) → "Operator"
         self.upper_module_type = self.module_type[0].upper() + self.module_type[1:]
 
         # Scan the directory and build both list and dict representations

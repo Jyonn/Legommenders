@@ -21,7 +21,7 @@ Responsibilities
 
 3. Provide utilities that *most* concrete experiments will need:
 
-   • Optimiser / scheduler initialisation
+   • Optimizer / scheduler initialization
    • Check-point save & load
    • Periodic logging helpers
    • Convenience methods to dump user/item embeddings
@@ -158,7 +158,7 @@ class BaseLego:
     @staticmethod
     def init_pigmento() -> None:
         """
-        Configure colourised console logging.
+        Configure colourized console logging.
         """
         pigmento.add_time_prefix()
         pigmento.add_log_plugin(Env.ph.log_path)
@@ -174,7 +174,7 @@ class BaseLego:
     # ------------------------------------------------------------------ #
     def init_optimizer(self) -> None:
         """
-        Instantiate the Adam optimiser.
+        Instantiate the Adam optimizer.
 
         If the model uses *pre-trained* item encoders we often want to
         train them with a lower learning rate than the rest of the
@@ -256,7 +256,7 @@ class BaseLego:
 
     def save(self) -> None:
         """
-        Serialise current experiment state to disk.
+        Serialize current experiment state to disk.
         """
         state_dict = dict(
             model=self.legommender.state_dict(),

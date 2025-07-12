@@ -4,7 +4,7 @@ trainer.py
 Full *train → dev-eval → test* pipeline including
 ------------------------------------------------
 • model initialisation (handled by `BaseLego`)
-• optimiser & LR-scheduler setup
+• optimizer & LR-scheduler setup
 • training loop with gradient accumulation
 • periodic *dev* set evaluation (+ early stopping)
 • final *test* set evaluation
