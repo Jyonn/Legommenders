@@ -19,10 +19,11 @@ import os
 from typing import cast, List, Tuple
 
 import pandas as pd
-from unitok import JsonHandler, UniTok, EntityTokenizer
+from unitok import UniTok, EntityTokenizer
 
 from processor.base_processor import Interactions
 from processor.mind_processor import MINDProcessor
+from utils import io
 
 
 class ONCEMINDProcessor(MINDProcessor):
@@ -46,7 +47,7 @@ class ONCEMINDProcessor(MINDProcessor):
         # Custom syntax: "<data_path>$<imp_json>"
         if data_dir and "$" in data_dir:
             data_dir, imp_path = data_dir.split("$")
-            self.imp_list = JsonHandler.load(imp_path)
+            self.imp_list = io.json_load(imp_path)
         elif data_dir:  # data_dir supplied but no '$' → raise error
             raise ValueError(
                 "data_dir for ONCEMINDProcessor should use '$' to "
