@@ -20,7 +20,7 @@ def neg_sample(all_items, pos_items, n_sample=99) -> List[str]:
 
     max_sample = len(pos_set) + n_sample
     results = [item for item in random.sample(all_items, k=max_sample) if item not in pos_set]
-    return results
+    return results[:n_sample]
     
 
 
@@ -167,6 +167,7 @@ class AmzProcessor(BaseProcessor):
                     self.LBL_COL: 0,
                 })
 
+            assert len(neg_vals) == 198
             # Test
             new_users.append({
                 self.UID_COL: user_id + "_test",
@@ -232,7 +233,7 @@ class AmzProcessor(BaseProcessor):
 
     def add_item_tokenizer(self, tokenizer):
         """This function is not required to be defined.
-        Here I override the original function as I don't use promp / LLM input
+        Here I override the original function as I don't use prompt / LLM input
         """
         name = tokenizer.vocab.name
 

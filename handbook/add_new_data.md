@@ -3,7 +3,7 @@
 
 This guide show you how to add the Amazon Video Games dataset to the **Legommenders** framework.
 
-**Note**: Any shell commmands below should be run from the repository **root folder** (not handbook folder).
+**Note**: Any shell commands below should be run from the repository **root folder** (not handbook folder).
 
 ---
 
@@ -31,7 +31,7 @@ mv meta_Video_Games.json data/game_raw/
 Register the data folder by adding an entry to the .data configuration file:
 
 ```shell
-echo amz = data/game_raw >> .data
+echo -e "\namz = data/game_raw" >> .data
 ```
 
 This set `data_dir="data/game_raw"` for `__init__` function in AmzProcessor.
@@ -49,7 +49,7 @@ ln -s handbook/samples/amz_processor.py processor/amz_processor.py
 ## Step 4: Preprocess the Data
 Next, we run preprocessing script:
 ```shell
-python process.py --dataset amz
+python process.py --data amz
 ```
 
 Download `glove` embedding.
