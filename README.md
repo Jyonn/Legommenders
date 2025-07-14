@@ -1,61 +1,56 @@
-# <img src="assets/lego.png" alt="icon" style="vertical-align: middle; height: 32px;"> Legommenders v2: A Modular Framework for Content-Based Recommendation in the Era of LLMs
+# <img src="assets/lego.png" alt="icon" style="vertical-align: middle; height: 32px;"> Legommenders
 
-**Legommenders** is an open-source library for content-based recommendation that supports “Lego-style” modular composition 🧱. It enables joint training of content encoders and user behavior models, integrating content understanding seamlessly into the recommendation pipeline. Researchers and developers can use Legommenders to easily assemble **thousands of different recommendation models** and run experiments across more than 15 datasets. Notably, Legommenders **pioneers integration with Large Language Models (LLMs)**, allowing LLMs to be used both as content encoders and as generators for data augmentation to build more personalized and effective recommenders 🎉.
-
-## 🧠 Project Overview
-
-The name "Legommenders" comes from "LEGO + Recommenders," symbolizing the idea of building recommendation models like Lego bricks 🫠. This project, proposed by The Hong Kong Polytechnic University, is the official implementation of the WWW 2025 paper, _Legommenders: A Comprehensive Content-Based Recommendation Library with LLM Support_. The key goal is to provide **a unified and flexible research framework** for content-driven recommendation. Traditional recommender systems often rely on static ID representations and struggle with cold-start problems. Legommenders focuses on content features (e.g., article texts, product descriptions) to enhance recommendations.
-
-### Highlights:
-
-- **Joint Modeling of Content & Behavior**: Supports end-to-end training of content encoders and user behavior models, ensuring content representations are task-aware.
-- **Modular Design**: Provides LEGO-style composable modules for content processing, behavior modeling, prediction, etc.
-- **Rich Built-in Models**: Includes classic models like NAML, NRMS, LSTUR, DeepFM, DCN, DIN, enabling rapid experimentation and comparison.
-- **LLM Integration**: Enables LLMs (e.g., BERT, GPT, LLaMA) as content encoders or for data generation. Includes LoRA support for efficient fine-tuning.
-- **Widely Adopted**: Already supports multiple research projects such as [ONCE](https://arxiv.org/abs/2305.06566), [SPAR](https://arxiv.org/abs/2402.10555),[GreenRec](https://arxiv.org/abs/2403.04736), and [UIST](https://arxiv.org/abs/2403.08206).
+> [**What is Legommenders?**](handbook/what-is-legommenders.md)  
+> Legommenders is a content-based recommendation library designed for the era of large language models.  
+> Click the title above to learn more.
 
 ## ⚙️ Installation & Getting Started
 
 1. **Clone the Repo:**
 
-```shell
-gh repo clone Jyonn/Legommenders
-cd Legommenders
-```
+    ```shell
+    gh repo clone Jyonn/Legommenders
+    cd Legommenders
+    ```
 
 2. **Install Dependencies:**
 
-```shell
-pip install -r requirements.txt
-```
+    ```shell
+    pip install -r requirements.txt
+    ```
+    
+    Ensure you have Python 3.10+ and a properly set up PyTorch environment: Nvidia GPU, Apple MPS, or even CPU device (`--cuda -1`).  
 
-Ensure you have Python 3.x and a properly set up PyTorch environment (CUDA optional).
+3. **Prepare the Configurations** _(Optional)_
 
-3. **Run the Project:** Use command-line tools to preprocess data, train models, and evaluate performance.
+    To run the data preprocessing scripts and generate the datasets by yourself, you should download the raw dataset and add the path to the `.data` file:
+    
+    ```shell
+    touch .data
+    echo -e "\n <name> = /path/to/data" >> .data  # e.g., echo -e "\n mind = /path/to/mind" >> .data
+    ```
+    
+    Legommenders will link `<name>` to a `class <Name>Processor` defined at `processor/*.py`.
+
+    You can also define HuggingFace language models at `.model` file:
+
+   ```shell
+   echo -e "\n <name> = huggingface/path" >> .model  # e.g., llama3.1 = meta-llama/Llama-3.1-8B-Instruct-evals
+   ```
+
+4. **Run the Project:** Use command-line tools to preprocess data, train models, and evaluate performance:
+    
+    ```shell
+    # e.g., python process.py --data mind 
+    python process.py --data <name>
+   
+    # e.g., python trainer.py --data config/data/mind.yaml --model config/model/naml.yaml --batch_size 64 --lr 0.001 --hidden_size 256 
+    python trainer.py --data config/data/<name>.yaml --model config/model/<model>.yaml --batch_size <batch-size> --lr <learning-rate> --hidden_size <hidden-size> 
+    ```
 
 ## 📊 Supported Datasets
 
-Legommenders supports 15+ datasets across domains like news, books, movies, music, fashion, and e-commerce:
-
-- 📰 MIND: Large-scale Microsoft news data for CTR prediction.
-- 📰 PENS: Personalized news recommendation dataset.
-~~- 📰 Adressa: News reading logs from Norway.~~
-- 📰 EB-NeRD: RecSys Challenge 2024 news dataset.
-- 📚 Goodreads: Book reviews and metadata.
-- 📚 Amazon Books: Subset of Amazon product reviews.
-- 🎥 MovieLens: Classic movie rating dataset.
-- 📺 MicroLens: MovieLens dataset with user-item interactions.
-- 📺 Netflix Prize: Large-scale movie rating competition dataset.
-- 🎵 Amazon CDs: Music CD reviews and metadata.
-- 🎵 Last.fm: Music playback logs and tagging data.
-- 👗 H&M: Apparel and fashion product data.
-- 👗 POG: Fashion product reviews and metadata.
-- 📱 Amazon Electronics: Electronics product reviews and metadata.
-- 🎮 Steam: Video game reviews and metadata.
-- 🏨 HotelRec: Hotel recommendation dataset.
-- ️️🍽️ Yelp: Restaurant reviews and metadata.
-
-The supported datasets can be categorized into three groups:
+Legommenders supports 15+ datasets across domains like news, books, movies, music, fashion, and e-commerce. The supported datasets can be categorized into three groups:
 
 - **Native**: Legommenders provide native dataset processing scripts, i.e., `processor/mind_processor.py`.
 - **Bridge**: Other repositories (e.g., [RecBench](https://github.com/Jyonn/RecBench)) process this dataset into their format, and Legommenders provides a bridge to convert it into our format, i.e., `processor/recbench_processor.py`. Using such datasets can make cross-repository models easy to evaluate.
@@ -63,31 +58,30 @@ The supported datasets can be categorized into three groups:
 
 **\* Single dataset can be supported by multiple channels.**
 
-
-| Dataset                                                                                     | Version    | Identifier   | Domain     | Support     | Comment                                                                                                                |
-|---------------------------------------------------------------------------------------------|------------|--------------|------------|-------------|------------------------------------------------------------------------------------------------------------------------|
-| [MIND](https://msnews.github.io/)                                                           | small      | mind         | News       | ✅ Native    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_processor.py)                        |
-| [MIND](https://msnews.github.io/)                                                           | large      | mindlarge    | News       | ❌           | ❌ Call for Contribution                                                                                                |
-| [MIND](https://msnews.github.io/)                                                           | small      | mindrb       | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_recbench_processor.py)               |
-| [MIND](https://msnews.github.io/)                                                           | small      | oncemind     | News       | ✅ Native    | Used for [ONCE](https://github.com/Jyonn/ONCE) paper. [View Processor](https://github.com/Jyonn/ONCE/tree/main/LegoV2) |
-| [xMIND](https://github.com/andreeaiana/xMIND/)                                              | small      | xmind        | News       | ✅ Native    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/xmind_processor.py)                       |
-| [PENS](https://msnews.github.io/pens)                                                       | N/A        | pensrb       | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/pens_recbench_processor.py)               |
-| [Adressa](https://reclab.idi.ntnu.no/dataset/)                                              | 1week      | adressa      | News       | ❌           | ❌ Call for Contribution                                                                                                |
-| [Adressa](https://reclab.idi.ntnu.no/dataset/)                                              | 10week     | adressalarge | News       | ❌           | In Norway language. ❌ Call for Contribution                                                                            |
-| [EB-NeRD](https://recsys.eb.dk/index.html)                                                  | N/A        | ebnerdrb     | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/ebnerd_recbench_processor.py)             |
-| [Goodreads](https://mengtingwan.github.io/data/goodreads)                                   | N/A        | goodreadsrb  | Book       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/goodreads_recbench_processor.py)          |
-| [MovieLens](https://grouplens.org/datasets/movielens/)                                      | Unknown    | movielensrb  | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/movielens_recbench_processor.py)          |
-| [MicroLens](https://github.com/westlake-repl/MicroLens)                                     | N/A        | microlensrb  | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/microlens_recbench_processor.py)          |
-| [Netflix Prize](https://www.kaggle.com/competitions/netflix-prize/data)                     | N/A        | netflixrb    | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/netflix_recbench_processor.py)            |
-| [LastFM](http://millionsongdataset.com/lastfm)                                              | N/A        | lastfmrb     | Music      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/lastfm_recbench_processor.py)             |
-| [HotelRec](https://github.com/zhaofangyuan98/HotelRec)                                      | N/A        | hotelrecrb   | Hotel      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/hotelrec_recbench_processor.py)           |
-| [Yelp](https://www.yelp.com/dataset)                                                        | N/A        | yelprb       | Restaurant | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/yelp_recbench_processor.py)               |
-| [H&M](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations)     | N/A        | hmrb         | Fashion    | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/hm_recbench_processor.py)                 |
-| [POG](https://drive.google.com/drive/folders/1tHCG8x1fLF18ccuXMJsEB8mNIn5n4F2l?usp=sharing) | N/A        | pogrb        | Fashion    | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/pog_recbench_processor.py)                |
-| [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | books      | booksrb      | Book       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/books_recbench_processor.py)              |
-| [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | automotive | automotiverb | Automotive | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/automotive_recbench_processor.py)         |
-| [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | cds        | cdsrb        | Music      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/cds_recbench_processor.py)                |
-| [Amazon](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | games      | games        | Game       | ✅ Community | Processor Coming Soon!                                                                                                 |
+| Dataset                                                                                         | Version    | Name         | Domain     | Support     | Comment                                                                                                                |
+|-------------------------------------------------------------------------------------------------|------------|--------------|------------|-------------|------------------------------------------------------------------------------------------------------------------------|
+| [**MIND**](https://msnews.github.io/)                                                           | small      | mind         | News       | ✅ Native    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_processor.py)                        |
+| [**MIND**](https://msnews.github.io/)                                                           | large      | mindlarge    | News       | ❌           | ❌ Call for Contribution                                                                                                |
+| [**MIND**](https://msnews.github.io/)                                                           | small      | mindrb       | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/mind_recbench_processor.py)               |
+| [**MIND**](https://msnews.github.io/)                                                           | small      | oncemind     | News       | ✅ Native    | Used for [ONCE](https://github.com/Jyonn/ONCE) paper. [View Processor](https://github.com/Jyonn/ONCE/tree/main/LegoV2) |
+| [**xMIND**](https://github.com/andreeaiana/xMIND/)                                              | small      | xmind        | News       | ✅ Native    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/xmind_processor.py)                       |
+| [**PENS**](https://msnews.github.io/pens)                                                       | N/A        | pensrb       | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/pens_recbench_processor.py)               |
+| [**Adressa**](https://reclab.idi.ntnu.no/dataset/)                                              | 1week      | adressa      | News       | ❌           | ❌ Call for Contribution                                                                                                |
+| [**Adressa**](https://reclab.idi.ntnu.no/dataset/)                                              | 10week     | adressalarge | News       | ❌           | In Norway language. ❌ Call for Contribution                                                                            |
+| [**EB-NeRD**](https://recsys.eb.dk/index.html)                                                  | N/A        | ebnerdrb     | News       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/ebnerd_recbench_processor.py)             |
+| [**Goodreads**](https://mengtingwan.github.io/data/goodreads)                                   | N/A        | goodreadsrb  | Book       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/goodreads_recbench_processor.py)          |
+| [**MovieLens**](https://grouplens.org/datasets/movielens/)                                      | Unknown    | movielensrb  | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/movielens_recbench_processor.py)          |
+| [**MicroLens**](https://github.com/westlake-repl/MicroLens)                                     | N/A        | microlensrb  | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/microlens_recbench_processor.py)          |
+| [**Netflix Prize**](https://www.kaggle.com/competitions/netflix-prize/data)                     | N/A        | netflixrb    | Movie      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/netflix_recbench_processor.py)            |
+| [**LastFM**](http://millionsongdataset.com/lastfm)                                              | N/A        | lastfmrb     | Music      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/lastfm_recbench_processor.py)             |
+| [**HotelRec**](https://github.com/zhaofangyuan98/HotelRec)                                      | N/A        | hotelrecrb   | Hotel      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/hotelrec_recbench_processor.py)           |
+| [**Yelp**](https://www.yelp.com/dataset)                                                        | N/A        | yelprb       | Restaurant | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/yelp_recbench_processor.py)               |
+| [**H&M**](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations)     | N/A        | hmrb         | Fashion    | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/hm_recbench_processor.py)                 |
+| [**POG**](https://drive.google.com/drive/folders/1tHCG8x1fLF18ccuXMJsEB8mNIn5n4F2l?usp=sharing) | N/A        | pogrb        | Fashion    | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/pog_recbench_processor.py)                |
+| [**Amazon**](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | books      | booksrb      | Book       | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/books_recbench_processor.py)              |
+| [**Amazon**](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | automotive | automotiverb | Automotive | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/automotive_recbench_processor.py)         |
+| [**Amazon**](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | cds        | cdsrb        | Music      | ✅ Bridge    | [View Processor](https://github.com/Jyonn/Legommenders/blob/master/processor/cds_recbench_processor.py)                |
+| [**Amazon**](https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/)                             | games      | games        | Game       | ✅ Community | Processor Coming Soon!                                                                                                 |
 
 Datasets can be processed into Legommenders format using built-in scripts based on RecBench. You can directly download the data from [here](https://drive.google.com/drive/folders/1PP2PMqg4Fxe8Qb2haob8eJy7g8bgw6tC?usp=sharing).
 
@@ -99,6 +93,29 @@ Legommenders is built with **a modular, layered architecture**:
 - **Content Operator**: Encodes item content using static (e.g., Glove) or deep models (e.g., CNN, BERT, GPT). Supports 15+ content modules.
 - **Behavior Operator**: Encodes user behavior history using methods like attention, RNN, Transformer. 8+ options available.
 - **Click Predictor**: Predicts user-item interactions via dot product, MLP, DeepFM, DCN, etc.
+
+The following models can be realised by Legommenders:
+
+| Model                                                              | Type    | Config                               | Item Op    | User Op            | Predictor |
+|--------------------------------------------------------------------|---------|--------------------------------------|------------|--------------------|-----------|
+| [**NAML** (2019)](https://arxiv.org/abs/1907.05576)                | Recall  | `config/model/naml.yaml`             | CNN        | Additive Attention | Dot       |
+| [**NRMS** (2019)](https://aclanthology.org/D19-1671/)              | Recall  | `config/model/nrms.yaml`             | Attention  | Attention          | Dot       |
+| [**LSTUR** (2019)](https://aclanthology.org/P19-1033/)             | Recall  | `config/model/lstur.yaml`            | CNN        | GRU                | Dot       |
+| [**PLM-NR** (2021)](https://arxiv.org/abs/2104.07413)              | Recall  | `config/model/bert-naml.yaml`        | BERT       | Additive Attention | Dot       |
+| [**Fastformer** (2023)](https://arxiv.org/abs/2108.09084)          | Recall  | `config/model/fastformer.yaml`       | Fastformer | Fastformer         | Dot       |
+| [**MINER** (2022)](https://aclanthology.org/2022.findings-acl.29/) | Recall  | `config/model/bert-miner.yaml`       | BERT       | PolyAttention      | Dot       | 
+| [**ONCE** (2024)](https://arxiv.org/abs/2305.06566)                | Recall  | `config/model/llama-naml.yaml`       | Llama1     | Additive Attention | Dot       |
+| [**IISAN** (2024)](https://arxiv.org/abs/2404.02059)               | Recall  | `config/model/llama-iisan-naml.yaml` | Llama1     | Additive Attention | Dot       |
+| [**PNN** (2016)](https://arxiv.org/pdf/1611.00144)                 | Ranking | `config/model/pnn_id.yaml`           | N/A        | Pooling            | PNN       |
+| [**DeepFM** (2017)](https://arxiv.org/abs/1703.04247)              | Ranking | `config/model/deepfm_id.yaml`        | N/A        | Pooling            | DeepFM    |
+| [**DCN** (2017)](https://arxiv.org/pdf/1708.05123)                 | Ranking | `config/model/dcn_id.yaml`           | N/A        | Pooling            | DCN       |
+| [**DIN** (2017)](https://arxiv.org/abs/1706.06978)                 | Ranking | `config/model/din_id.yaml`           | N/A        | N/A                | DIN       |
+| [**AutoInt** (2018)](https://arxiv.org/abs/1810.11921)             | Ranking | `config/model/autoint_id.yaml`       | N/A        | Pooling            | AutoInt   |
+| [**DCNv2** (2020)](https://arxiv.org/abs/2008.13535)               | Ranking | `config/model/dcnv2_id.yaml`         | N/A        | Pooling            | DCNv2     |
+| [**MaskNet** (2021)](https://arxiv.org/abs/2102.07619)             | Ranking | `config/model/masknet_id.yaml`       | N/A        | Pooling            | MaskNet   |
+| [**GDCN** (2023)](https://arxiv.org/abs/2311.04635)                | Ranking | `config/model/gdcn_id.yaml`          | N/A        | Pooling            | GDCN      | 
+| [**FinalMLP** (2023)](https://arxiv.org/abs/2304.00902)            | Ranking | `config/model/finalmlp_id.yaml`      | N/A        | Pooling            | FinalMLP  |
+
 
 ## 🚀 Training & Evaluation
 
@@ -206,6 +223,7 @@ python trainer.py
 
 ## Updates
 
+- **2025-07-14**: Code comments are available!
 - **2025-04-10**: New LLM Adaptor: IISAN is supported. 
 - **2025-02-18**: Legommenders v2.0, with multiple LLMs support, simplified configuration, more CTR predictors, and recbench-based datasets is released!
 - **2025-01-06**: Legommenders v2.0 beta is released!

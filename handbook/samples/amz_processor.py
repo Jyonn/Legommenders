@@ -1,19 +1,16 @@
 import json
 import os
 import pandas as pd
-from collections import defaultdict
 import random
 from typing import List
 
-from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer
-from unitok.tokenizer.glove_tokenizer import GloVeTokenizer
+from unitok import BertTokenizer, TransformersTokenizer, EntityTokenizer, GloVeTokenizer
 
 from processor.base_processor import BaseProcessor, Interactions
 from embedder.glove_embedder import GloVeEmbedder
 from utils.config_init import ModelInit
 
 
-random.seed(42)
 def neg_sample(all_items, pos_items, n_sample=99) -> List[str]:
     """Sample negative items"""
     pos_set = set(pos_items)  
@@ -42,7 +39,7 @@ class AmzProcessor(BaseProcessor):
         Args:
             data_dir: Input config for processor.
                 This is defined in .data at the Legommenders root folder
-                Note: This is not neccessary be a directory. It can be any string
+                Note: This is not necessary be a directory. It can be any string
         """
         super().__init__(data_dir)
 

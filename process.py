@@ -31,6 +31,7 @@ from unitok.utils.class_pool import ClassPool
 # Project utilities / abstractions
 from loader.class_hub import ClassHub
 from processor.base_processor import BaseProcessor
+from utils import function
 from utils.config_init import CommandInit, DataInit
 
 
@@ -92,6 +93,8 @@ if __name__ == '__main__':
     # -------- Processor bootstrap ------------------------------------- #
     processor_class = get_processor(args.data)
     data_dir = DataInit.get(args.data)       # maps dataset name -> local folder
+    args.seed = int(args.seed or 2023)
+    function.seeding(args.seed)
 
     processor = processor_class(data_dir=data_dir)
     # Either loads cached output or runs the `process()` routine again.
