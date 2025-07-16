@@ -52,7 +52,7 @@ class Monitor:
         """
         self.current_index += 1
 
-        # First value — initialise & mark as best -------------------------
+        # First value — initialize & mark as best -------------------------
         if self.best_value is None:
             self.best_value = value
             return Symbols.best

@@ -51,7 +51,7 @@ class OPTEmbedder(BaseEmbedder, abc.ABC):
     """
     Common logic for every OPT checkpoint.
 
-    Subclasses simply specialise the *identifier* picked up by
+    Subclasses simply specialize the *identifier* picked up by
     `BaseEmbedder.__str__` (“optbase”, “optlarge”, …).
     """
 

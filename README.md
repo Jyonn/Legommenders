@@ -4,6 +4,11 @@
 > Legommenders is a content-based recommendation library designed for the era of large language models.  
 > Click the title above to learn more.
 
+## Handbooks
+
+- [Training on xMIND dataset](handbook/training-on-xmind-dataset.md)
+- [How to customize a new dataset processor](handbook/how-to-customize-a-new-dataset-processor.md) by [@chenxing1999](https://github.com/chenxing1999)
+
 ## ⚙️ Installation & Getting Started
 
 1. **Clone the Repo:**
@@ -94,7 +99,7 @@ Legommenders is built with **a modular, layered architecture**:
 - **Behavior Operator**: Encodes user behavior history using methods like attention, RNN, Transformer. 8+ options available.
 - **Click Predictor**: Predicts user-item interactions via dot product, MLP, DeepFM, DCN, etc.
 
-The following models can be realised by Legommenders:
+The following models can be realized by Legommenders:
 
 | Model                                                              | Type    | Config                               | Item Op    | User Op            | Predictor |
 |--------------------------------------------------------------------|---------|--------------------------------------|------------|--------------------|-----------|
