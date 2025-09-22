@@ -1,0 +1,8 @@
+$$import:
+  - common/operators/user-polyattention.yaml
+name: MINER_id
+meta:
+  predictor: MINER
+config:
+  use_item_content: false
+  hidden_size: ${hidden_size}$

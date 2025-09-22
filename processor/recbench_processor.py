@@ -116,7 +116,7 @@ class RecBenchProcessor(BaseProcessor, abc.ABC):
         #     os.path.join(self.data_dir, f"valid_user_set_{valid_ratio}.txt"), "r"
         # ) as f:
         #     return {line.strip() for line in f}
-        lines = io.file_load(os.path.join(self.BASE_STORE_DIR, f"valid_user_set_{valid_ratio}.txt")).split('\n')
+        lines = io.file_load(os.path.join(self.data_dir, f"valid_user_set_{valid_ratio}.txt")).split('\n')
         return {line.strip() for line in lines}
 
     # ----------------------------- loaders ---------------------------

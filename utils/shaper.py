@@ -34,14 +34,16 @@ class Reshaper(Iterating):
         Raises:
             AssertionError: If the batch size of the tensor does not match the expected batch size.
         """
-        if isinstance(x, torch.Tensor):
-            if self.batch_size is None:
-                # Infer batch size from the first tensor processed
-                self.batch_size = x.shape[0]
-            else:
-                # Ensure the batch size matches the expected size
-                assert self.batch_size == x.shape[0], 'Batch size mismatch'
-            return x.view(-1, x.shape[-1])  # Flatten all but the last dimension
+        if not isinstance(x, torch.Tensor):
+            return None
+
+        if self.batch_size is None:
+            # Infer batch size from the first tensor processed
+            self.batch_size = x.shape[0]
+        else:
+            # Ensure the batch size matches the expected size
+            assert self.batch_size == x.shape[0], 'Batch size mismatch'
+        return x.view(-1, x.shape[-1])  # Flatten all but the last dimension
 
 
 class Recover(Iterating):

@@ -105,15 +105,16 @@ class Structure(Iterating):
             if self.use_shape:
                 return TensorShape(x.shape, x.dtype)  # Return detailed shape object
             return f'tensor({list(x.shape)}, dtype={x.dtype})'  # Return summarized shape
-        elif isinstance(x, list):
+
+        if isinstance(x, list):
             # Handle nested lists
             shape = ListShape(x)  # Analyze the list shape
             if self.use_shape:
                 return shape  # Return detailed shape object
             return str(shape)  # Return summarized shape as a string
-        else:
-            # For other types, return their type name
-            return type(x).__name__
+
+        # For other types, return their type name
+        return type(x).__name__
 
     def worker(self, x):
         """
