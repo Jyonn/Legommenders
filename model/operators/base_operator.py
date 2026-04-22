@@ -23,6 +23,7 @@ class BaseOperator(nn.Module):
     config_class = BaseOperatorConfig
     inputer_class: Type[BaseInputer]
     inputer: BaseInputer
+    metadata = {}
     allow_caching = True
     flatten_mode = False
 
@@ -71,3 +72,9 @@ class BaseOperator(nn.Module):
     @property
     def classname(self):
         return self.__class__.__name__
+
+    @classmethod
+    def describe(cls):
+        from model.operator_metadata import describe_operator
+
+        return describe_operator(cls)

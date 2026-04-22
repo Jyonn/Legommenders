@@ -26,6 +26,32 @@ class CNNOperator(BaseOperator):
     config_class = CNNOperatorConfig
     config: CNNOperatorConfig
     inputer_class = SimpleInputer
+    metadata = {
+        "id": "CNN",
+        "displayName": "CNN Content Encoder",
+        "roles": ["item", "user"],
+        "explain": "Encodes multi-column token content with Conv1d and additive attention.",
+        "contract": {
+            "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+            "maskShape": "dict[col -> tensor[N, Lc]]",
+            "outputShape": "tensor[N, hidden_size]",
+            "outputKind": "vector",
+            "outputDimPolicy": "config.hidden_size",
+            "branchOutputShapes": {
+                "history": "tensor[B, L, hidden_size]",
+                "positive": "tensor[B, 1, hidden_size]",
+                "negative": "tensor[B, K, hidden_size]",
+            },
+        },
+        "params": {
+            "kernel_size": {"min": 1, "step": 1, "description": "Conv1d window size for token sequences."},
+            "dropout": {"min": 0, "max": 0.9, "step": 0.05, "description": "Dropout after convolution activation."},
+            "additive_hidden_size": {"min": 16, "step": 8, "description": "Hidden size used inside additive attention."},
+        },
+        "notes": [
+            "When used as an item operator, the same encoder is applied per clicked, positive, and negative item.",
+        ],
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

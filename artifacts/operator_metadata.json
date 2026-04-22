@@ -1,0 +1,724 @@
+{
+  "operators": [
+    {
+      "className": "CNNOperator",
+      "contract": {
+        "branchOutputShapes": {
+          "history": "tensor[B, L, hidden_size]",
+          "negative": "tensor[B, K, hidden_size]",
+          "positive": "tensor[B, 1, hidden_size]"
+        },
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]"
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "dropout": 0.1,
+        "kernel_size": 3
+      },
+      "displayName": "CNN Content Encoder",
+      "explain": "Encodes multi-column token content with Conv1d and additive attention.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "CNN",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "notes": [
+        "When used as an item operator, the same encoder is applied per clicked, positive, and negative item."
+      ],
+      "params": [
+        {
+          "default": 3,
+          "description": "Conv1d window size for token sequences.",
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "min": 1,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0.1,
+          "description": "Dropout after convolution activation.",
+          "key": "dropout",
+          "label": "dropout",
+          "max": 0.9,
+          "min": 0,
+          "step": 0.05,
+          "type": "number"
+        },
+        {
+          "default": 256,
+          "description": "Hidden size used inside additive attention.",
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "min": 16,
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "CNNCatOperator",
+      "contract": {
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "outputDimPolicy": "config.hidden_size * len(item_inputs)",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size * num_fields]"
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "dropout": 0.1,
+        "kernel_size": 3
+      },
+      "displayName": "CNN Cat Encoder",
+      "explain": "Runs CNN attention per field and concatenates field vectors.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "CNNCat",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [
+        {
+          "default": 3,
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "number"
+        },
+        {
+          "default": 0.1,
+          "key": "dropout",
+          "label": "dropout",
+          "type": "number"
+        },
+        {
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": [
+        "Output width depends on the number of configured item input fields."
+      ]
+    },
+    {
+      "className": "AttentionOperator",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "maskShape": "tensor[N, L]",
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]"
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "num_attention_heads": 8
+      },
+      "displayName": "Multihead Attention Encoder",
+      "explain": "Runs self-attention over a concatenated feature sequence, then pools with additive attention.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Attention",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [
+        {
+          "default": 8,
+          "description": "Number of self-attention heads.",
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "min": 1,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0.1,
+          "description": "Dropout inside multi-head attention.",
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "max": 0.9,
+          "min": 0,
+          "step": 0.05,
+          "type": "number"
+        },
+        {
+          "default": 256,
+          "description": "Hidden size used inside additive attention pooling.",
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "min": 16,
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "AdaOperator",
+      "contract": {
+        "inputShape": "tensor[B, L, input_dim]",
+        "maskShape": "tensor[B, L]",
+        "outputDimPolicy": "config.input_dim",
+        "outputKind": "vector",
+        "outputShape": "tensor[B, input_dim]"
+      },
+      "defaults": {
+        "additive_hidden_size": 256
+      },
+      "displayName": "Additive Attention User Encoder",
+      "explain": "Aggregates a click sequence into one user vector using additive attention.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Ada",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [
+        {
+          "default": 256,
+          "description": "Hidden size used inside additive attention.",
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "min": 16,
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "GRUOperator",
+      "contract": {
+        "inputShape": "tensor[B, L, input_dim]",
+        "maskShape": "tensor[B, L]",
+        "outputDimPolicy": "forward returns config.input_dim",
+        "outputKind": "vector",
+        "outputShape": "tensor[B, input_dim]"
+      },
+      "defaults": {
+        "num_layers": 1
+      },
+      "displayName": "GRU User Encoder",
+      "explain": "Encodes the click sequence with a GRU and projects the last hidden state back to input_dim.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "GRU",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [
+        {
+          "default": 1,
+          "description": "Number of stacked GRU layers.",
+          "key": "num_layers",
+          "label": "num_layers",
+          "min": 1,
+          "step": 1,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": [
+        "Runtime output_dim currently inherits BaseOperator.output_dim (hidden_size), while forward returns input_dim."
+      ]
+    },
+    {
+      "className": "PoolingOperator",
+      "contract": {
+        "inputShape": "dict[col -> tensor[B, Lc, input_dim]] or tensor[B, L, input_dim]",
+        "maskShape": "dict[col -> tensor[B, Lc]] or tensor[B, L]",
+        "outputDimPolicy": "config.input_dim unless flatten=true",
+        "outputKind": "vector",
+        "outputShape": "tensor[B, input_dim] or tensor[B, input_dim * num_fields]"
+      },
+      "defaults": {
+        "flatten": false,
+        "max_pooling": false
+      },
+      "displayName": "Pooling User Encoder",
+      "explain": "Pools each input field, then averages/maxes fields or concatenates them when flatten=true.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Pooling",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [
+        {
+          "default": false,
+          "description": "Concatenate pooled fields instead of reducing across fields.",
+          "key": "flatten",
+          "label": "flatten",
+          "type": "boolean"
+        },
+        {
+          "default": false,
+          "description": "Use max pooling rather than masked mean pooling.",
+          "key": "max_pooling",
+          "label": "max_pooling",
+          "type": "boolean"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": [
+        "When flatten=true, output width depends on the number of input fields and should be validated with dataset metadata."
+      ]
+    },
+    {
+      "className": "PolyAttentionOperator",
+      "contract": {
+        "compatiblePredictors": [
+          "MINERPredictor"
+        ],
+        "inputShape": "tensor[B, L, input_dim]",
+        "maskShape": "tensor[B, L]",
+        "outputDimPolicy": "config.input_dim",
+        "outputKind": "multi-interest",
+        "outputShape": "tensor[B, num_context_codes, input_dim]"
+      },
+      "defaults": {
+        "context_code_dim": 200,
+        "num_context_codes": 32
+      },
+      "displayName": "Poly Attention User Encoder",
+      "explain": "Produces multiple user-interest vectors for target-aware matching.",
+      "flags": {
+        "allowCaching": false,
+        "flattenMode": false
+      },
+      "id": "PolyAttention",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "notes": [
+        "This operator disables caching because the multi-interest representation is target-aware downstream."
+      ],
+      "params": [
+        {
+          "default": 32,
+          "description": "Number of interest vectors emitted for each user.",
+          "key": "num_context_codes",
+          "label": "num_context_codes",
+          "min": 2,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 200,
+          "description": "Internal projection width for context-code attention.",
+          "key": "context_code_dim",
+          "label": "context_code_dim",
+          "min": 8,
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "NullSimpleOperator",
+      "contract": {
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "outputDimPolicy": "not a plain vector",
+        "outputKind": "embedding-mask",
+        "outputShape": "dict{embedding, mask}"
+      },
+      "defaults": {},
+      "displayName": "Null Simple Operator",
+      "explain": "Passes SimpleInputer embeddings and masks through as a structured dict.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "NullSimple",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "NullConcatOperator",
+      "contract": {
+        "compatiblePredictors": [
+          "DINPredictor"
+        ],
+        "inputShape": "tensor[B, L, input_dim]",
+        "maskShape": "tensor[B, L]",
+        "outputDimPolicy": "not a plain vector",
+        "outputKind": "embedding-mask",
+        "outputShape": "dict{embedding: tensor[B, L, input_dim], mask: tensor[B, L]}"
+      },
+      "defaults": {},
+      "displayName": "Null Concat Operator",
+      "explain": "Passes concatenated embeddings and mask through, mainly for DIN-style target attention.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "NullConcat",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "notes": [],
+      "params": [],
+      "roles": [
+        "user"
+      ],
+      "warnings": []
+    }
+  ],
+  "predictors": [
+    {
+      "className": "DotPredictor",
+      "contract": {
+        "inputShape": "user: tensor[B, D], item: tensor[B, K, D] or tensor[B, D]",
+        "objective": "matching or ranking",
+        "outputShape": "tensor[B, K] or tensor[B]",
+        "requires": [
+          "user.outputDim == item.outputDim"
+        ]
+      },
+      "defaults": {},
+      "displayName": "Dot Product Predictor",
+      "explain": "Scores user-item compatibility with an inner product.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false
+      },
+      "id": "Dot",
+      "kind": "predictor",
+      "notes": [],
+      "params": [],
+      "warnings": []
+    },
+    {
+      "className": "DNNPredictor",
+      "contract": {
+        "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
+        "objective": "ranking; matching after candidate flattening",
+        "outputShape": "tensor[B]"
+      },
+      "defaults": {},
+      "displayName": "DNN Predictor",
+      "explain": "Scores a concatenated user-item vector with a multilayer perceptron.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false
+      },
+      "id": "DNN",
+      "kind": "predictor",
+      "notes": [],
+      "params": [
+        {
+          "default": [
+            1000,
+            1000,
+            1000
+          ],
+          "description": "Hidden widths of the MLP.",
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "type": "list"
+        },
+        {
+          "default": "ReLU",
+          "description": "Activation used by hidden layers.",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "type": "text"
+        },
+        {
+          "default": 0.1,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "max": 0.9,
+          "min": 0,
+          "step": 0.05,
+          "type": "number"
+        },
+        {
+          "default": false,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "type": "boolean"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "DCNPredictor",
+      "contract": {
+        "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
+        "objective": "ranking; matching after candidate flattening",
+        "outputShape": "tensor[B]"
+      },
+      "defaults": {},
+      "displayName": "DCN Predictor",
+      "explain": "Combines explicit cross layers and a DNN over concatenated user-item embeddings.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false
+      },
+      "id": "DCN",
+      "kind": "predictor",
+      "notes": [],
+      "params": [
+        {
+          "default": [
+            1000,
+            1000,
+            1000
+          ],
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "type": "list"
+        },
+        {
+          "default": "ReLU",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "type": "text"
+        },
+        {
+          "default": 0.1,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "max": 0.9,
+          "min": 0,
+          "step": 0.05,
+          "type": "number"
+        },
+        {
+          "default": false,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "type": "boolean"
+        },
+        {
+          "default": 3,
+          "key": "cross_num",
+          "label": "cross_num",
+          "min": 1,
+          "step": 1,
+          "type": "number"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "DINPredictor",
+      "contract": {
+        "inputShape": "user: dict{embedding: tensor[B, L, D], mask: tensor[B, L]}, item: tensor[B, D]",
+        "objective": "ranking only",
+        "outputShape": "tensor[B]",
+        "requires": [
+          "user.outputKind == embedding-mask"
+        ]
+      },
+      "defaults": {
+        "attention_dropout": 0,
+        "attention_hidden_units": null,
+        "attention_output_activation": null,
+        "batch_norm": false,
+        "din_use_softmax": false,
+        "dnn_activations": "ReLU",
+        "dnn_hidden_units": null,
+        "embedding_regularizer": null,
+        "net_dropout": 0,
+        "net_regularizer": null
+      },
+      "displayName": "DIN Predictor",
+      "explain": "Applies target-aware attention over the user's click embeddings before scoring.",
+      "flags": {
+        "allowMatching": false,
+        "allowRanking": true,
+        "keepInputDim": false
+      },
+      "id": "DIN",
+      "kind": "predictor",
+      "notes": [],
+      "params": [
+        {
+          "default": null,
+          "description": "Hidden widths of the final scoring MLP.",
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "type": "list"
+        },
+        {
+          "default": "ReLU",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "type": "text"
+        },
+        {
+          "default": null,
+          "description": "Hidden widths of the DIN attention network.",
+          "key": "attention_hidden_units",
+          "label": "attention_hidden_units",
+          "type": "list"
+        },
+        {
+          "default": null,
+          "key": "attention_output_activation",
+          "label": "attention_output_activation",
+          "type": "text"
+        },
+        {
+          "default": 0,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "key": "net_dropout",
+          "label": "net_dropout",
+          "type": "number"
+        },
+        {
+          "default": false,
+          "key": "batch_norm",
+          "label": "batch_norm",
+          "type": "boolean"
+        },
+        {
+          "default": false,
+          "key": "din_use_softmax",
+          "label": "din_use_softmax",
+          "type": "boolean"
+        },
+        {
+          "default": null,
+          "key": "embedding_regularizer",
+          "label": "embedding_regularizer",
+          "type": "text"
+        },
+        {
+          "default": null,
+          "key": "net_regularizer",
+          "label": "net_regularizer",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "MINERPredictor",
+      "contract": {
+        "inputShape": "user: tensor[B, I, D], item: tensor[B, K, D]",
+        "objective": "matching only",
+        "outputShape": "tensor[B, K]",
+        "requires": [
+          "user.outputKind == multi-interest"
+        ]
+      },
+      "defaults": {
+        "score_type": "weighted"
+      },
+      "displayName": "MINER Predictor",
+      "explain": "Target-aware matching over multiple user-interest vectors.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": false,
+        "keepInputDim": true
+      },
+      "id": "MINER",
+      "kind": "predictor",
+      "notes": [],
+      "params": [
+        {
+          "default": "weighted",
+          "description": "Aggregation strategy over per-interest scores.",
+          "key": "score_type",
+          "label": "score_type",
+          "options": [
+            "weighted",
+            "max",
+            "mean"
+          ],
+          "type": "select"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "schemaVersion": 1,
+  "source": "legommenders-algorithm"
+}

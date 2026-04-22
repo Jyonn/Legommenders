@@ -47,6 +47,22 @@ class DNNPredictorConfig(BasePredictorConfig):
 class DNNPredictor(BasePredictor):
     config_class = DNNPredictorConfig
     config: DNNPredictorConfig
+    metadata = {
+        "id": "DNN",
+        "displayName": "DNN Predictor",
+        "explain": "Scores a concatenated user-item vector with a multilayer perceptron.",
+        "params": {
+            "dnn_hidden_units": {"type": "list", "default": [1000, 1000, 1000], "description": "Hidden widths of the MLP."},
+            "dnn_activations": {"type": "text", "default": "ReLU", "description": "Activation used by hidden layers."},
+            "dnn_dropout": {"type": "number", "default": 0.1, "min": 0, "max": 0.9, "step": 0.05},
+            "dnn_batch_norm": {"type": "boolean", "default": False},
+        },
+        "contract": {
+            "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
+            "outputShape": "tensor[B]",
+            "objective": "ranking; matching after candidate flattening",
+        },
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

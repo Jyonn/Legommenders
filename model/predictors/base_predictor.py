@@ -16,6 +16,7 @@ class BasePredictor(nn.Module):
     keep_input_dim = False
 
     config_class = BasePredictorConfig
+    metadata = {}
 
     def __init__(self, config: BasePredictorConfig, lego_config):
         super().__init__()
@@ -29,3 +30,9 @@ class BasePredictor(nn.Module):
 
     def __call__(self, *args, **kwargs):
         return self.predict(*args, **kwargs)
+
+    @classmethod
+    def describe(cls):
+        from model.operator_metadata import describe_predictor
+
+        return describe_predictor(cls)

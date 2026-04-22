@@ -25,6 +25,24 @@ class AttentionOperator(BaseOperator):
     config_class = AttentionOperatorConfig
     inputer_class = ConcatInputer
     config: AttentionOperatorConfig
+    metadata = {
+        "id": "Attention",
+        "displayName": "Multihead Attention Encoder",
+        "roles": ["item", "user"],
+        "explain": "Runs self-attention over a concatenated feature sequence, then pools with additive attention.",
+        "contract": {
+            "inputShape": "tensor[N, L, input_dim]",
+            "maskShape": "tensor[N, L]",
+            "outputShape": "tensor[N, hidden_size]",
+            "outputKind": "vector",
+            "outputDimPolicy": "config.hidden_size",
+        },
+        "params": {
+            "num_attention_heads": {"min": 1, "step": 1, "description": "Number of self-attention heads."},
+            "attention_dropout": {"min": 0, "max": 0.9, "step": 0.05, "description": "Dropout inside multi-head attention."},
+            "additive_hidden_size": {"min": 16, "step": 8, "description": "Hidden size used inside additive attention pooling."},
+        },
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

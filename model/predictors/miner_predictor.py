@@ -40,6 +40,25 @@ class MINERPredictor(BasePredictor):
     config: MINERPredictorConfig
     allow_ranking = False
     keep_input_dim = True
+    metadata = {
+        "id": "MINER",
+        "displayName": "MINER Predictor",
+        "explain": "Target-aware matching over multiple user-interest vectors.",
+        "params": {
+            "score_type": {
+                "type": "select",
+                "default": "weighted",
+                "options": ["weighted", "max", "mean"],
+                "description": "Aggregation strategy over per-interest scores.",
+            },
+        },
+        "contract": {
+            "inputShape": "user: tensor[B, I, D], item: tensor[B, K, D]",
+            "outputShape": "tensor[B, K]",
+            "objective": "matching only",
+            "requires": ["user.outputKind == multi-interest"],
+        },
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

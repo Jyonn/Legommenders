@@ -24,6 +24,26 @@ class PoolingOperator(BaseOperator):
     inputer_class = SimpleInputer
     config_class = PoolingOperatorConfig
     config: PoolingOperatorConfig
+    metadata = {
+        "id": "Pooling",
+        "displayName": "Pooling User Encoder",
+        "roles": ["user"],
+        "explain": "Pools each input field, then averages/maxes fields or concatenates them when flatten=true.",
+        "contract": {
+            "inputShape": "dict[col -> tensor[B, Lc, input_dim]] or tensor[B, L, input_dim]",
+            "maskShape": "dict[col -> tensor[B, Lc]] or tensor[B, L]",
+            "outputShape": "tensor[B, input_dim] or tensor[B, input_dim * num_fields]",
+            "outputKind": "vector",
+            "outputDimPolicy": "config.input_dim unless flatten=true",
+        },
+        "params": {
+            "flatten": {"description": "Concatenate pooled fields instead of reducing across fields."},
+            "max_pooling": {"description": "Use max pooling rather than masked mean pooling."},
+        },
+        "warnings": [
+            "When flatten=true, output width depends on the number of input fields and should be validated with dataset metadata.",
+        ],
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
