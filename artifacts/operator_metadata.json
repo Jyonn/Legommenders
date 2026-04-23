@@ -1,65 +1,210 @@
 {
+  "extraction": {
+    "mode": "ast+docstring+overrides",
+    "overrideFile": "tools/operator_metadata_overrides.json"
+  },
   "operators": [
     {
-      "className": "CNNOperator",
+      "className": "AdaOperator",
+      "configClass": "AdaOperatorConfig",
       "contract": {
-        "branchOutputShapes": {
-          "history": "tensor[B, L, hidden_size]",
-          "negative": "tensor[B, K, hidden_size]",
-          "positive": "tensor[B, 1, hidden_size]"
-        },
-        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
-        "maskShape": "dict[col -> tensor[N, Lc]]",
-        "outputDimPolicy": "config.hidden_size",
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.input_dim",
         "outputKind": "vector",
-        "outputShape": "tensor[N, hidden_size]"
+        "outputShape": "tensor[B, input_dim]",
+        "outputs": [
+          {
+            "dimPolicy": "config.input_dim",
+            "kind": "vector",
+            "name": "user",
+            "shape": {
+              "axes": [
+                "B",
+                "input_dim"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
       },
       "defaults": {
-        "additive_hidden_size": 256,
-        "dropout": 0.1,
-        "kernel_size": 3
+        "additive_hidden_size": 256
       },
-      "displayName": "CNN Content Encoder",
-      "explain": "Encodes multi-column token content with Conv1d and additive attention.",
+      "displayName": "Ada",
+      "explain": "Aggregates a click sequence into one user vector using additive attention.",
       "flags": {
         "allowCaching": true,
         "flattenMode": false
       },
-      "id": "CNN",
+      "id": "Ada",
       "inputer": {
-        "className": "SimpleInputer",
-        "outputSingleSequence": false
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
       },
       "kind": "operator",
-      "notes": [
-        "When used as an item operator, the same encoder is applied per clicked, positive, and negative item."
-      ],
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.operators.ada_operator",
+      "notes": [],
       "params": [
         {
-          "default": 3,
-          "description": "Conv1d window size for token sequences.",
-          "key": "kernel_size",
-          "label": "kernel_size",
-          "min": 1,
-          "step": 1,
-          "type": "number"
-        },
-        {
-          "default": 0.1,
-          "description": "Dropout after convolution activation.",
-          "key": "dropout",
-          "label": "dropout",
-          "max": 0.9,
-          "min": 0,
-          "step": 0.05,
-          "type": "number"
-        },
-        {
+          "dataType": "int",
           "default": 256,
           "description": "Hidden size used inside additive attention.",
           "key": "additive_hidden_size",
           "label": "additive_hidden_size",
           "min": 16,
+          "source": "config_signature",
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "AttentionOperator",
+      "configClass": "AttentionOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "num_attention_heads": 8
+      },
+      "displayName": "Attention",
+      "explain": "Runs self-attention over a concatenated feature sequence, then pools with additive attention.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Attention",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.operators.attention_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 8,
+          "description": "Number of self-attention heads.",
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "min": 1,
+          "source": "config_signature",
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "description": "Dropout inside multi-head attention.",
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "max": 0.9,
+          "min": 0,
+          "source": "config_signature",
+          "step": 0.05,
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 256,
+          "description": "Hidden size used inside additive attention pooling.",
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "min": 16,
+          "source": "config_signature",
           "step": 8,
           "type": "number"
         }
@@ -71,20 +216,561 @@
       "warnings": []
     },
     {
+      "className": "BertBaseIISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "Bert Base IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "BertBaseIISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.bert_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "BertBaseOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Bert Base",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "BertBase",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.bert_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "BertLargeIISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "Bert Large IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "BertLargeIISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.bert_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "BertLargeOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Bert Large",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "BertLarge",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.bert_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
       "className": "CNNCatOperator",
+      "configClass": "CNNCatOperatorConfig",
       "contract": {
         "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc",
+                  "input_dim"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
         "maskShape": "dict[col -> tensor[N, Lc]]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
         "outputDimPolicy": "config.hidden_size * len(item_inputs)",
         "outputKind": "vector",
-        "outputShape": "tensor[N, hidden_size * num_fields]"
+        "outputShape": "tensor[N, hidden_size * num_fields]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size * len(item_inputs)",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size * num_fields"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
       },
       "defaults": {
         "additive_hidden_size": 256,
         "dropout": 0.1,
         "kernel_size": 3
       },
-      "displayName": "CNN Cat Encoder",
+      "displayName": "CNN Cat",
       "explain": "Runs CNN attention per field and concatenates field vectors.",
       "flags": {
         "allowCaching": true,
@@ -96,24 +782,36 @@
         "outputSingleSequence": false
       },
       "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": false
+      },
+      "module": "model.operators.cnn_cat_operator",
       "notes": [],
       "params": [
         {
+          "dataType": "int",
           "default": 3,
           "key": "kernel_size",
           "label": "kernel_size",
+          "source": "config_signature",
           "type": "number"
         },
         {
+          "dataType": "float",
           "default": 0.1,
           "key": "dropout",
           "label": "dropout",
+          "source": "config_signature",
           "type": "number"
         },
         {
+          "dataType": "int",
           "default": 256,
           "key": "additive_hidden_size",
           "label": "additive_hidden_size",
+          "source": "config_signature",
           "type": "number"
         }
       ],
@@ -126,58 +824,150 @@
       ]
     },
     {
-      "className": "AttentionOperator",
+      "className": "CNNOperator",
+      "configClass": "CNNOperatorConfig",
       "contract": {
-        "inputShape": "tensor[N, L, input_dim]",
-        "maskShape": "tensor[N, L]",
+        "branchOutputs": {
+          "history": {
+            "axes": [
+              "B",
+              "L",
+              "hidden_size"
+            ],
+            "type": "tensor"
+          },
+          "negative": {
+            "axes": [
+              "B",
+              "K",
+              "hidden_size"
+            ],
+            "type": "tensor"
+          },
+          "positive": {
+            "axes": [
+              "B",
+              "1",
+              "hidden_size"
+            ],
+            "type": "tensor"
+          }
+        },
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc",
+                  "input_dim"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
         "outputDimPolicy": "config.hidden_size",
         "outputKind": "vector",
-        "outputShape": "tensor[N, hidden_size]"
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
       "defaults": {
         "additive_hidden_size": 256,
-        "attention_dropout": 0.1,
-        "num_attention_heads": 8
+        "dropout": 0.1,
+        "kernel_size": 3
       },
-      "displayName": "Multihead Attention Encoder",
-      "explain": "Runs self-attention over a concatenated feature sequence, then pools with additive attention.",
+      "displayName": "CNN",
+      "explain": "Encodes multi-column token content with Conv1d and additive attention.",
       "flags": {
         "allowCaching": true,
         "flattenMode": false
       },
-      "id": "Attention",
+      "id": "CNN",
       "inputer": {
-        "className": "ConcatInputer",
-        "outputSingleSequence": true
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
       },
       "kind": "operator",
-      "notes": [],
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.operators.cnn_operator",
+      "notes": [
+        "When used as an item operator, the same encoder is applied per clicked, positive, and negative item."
+      ],
       "params": [
         {
-          "default": 8,
-          "description": "Number of self-attention heads.",
-          "key": "num_attention_heads",
-          "label": "num_attention_heads",
+          "dataType": "int",
+          "default": 3,
+          "description": "Conv1d window size for token sequences.",
+          "key": "kernel_size",
+          "label": "kernel_size",
           "min": 1,
+          "source": "config_signature",
           "step": 1,
           "type": "number"
         },
         {
+          "dataType": "float",
           "default": 0.1,
-          "description": "Dropout inside multi-head attention.",
-          "key": "attention_dropout",
-          "label": "attention_dropout",
+          "description": "Dropout after convolution activation.",
+          "key": "dropout",
+          "label": "dropout",
           "max": 0.9,
           "min": 0,
+          "source": "config_signature",
           "step": 0.05,
           "type": "number"
         },
         {
+          "dataType": "int",
           "default": 256,
-          "description": "Hidden size used inside additive attention pooling.",
+          "description": "Hidden size used inside additive attention.",
           "key": "additive_hidden_size",
           "label": "additive_hidden_size",
           "min": 16,
+          "source": "config_signature",
           "step": 8,
           "type": "number"
         }
@@ -189,59 +979,678 @@
       "warnings": []
     },
     {
-      "className": "AdaOperator",
+      "className": "FastformerOperator",
+      "configClass": "FastformerOperatorConfig",
       "contract": {
-        "inputShape": "tensor[B, L, input_dim]",
-        "maskShape": "tensor[B, L]",
-        "outputDimPolicy": "config.input_dim",
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
         "outputKind": "vector",
-        "outputShape": "tensor[B, input_dim]"
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
       "defaults": {
-        "additive_hidden_size": 256
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "hidden_dropout_prob": 0.1,
+        "num_attention_heads": 8,
+        "num_hidden_layers": 3
       },
-      "displayName": "Additive Attention User Encoder",
-      "explain": "Aggregates a click sequence into one user vector using additive attention.",
+      "displayName": "Fastformer",
+      "explain": "",
       "flags": {
         "allowCaching": true,
         "flattenMode": false
       },
-      "id": "Ada",
+      "id": "Fastformer",
       "inputer": {
         "className": "ConcatInputer",
         "outputSingleSequence": true
       },
       "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.fastformer_operator",
       "notes": [],
       "params": [
         {
+          "dataType": "int",
+          "default": 8,
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
           "default": 256,
-          "description": "Hidden size used inside additive attention.",
           "key": "additive_hidden_size",
           "label": "additive_hidden_size",
-          "min": 16,
-          "step": 8,
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 3,
+          "key": "num_hidden_layers",
+          "label": "num_hidden_layers",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "hidden_dropout_prob",
+          "label": "hidden_dropout_prob",
+          "source": "config_signature",
           "type": "number"
         }
       ],
       "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "FlattenFastformerOperator",
+      "configClass": "FastformerOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L_flat, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L_flat",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L_flat]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L_flat"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "hidden_dropout_prob": 0.1,
+        "num_attention_heads": 8,
+        "num_hidden_layers": 3
+      },
+      "displayName": "Flatten Fastformer",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": true
+      },
+      "id": "FlattenFastformer",
+      "inputer": {
+        "className": "FlattenSeqInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.flatten_fastformer_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 8,
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 3,
+          "key": "num_hidden_layers",
+          "label": "num_hidden_layers",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "hidden_dropout_prob",
+          "label": "hidden_dropout_prob",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "FlattenTransformerOperator",
+      "configClass": "TransformerOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L_flat, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L_flat",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L_flat]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L_flat"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "num_attention_heads": 8,
+        "num_hidden_layers": 3
+      },
+      "displayName": "Flatten Transformer",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": true
+      },
+      "id": "FlattenTransformer",
+      "inputer": {
+        "className": "FlattenSeqInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.flatten_transformer_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 8,
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 3,
+          "key": "num_hidden_layers",
+          "label": "num_hidden_layers",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "GLM4TH9BIISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "GLM4 TH9 BIISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "GLM4TH9BIISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.glm_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "GLM4TH9BOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "GLM4 TH9 B",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "GLM4TH9B",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.glm_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
         "user"
       ],
       "warnings": []
     },
     {
       "className": "GRUOperator",
+      "configClass": "GRUOperatorConfig",
       "contract": {
-        "inputShape": "tensor[B, L, input_dim]",
-        "maskShape": "tensor[B, L]",
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
         "outputDimPolicy": "forward returns config.input_dim",
         "outputKind": "vector",
-        "outputShape": "tensor[B, input_dim]"
+        "outputShape": "tensor[B, input_dim]",
+        "outputs": [
+          {
+            "dimPolicy": "forward returns config.input_dim",
+            "kind": "vector",
+            "name": "user",
+            "shape": {
+              "axes": [
+                "B",
+                "input_dim"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
       },
       "defaults": {
         "num_layers": 1
       },
-      "displayName": "GRU User Encoder",
+      "displayName": "GRU",
       "explain": "Encodes the click sequence with a GRU and projects the last hidden state back to input_dim.",
       "flags": {
         "allowCaching": true,
@@ -253,14 +1662,22 @@
         "outputSingleSequence": true
       },
       "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.operators.gru_operator",
       "notes": [],
       "params": [
         {
+          "dataType": "int",
           "default": 1,
           "description": "Number of stacked GRU layers.",
           "key": "num_layers",
           "label": "num_layers",
           "min": 1,
+          "source": "config_signature",
           "step": 1,
           "type": "number"
         }
@@ -273,134 +1690,843 @@
       ]
     },
     {
-      "className": "PoolingOperator",
+      "className": "IISANOperator",
+      "configClass": "IISANOperatorConfig",
       "contract": {
-        "inputShape": "dict[col -> tensor[B, Lc, input_dim]] or tensor[B, L, input_dim]",
-        "maskShape": "dict[col -> tensor[B, Lc]] or tensor[B, L]",
-        "outputDimPolicy": "config.input_dim unless flatten=true",
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
         "outputKind": "vector",
-        "outputShape": "tensor[B, input_dim] or tensor[B, input_dim * num_fields]"
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
       "defaults": {
-        "flatten": false,
-        "max_pooling": false
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
       },
-      "displayName": "Pooling User Encoder",
-      "explain": "Pools each input field, then averages/maxes fields or concatenates them when flatten=true.",
+      "displayName": "IISAN",
+      "explain": "",
       "flags": {
         "allowCaching": true,
         "flattenMode": false
       },
-      "id": "Pooling",
-      "inputer": {
-        "className": "SimpleInputer",
-        "outputSingleSequence": false
-      },
-      "kind": "operator",
-      "notes": [],
-      "params": [
-        {
-          "default": false,
-          "description": "Concatenate pooled fields instead of reducing across fields.",
-          "key": "flatten",
-          "label": "flatten",
-          "type": "boolean"
-        },
-        {
-          "default": false,
-          "description": "Use max pooling rather than masked mean pooling.",
-          "key": "max_pooling",
-          "label": "max_pooling",
-          "type": "boolean"
-        }
-      ],
-      "roles": [
-        "user"
-      ],
-      "warnings": [
-        "When flatten=true, output width depends on the number of input fields and should be validated with dataset metadata."
-      ]
-    },
-    {
-      "className": "PolyAttentionOperator",
-      "contract": {
-        "compatiblePredictors": [
-          "MINERPredictor"
-        ],
-        "inputShape": "tensor[B, L, input_dim]",
-        "maskShape": "tensor[B, L]",
-        "outputDimPolicy": "config.input_dim",
-        "outputKind": "multi-interest",
-        "outputShape": "tensor[B, num_context_codes, input_dim]"
-      },
-      "defaults": {
-        "context_code_dim": 200,
-        "num_context_codes": 32
-      },
-      "displayName": "Poly Attention User Encoder",
-      "explain": "Produces multiple user-interest vectors for target-aware matching.",
-      "flags": {
-        "allowCaching": false,
-        "flattenMode": false
-      },
-      "id": "PolyAttention",
+      "id": "IISAN",
       "inputer": {
         "className": "ConcatInputer",
         "outputSingleSequence": true
       },
       "kind": "operator",
-      "notes": [
-        "This operator disables caching because the multi-interest representation is target-aware downstream."
-      ],
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.iisan_operator",
+      "notes": [],
       "params": [
         {
-          "default": 32,
-          "description": "Number of interest vectors emitted for each user.",
-          "key": "num_context_codes",
-          "label": "num_context_codes",
-          "min": 2,
-          "step": 1,
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
           "type": "number"
         },
         {
-          "default": 200,
-          "description": "Internal projection width for context-code attention.",
-          "key": "context_code_dim",
-          "label": "context_code_dim",
-          "min": 8,
-          "step": 8,
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
           "type": "number"
         }
       ],
       "roles": [
+        "item",
         "user"
       ],
       "warnings": []
     },
     {
-      "className": "NullSimpleOperator",
+      "className": "Llama1IISANOperator",
+      "configClass": "IISANOperatorConfig",
       "contract": {
-        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
-        "maskShape": "dict[col -> tensor[N, Lc]]",
-        "outputDimPolicy": "not a plain vector",
-        "outputKind": "embedding-mask",
-        "outputShape": "dict{embedding, mask}"
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
-      "defaults": {},
-      "displayName": "Null Simple Operator",
-      "explain": "Passes SimpleInputer embeddings and masks through as a structured dict.",
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "Llama1 IISAN",
+      "explain": "",
       "flags": {
         "allowCaching": true,
         "flattenMode": false
       },
-      "id": "NullSimple",
+      "id": "Llama1IISAN",
       "inputer": {
-        "className": "SimpleInputer",
-        "outputSingleSequence": false
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
       },
       "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_iisan_operator",
       "notes": [],
-      "params": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "Llama1Operator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Llama1",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Llama1",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "Llama2IISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "Llama2 IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Llama2IISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "Llama2Operator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Llama2",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Llama2",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "Llama3IISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "Llama3 IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Llama3IISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "Llama3Operator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Llama3",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Llama3",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.llama_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
       "roles": [
         "item",
         "user"
@@ -409,18 +2535,74 @@
     },
     {
       "className": "NullConcatOperator",
+      "configClass": "NullOperatorConfig",
       "contract": {
         "compatiblePredictors": [
           "DINPredictor"
         ],
-        "inputShape": "tensor[B, L, input_dim]",
-        "maskShape": "tensor[B, L]",
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
         "outputDimPolicy": "not a plain vector",
         "outputKind": "embedding-mask",
-        "outputShape": "dict{embedding: tensor[B, L, input_dim], mask: tensor[B, L]}"
+        "outputShape": "dict{embedding: tensor[B, L, input_dim], mask: tensor[B, L]}",
+        "outputs": [
+          {
+            "dimPolicy": "not a plain vector",
+            "kind": "embedding-mask",
+            "name": "payload",
+            "shape": {
+              "fields": {
+                "embedding": {
+                  "axes": [
+                    "B",
+                    "L",
+                    "input_dim"
+                  ],
+                  "type": "tensor"
+                },
+                "mask": {
+                  "axes": [
+                    "B",
+                    "L"
+                  ],
+                  "type": "tensor"
+                }
+              },
+              "type": "dict"
+            }
+          }
+        ],
+        "requires": []
       },
       "defaults": {},
-      "displayName": "Null Concat Operator",
+      "displayName": "Null Concat",
       "explain": "Passes concatenated embeddings and mask through, mainly for DIN-style target attention.",
       "flags": {
         "allowCaching": true,
@@ -432,9 +2614,1331 @@
         "outputSingleSequence": true
       },
       "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": false
+      },
+      "module": "model.operators.null_operator",
       "notes": [],
       "params": [],
       "roles": [
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "NullSimpleOperator",
+      "configClass": "NullOperatorConfig",
+      "contract": {
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc",
+                  "input_dim"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "not a plain vector",
+        "outputKind": "embedding-mask",
+        "outputShape": "dict{embedding, mask}",
+        "outputs": [
+          {
+            "dimPolicy": "not a plain vector",
+            "kind": "embedding-mask",
+            "name": "payload",
+            "shape": {
+              "keys": [
+                "embedding",
+                "mask"
+              ],
+              "type": "dict"
+            }
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {},
+      "displayName": "Null Simple",
+      "explain": "Passes SimpleInputer embeddings and masks through as a structured dict.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "NullSimple",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": false
+      },
+      "module": "model.operators.null_operator",
+      "notes": [],
+      "params": [],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "OPTBaseIISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "OPT Base IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "OPTBaseIISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.opt_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "OPTBaseOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "OPT Base",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "OPTBase",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.opt_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "OPTLargeIISANOperator",
+      "configClass": "IISANOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "global_proj_size": null,
+        "layer_selection_step": 1,
+        "local_proj_size": null
+      },
+      "displayName": "OPT Large IISAN",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "OPTLargeIISAN",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.opt_iisan_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "global_proj_size",
+          "label": "global_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": null,
+          "key": "local_proj_size",
+          "label": "local_proj_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "layer_selection_step",
+          "label": "layer_selection_step",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "OPTLargeOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "OPT Large",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "OPTLarge",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.opt_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "OnceOperator",
+      "configClass": "OnceOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "lora_alpha": 128,
+        "lora_dropout": 0.1,
+        "lora_r": 32,
+        "tune_from": 0,
+        "use_lora": true
+      },
+      "displayName": "Once",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Once",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.once_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "tune_from",
+          "label": "tune_from",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_lora",
+          "label": "use_lora",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 128,
+          "key": "lora_alpha",
+          "label": "lora_alpha",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 32,
+          "key": "lora_r",
+          "label": "lora_r",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "lora_dropout",
+          "label": "lora_dropout",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "PolyAttentionOperator",
+      "configClass": "PolyAttentionOperatorConfig",
+      "contract": {
+        "compatiblePredictors": [
+          "MINERPredictor"
+        ],
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.input_dim",
+        "outputKind": "multi-interest",
+        "outputShape": "tensor[B, num_context_codes, input_dim]",
+        "outputs": [
+          {
+            "dimPolicy": "config.input_dim",
+            "kind": "multi-interest",
+            "name": "user",
+            "shape": {
+              "axes": [
+                "B",
+                "num_context_codes",
+                "input_dim"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "context_code_dim": 200,
+        "num_context_codes": 32
+      },
+      "displayName": "Poly Attention",
+      "explain": "Produces multiple user-interest vectors for target-aware matching.",
+      "flags": {
+        "allowCaching": false,
+        "flattenMode": false
+      },
+      "id": "PolyAttention",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.operators.poly_attention_operator",
+      "notes": [
+        "This operator disables caching because the multi-interest representation is target-aware downstream."
+      ],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 32,
+          "description": "Number of interest vectors emitted for each user.",
+          "key": "num_context_codes",
+          "label": "num_context_codes",
+          "min": 2,
+          "source": "config_signature",
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 200,
+          "description": "Internal projection width for context-code attention.",
+          "key": "context_code_dim",
+          "label": "context_code_dim",
+          "min": 8,
+          "source": "config_signature",
+          "step": 8,
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "PoolingOperator",
+      "configClass": "PoolingOperatorConfig",
+      "contract": {
+        "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc",
+                  "input_dim"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "dict[col -> tensor[N, Lc]]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "key": "col",
+              "type": "dict",
+              "value": {
+                "axes": [
+                  "N",
+                  "Lc"
+                ],
+                "type": "tensor"
+              }
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.input_dim unless flatten=true",
+        "outputKind": "vector",
+        "outputShape": "tensor[B, input_dim] or tensor[B, input_dim * num_fields]",
+        "outputs": [
+          {
+            "dimPolicy": "config.input_dim unless flatten=true",
+            "kind": "vector",
+            "name": "user",
+            "shape": {
+              "oneOf": [
+                {
+                  "axes": [
+                    "B",
+                    "input_dim"
+                  ],
+                  "type": "tensor"
+                },
+                {
+                  "axes": [
+                    "B",
+                    "input_dim * num_fields"
+                  ],
+                  "type": "tensor"
+                }
+              ]
+            }
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "flatten": false,
+        "max_pooling": false
+      },
+      "displayName": "Pooling",
+      "explain": "Pools each input field, then averages/maxes fields or concatenates them when flatten=true.",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Pooling",
+      "inputer": {
+        "className": "SimpleInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": false
+      },
+      "module": "model.operators.pooling_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "flatten",
+          "label": "flatten",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "max_pooling",
+          "label": "max_pooling",
+          "source": "config_signature",
+          "type": "boolean"
+        }
+      ],
+      "roles": [
+        "user"
+      ],
+      "warnings": [
+        "When flatten=true, output width depends on the number of input fields and should be validated with dataset metadata."
+      ]
+    },
+    {
+      "className": "SCFlattenOperator",
+      "configClass": "SCSimpleOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.input_dim",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, input_dim]",
+        "outputs": [
+          {
+            "dimPolicy": "config.input_dim",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "output_dim"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {},
+      "displayName": "SC Flatten",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": true
+      },
+      "id": "SCFlatten",
+      "inputer": {
+        "className": "SingleColumnInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.single_column_operator",
+      "notes": [],
+      "params": [],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "SCSimpleOperator",
+      "configClass": "SCSimpleOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.input_dim",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, input_dim]",
+        "outputs": [
+          {
+            "dimPolicy": "config.input_dim",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "output_dim"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {},
+      "displayName": "SC Simple",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "SCSimple",
+      "inputer": {
+        "className": "SingleColumnInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.single_column_operator",
+      "notes": [],
+      "params": [],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "SemanticOperator",
+      "configClass": "SemanticOperatorConfig",
+      "contract": {
+        "inputShape": "operator-specific",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "type": "operator-specific"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "operator-specific",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "type": "operator-specific"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256
+      },
+      "displayName": "Semantic",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": true
+      },
+      "id": "Semantic",
+      "inputer": {
+        "className": "SemanticInputer",
+        "outputSingleSequence": false
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.semantic_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "str",
+          "key": "user_operator",
+          "label": "user_operator",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "dict",
+          "key": "user_operator_config",
+          "label": "user_operator_config",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
+        "user"
+      ],
+      "warnings": []
+    },
+    {
+      "className": "TransformerOperator",
+      "configClass": "TransformerOperatorConfig",
+      "contract": {
+        "inputShape": "tensor[N, L, input_dim]",
+        "inputs": [
+          {
+            "name": "embeddings",
+            "shape": {
+              "axes": [
+                "N",
+                "L",
+                "input_dim"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "maskShape": "tensor[N, L]",
+        "masks": [
+          {
+            "name": "mask",
+            "shape": {
+              "axes": [
+                "N",
+                "L"
+              ],
+              "type": "tensor"
+            },
+            "source": "inputer"
+          }
+        ],
+        "outputDimPolicy": "config.hidden_size",
+        "outputKind": "vector",
+        "outputShape": "tensor[N, hidden_size]",
+        "outputs": [
+          {
+            "dimPolicy": "config.hidden_size",
+            "kind": "vector",
+            "name": "embedding",
+            "shape": {
+              "axes": [
+                "N",
+                "hidden_size"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "additive_hidden_size": 256,
+        "attention_dropout": 0.1,
+        "num_attention_heads": 8,
+        "num_hidden_layers": 3
+      },
+      "displayName": "Transformer",
+      "explain": "",
+      "flags": {
+        "allowCaching": true,
+        "flattenMode": false
+      },
+      "id": "Transformer",
+      "inputer": {
+        "className": "ConcatInputer",
+        "outputSingleSequence": true
+      },
+      "kind": "operator",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.operators.transformer_operator",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "int",
+          "default": 8,
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "float",
+          "default": 0.1,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 256,
+          "key": "additive_hidden_size",
+          "label": "additive_hidden_size",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 3,
+          "key": "num_hidden_layers",
+          "label": "num_hidden_layers",
+          "source": "config_signature",
+          "type": "number"
+        }
+      ],
+      "roles": [
+        "item",
         "user"
       ],
       "warnings": []
@@ -442,49 +3946,204 @@
   ],
   "predictors": [
     {
-      "className": "DotPredictor",
+      "className": "AutoIntPredictor",
+      "configClass": "AutoIntPredictorConfig",
       "contract": {
-        "inputShape": "user: tensor[B, D], item: tensor[B, K, D] or tensor[B, D]",
-        "objective": "matching or ranking",
-        "outputShape": "tensor[B, K] or tensor[B]",
-        "requires": [
-          "user.outputDim == item.outputDim"
-        ]
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
-      "defaults": {},
-      "displayName": "Dot Product Predictor",
-      "explain": "Scores user-item compatibility with an inner product.",
+      "defaults": {
+        "attention_layer_norm": false,
+        "use_residual": true,
+        "use_scale": false
+      },
+      "displayName": "Auto Int",
+      "explain": "",
       "flags": {
         "allowMatching": true,
         "allowRanking": true,
-        "keepInputDim": false
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
       },
-      "id": "Dot",
+      "id": "AutoInt",
       "kind": "predictor",
-      "notes": [],
-      "params": [],
-      "warnings": []
-    },
-    {
-      "className": "DNNPredictor",
-      "contract": {
-        "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
-        "objective": "ranking; matching after candidate flattening",
-        "outputShape": "tensor[B]"
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
       },
-      "defaults": {},
-      "displayName": "DNN Predictor",
-      "explain": "Scores a concatenated user-item vector with a multilayer perceptron.",
-      "flags": {
-        "allowMatching": true,
-        "allowRanking": true,
-        "keepInputDim": false
-      },
-      "id": "DNN",
-      "kind": "predictor",
+      "module": "model.predictors.autoint_predictor",
       "notes": [],
       "params": [
         {
+          "dataType": null,
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "num_attention_layers",
+          "label": "num_attention_layers",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "num_attention_heads",
+          "label": "num_attention_heads",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "attention_dim",
+          "label": "attention_dim",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "attention_dropout",
+          "label": "attention_dropout",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "attention_layer_norm",
+          "label": "attention_layer_norm",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "use_scale",
+          "label": "use_scale",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_residual",
+          "label": "use_residual",
+          "source": "config_signature",
+          "type": "boolean"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "DCNPredictor",
+      "configClass": "DCNPredictorConfig",
+      "contract": {
+        "inputShape": "tensor[B, 2 * hidden_size]",
+        "inputs": [
+          {
+            "name": "concat",
+            "shape": {
+              "axes": [
+                "B",
+                "2 * hidden_size"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "cross_num": 3,
+        "dnn_activations": "ReLU",
+        "dnn_batch_norm": false,
+        "dnn_dropout": 0.1,
+        "dnn_hidden_units": [
+          1000,
+          1000,
+          1000
+        ]
+      },
+      "displayName": "DCN",
+      "explain": "Combines explicit cross layers and a DNN over concatenated user-item embeddings.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "DCN",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.predictors.dcn_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
           "default": [
             1000,
             1000,
@@ -493,102 +4152,253 @@
           "description": "Hidden widths of the MLP.",
           "key": "dnn_hidden_units",
           "label": "dnn_hidden_units",
-          "type": "list"
-        },
-        {
-          "default": "ReLU",
-          "description": "Activation used by hidden layers.",
-          "key": "dnn_activations",
-          "label": "dnn_activations",
+          "source": "config_signature",
           "type": "text"
         },
         {
+          "dataType": null,
+          "default": "ReLU",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
           "default": 0.1,
           "key": "dnn_dropout",
           "label": "dnn_dropout",
           "max": 0.9,
           "min": 0,
+          "source": "config_signature",
           "step": 0.05,
-          "type": "number"
+          "type": "text"
         },
         {
+          "dataType": null,
           "default": false,
           "key": "dnn_batch_norm",
           "label": "dnn_batch_norm",
-          "type": "boolean"
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": 3,
+          "key": "cross_num",
+          "label": "cross_num",
+          "min": 1,
+          "source": "config_signature",
+          "step": 1,
+          "type": "text"
         }
       ],
       "warnings": []
     },
     {
-      "className": "DCNPredictor",
+      "className": "DCNv2Predictor",
+      "configClass": "DCNv2PredictorConfig",
       "contract": {
-        "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
-        "objective": "ranking; matching after candidate flattening",
-        "outputShape": "tensor[B]"
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
       },
-      "defaults": {},
-      "displayName": "DCN Predictor",
-      "explain": "Combines explicit cross layers and a DNN over concatenated user-item embeddings.",
+      "defaults": {
+        "cross_num": 3,
+        "dnn_activations": "ReLU",
+        "dnn_batch_norm": false,
+        "dnn_dropout": 0,
+        "low_rank": 32,
+        "model_structure": "parallel",
+        "num_experts": 4,
+        "parallel_dnn_hidden_units": null,
+        "stacked_dnn_hidden_units": null,
+        "use_low_rank_mixture": false
+      },
+      "displayName": "DC Nv2",
+      "explain": "",
       "flags": {
         "allowMatching": true,
         "allowRanking": true,
-        "keepInputDim": false
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
       },
-      "id": "DCN",
+      "id": "DCNv2",
       "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.dcnv2_predictor",
       "notes": [],
       "params": [
         {
-          "default": [
-            1000,
-            1000,
-            1000
-          ],
-          "key": "dnn_hidden_units",
-          "label": "dnn_hidden_units",
-          "type": "list"
-        },
-        {
-          "default": "ReLU",
-          "key": "dnn_activations",
-          "label": "dnn_activations",
+          "dataType": "str",
+          "default": "parallel",
+          "key": "model_structure",
+          "label": "model_structure",
+          "source": "config_signature",
           "type": "text"
         },
         {
-          "default": 0.1,
-          "key": "dnn_dropout",
-          "label": "dnn_dropout",
-          "max": 0.9,
-          "min": 0,
-          "step": 0.05,
-          "type": "number"
-        },
-        {
+          "dataType": "bool",
           "default": false,
-          "key": "dnn_batch_norm",
-          "label": "dnn_batch_norm",
+          "key": "use_low_rank_mixture",
+          "label": "use_low_rank_mixture",
+          "source": "config_signature",
           "type": "boolean"
         },
         {
+          "dataType": "int",
+          "default": 32,
+          "key": "low_rank",
+          "label": "low_rank",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 4,
+          "key": "num_experts",
+          "label": "num_experts",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "stacked_dnn_hidden_units",
+          "label": "stacked_dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "parallel_dnn_hidden_units",
+          "label": "parallel_dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "str",
+          "default": "ReLU",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
           "default": 3,
           "key": "cross_num",
           "label": "cross_num",
-          "min": 1,
-          "step": 1,
+          "source": "config_signature",
           "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "boolean"
         }
       ],
       "warnings": []
     },
     {
       "className": "DINPredictor",
+      "configClass": "DINPredictorConfig",
       "contract": {
         "inputShape": "user: dict{embedding: tensor[B, L, D], mask: tensor[B, L]}, item: tensor[B, D]",
-        "objective": "ranking only",
+        "inputs": [
+          {
+            "kind": "embedding-mask",
+            "name": "user",
+            "shape": {
+              "fields": {
+                "embedding": {
+                  "axes": [
+                    "B",
+                    "L",
+                    "D"
+                  ],
+                  "type": "tensor"
+                },
+                "mask": {
+                  "axes": [
+                    "B",
+                    "L"
+                  ],
+                  "type": "tensor"
+                }
+              },
+              "type": "dict"
+            }
+          },
+          {
+            "kind": "vector",
+            "name": "item",
+            "shape": {
+              "axes": [
+                "B",
+                "D"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "objective": "ranking_only",
         "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
         "requires": [
-          "user.outputKind == embedding-mask"
+          {
+            "left": "user.outputKind",
+            "op": "eq",
+            "right": "embedding-mask"
+          }
         ]
       },
       "defaults": {
@@ -603,107 +4413,748 @@
         "net_dropout": 0,
         "net_regularizer": null
       },
-      "displayName": "DIN Predictor",
+      "displayName": "DIN",
       "explain": "Applies target-aware attention over the user's click embeddings before scoring.",
       "flags": {
         "allowMatching": false,
         "allowRanking": true,
-        "keepInputDim": false
+        "keepInputDim": false,
+        "objective": "ranking_only"
       },
       "id": "DIN",
       "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.predictors.din_predictor",
       "notes": [],
       "params": [
         {
+          "dataType": null,
           "default": null,
           "description": "Hidden widths of the final scoring MLP.",
           "key": "dnn_hidden_units",
           "label": "dnn_hidden_units",
-          "type": "list"
-        },
-        {
-          "default": "ReLU",
-          "key": "dnn_activations",
-          "label": "dnn_activations",
+          "source": "config_signature",
           "type": "text"
         },
         {
+          "dataType": "str",
+          "default": "ReLU",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
           "default": null,
           "description": "Hidden widths of the DIN attention network.",
           "key": "attention_hidden_units",
           "label": "attention_hidden_units",
-          "type": "list"
+          "source": "config_signature",
+          "type": "text"
         },
         {
+          "dataType": null,
           "default": null,
           "key": "attention_output_activation",
           "label": "attention_output_activation",
+          "source": "config_signature",
           "type": "text"
         },
         {
+          "dataType": "int",
           "default": 0,
           "key": "attention_dropout",
           "label": "attention_dropout",
+          "source": "config_signature",
           "type": "number"
         },
         {
+          "dataType": "int",
           "default": 0,
           "key": "net_dropout",
           "label": "net_dropout",
+          "source": "config_signature",
           "type": "number"
         },
         {
+          "dataType": "bool",
           "default": false,
           "key": "batch_norm",
           "label": "batch_norm",
+          "source": "config_signature",
           "type": "boolean"
         },
         {
+          "dataType": "bool",
           "default": false,
           "key": "din_use_softmax",
           "label": "din_use_softmax",
+          "source": "config_signature",
           "type": "boolean"
         },
         {
+          "dataType": null,
           "default": null,
           "key": "embedding_regularizer",
           "label": "embedding_regularizer",
+          "source": "config_signature",
           "type": "text"
         },
         {
+          "dataType": null,
           "default": null,
           "key": "net_regularizer",
           "label": "net_regularizer",
+          "source": "config_signature",
           "type": "text"
         }
       ],
       "warnings": []
     },
     {
+      "className": "DNNPredictor",
+      "configClass": "DNNPredictorConfig",
+      "contract": {
+        "inputShape": "tensor[B, 2 * hidden_size]",
+        "inputs": [
+          {
+            "name": "concat",
+            "shape": {
+              "axes": [
+                "B",
+                "2 * hidden_size"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "dnn_activations": "ReLU",
+        "dnn_batch_norm": false,
+        "dnn_dropout": 0.1,
+        "dnn_hidden_units": [
+          1000,
+          1000,
+          1000
+        ]
+      },
+      "displayName": "DNN",
+      "explain": "Scores a concatenated user-item vector with a multilayer perceptron.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "DNN",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.predictors.dnn_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "default": [
+            1000,
+            1000,
+            1000
+          ],
+          "description": "Hidden widths of the MLP.",
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": "ReLU",
+          "description": "Activation used by hidden layers.",
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": 0.1,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "max": 0.9,
+          "min": 0,
+          "source": "config_signature",
+          "step": 0.05,
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": false,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "DeepFMPredictor",
+      "configClass": "DeepFMPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {},
+      "displayName": "Deep FM",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "DeepFM",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.deepfm_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "DotPredictor",
+      "configClass": null,
+      "contract": {
+        "inputShape": "user: tensor[B, D], item: tensor[B, K, D] or tensor[B, D]",
+        "inputs": [
+          {
+            "kind": "vector",
+            "name": "user",
+            "shape": {
+              "axes": [
+                "B",
+                "D"
+              ],
+              "type": "tensor"
+            }
+          },
+          {
+            "kind": "vector",
+            "name": "item",
+            "shape": {
+              "oneOf": [
+                {
+                  "axes": [
+                    "B",
+                    "K",
+                    "D"
+                  ],
+                  "type": "tensor"
+                },
+                {
+                  "axes": [
+                    "B",
+                    "D"
+                  ],
+                  "type": "tensor"
+                }
+              ]
+            }
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B, K] or tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "oneOf": [
+                {
+                  "axes": [
+                    "B",
+                    "K"
+                  ],
+                  "type": "tensor"
+                },
+                {
+                  "axes": [
+                    "B"
+                  ],
+                  "type": "tensor"
+                }
+              ]
+            }
+          }
+        ],
+        "requires": [
+          {
+            "left": "user.outputDim",
+            "op": "eq",
+            "right": "item.outputDim"
+          }
+        ]
+      },
+      "defaults": {},
+      "displayName": "Dot",
+      "explain": "Scores user-item compatibility with an inner product.",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "Dot",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": false
+      },
+      "module": "model.predictors.dot_predictor",
+      "notes": [],
+      "params": [],
+      "warnings": []
+    },
+    {
+      "className": "FinalMLPPredictor",
+      "configClass": "FinalMLPPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "embedding_regularizer": null,
+        "fs1_context": null,
+        "fs2_context": null,
+        "fs_hidden_units": null,
+        "mlp1_batch_norm": false,
+        "mlp1_dropout": 0,
+        "mlp1_hidden_activations": "ReLU",
+        "mlp1_hidden_units": null,
+        "mlp2_batch_norm": false,
+        "mlp2_dropout": 0,
+        "mlp2_hidden_activations": "ReLU",
+        "mlp2_hidden_units": null,
+        "net_regularizer": null,
+        "num_heads": 1,
+        "use_fs": true
+      },
+      "displayName": "Final MLP",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "FinalMLP",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.final_mlp_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "default": null,
+          "key": "mlp1_hidden_units",
+          "label": "mlp1_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "str",
+          "default": "ReLU",
+          "key": "mlp1_hidden_activations",
+          "label": "mlp1_hidden_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "mlp1_dropout",
+          "label": "mlp1_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "mlp1_batch_norm",
+          "label": "mlp1_batch_norm",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "mlp2_hidden_units",
+          "label": "mlp2_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "str",
+          "default": "ReLU",
+          "key": "mlp2_hidden_activations",
+          "label": "mlp2_hidden_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "mlp2_dropout",
+          "label": "mlp2_dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "mlp2_batch_norm",
+          "label": "mlp2_batch_norm",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "use_fs",
+          "label": "use_fs",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "fs_hidden_units",
+          "label": "fs_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "fs1_context",
+          "label": "fs1_context",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "fs2_context",
+          "label": "fs2_context",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "num_heads",
+          "label": "num_heads",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "embedding_regularizer",
+          "label": "embedding_regularizer",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "net_regularizer",
+          "label": "net_regularizer",
+          "source": "config_signature",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "GDCNPredictor",
+      "configClass": "GDCNPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "sequential_mode": false
+      },
+      "displayName": "GDCN",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "GDCN",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.gdcn_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "cross_num",
+          "label": "cross_num",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "sequential_mode",
+          "label": "sequential_mode",
+          "source": "config_signature",
+          "type": "boolean"
+        }
+      ],
+      "warnings": []
+    },
+    {
       "className": "MINERPredictor",
+      "configClass": "MINERPredictorConfig",
       "contract": {
         "inputShape": "user: tensor[B, I, D], item: tensor[B, K, D]",
-        "objective": "matching only",
+        "inputs": [
+          {
+            "kind": "multi-interest",
+            "name": "user",
+            "shape": {
+              "axes": [
+                "B",
+                "I",
+                "D"
+              ],
+              "type": "tensor"
+            }
+          },
+          {
+            "kind": "vector",
+            "name": "item",
+            "shape": {
+              "axes": [
+                "B",
+                "K",
+                "D"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
+        "objective": "matching_only",
         "outputShape": "tensor[B, K]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B",
+                "K"
+              ],
+              "type": "tensor"
+            }
+          }
+        ],
         "requires": [
-          "user.outputKind == multi-interest"
+          {
+            "left": "user.outputKind",
+            "op": "eq",
+            "right": "multi-interest"
+          }
         ]
       },
       "defaults": {
         "score_type": "weighted"
       },
-      "displayName": "MINER Predictor",
+      "displayName": "MINER",
       "explain": "Target-aware matching over multiple user-interest vectors.",
       "flags": {
         "allowMatching": true,
         "allowRanking": false,
-        "keepInputDim": true
+        "keepInputDim": true,
+        "objective": "matching_only"
       },
       "id": "MINER",
       "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": true,
+        "overrides": true
+      },
+      "module": "model.predictors.miner_predictor",
       "notes": [],
       "params": [
         {
+          "dataType": "str",
           "default": "weighted",
           "description": "Aggregation strategy over per-interest scores.",
           "key": "score_type",
@@ -713,12 +5164,383 @@
             "max",
             "mean"
           ],
+          "source": "config_signature",
           "type": "select"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "MaskNetPredictor",
+      "configClass": "MaskNetPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "activations": "ReLU",
+        "block_dim": 64,
+        "dropout": 0,
+        "embed_layer_norm": true,
+        "layer_norm": true,
+        "num_blocks": 1,
+        "output_activation": null,
+        "reduction_ratio": 1,
+        "sequential_mode": false
+      },
+      "displayName": "Mask Net",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "MaskNet",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.mask_net_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "key": "hidden_units",
+          "label": "hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "str",
+          "default": "ReLU",
+          "key": "activations",
+          "label": "activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "default": null,
+          "key": "output_activation",
+          "label": "output_activation",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "int",
+          "default": 0,
+          "key": "dropout",
+          "label": "dropout",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "layer_norm",
+          "label": "layer_norm",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "bool",
+          "default": true,
+          "key": "embed_layer_norm",
+          "label": "embed_layer_norm",
+          "source": "config_signature",
+          "type": "boolean"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "reduction_ratio",
+          "label": "reduction_ratio",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 1,
+          "key": "num_blocks",
+          "label": "num_blocks",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "int",
+          "default": 64,
+          "key": "block_dim",
+          "label": "block_dim",
+          "source": "config_signature",
+          "type": "number"
+        },
+        {
+          "dataType": "bool",
+          "default": false,
+          "key": "sequential_mode",
+          "label": "sequential_mode",
+          "source": "config_signature",
+          "type": "boolean"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "PNNPredictor",
+      "configClass": "PNNPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {},
+      "displayName": "PNN",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "PNN",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.pnn_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "key": "dnn_hidden_units",
+          "label": "dnn_hidden_units",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_activations",
+          "label": "dnn_activations",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_dropout",
+          "label": "dnn_dropout",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": null,
+          "key": "dnn_batch_norm",
+          "label": "dnn_batch_norm",
+          "source": "config_signature",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "PolyPredictor",
+      "configClass": "PolyPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "base_predictor": "dot",
+        "base_predictor_config": null
+      },
+      "displayName": "Poly",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "Poly",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.poly_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": null,
+          "key": "num_layers",
+          "label": "num_layers",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "str",
+          "default": "dot",
+          "key": "base_predictor",
+          "label": "base_predictor",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "dict",
+          "default": null,
+          "key": "base_predictor_config",
+          "label": "base_predictor_config",
+          "source": "config_signature",
+          "type": "text"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "className": "SemanticMixPredictor",
+      "configClass": "SemanticMixPredictorConfig",
+      "contract": {
+        "inputShape": "any",
+        "inputs": [
+          {
+            "name": "user_item",
+            "shape": {
+              "type": "any"
+            },
+            "source": "unknown"
+          }
+        ],
+        "objective": "ranking_or_matching",
+        "outputShape": "tensor[B]",
+        "outputs": [
+          {
+            "name": "score",
+            "shape": {
+              "axes": [
+                "B"
+              ],
+              "type": "tensor"
+            },
+            "source": "default"
+          }
+        ],
+        "requires": []
+      },
+      "defaults": {
+        "base_predictor": "DCN",
+        "base_predictor_config": null
+      },
+      "displayName": "Semantic Mix",
+      "explain": "",
+      "flags": {
+        "allowMatching": true,
+        "allowRanking": true,
+        "keepInputDim": false,
+        "objective": "ranking_or_matching"
+      },
+      "id": "SemanticMix",
+      "kind": "predictor",
+      "metadataSource": {
+        "base": "ast",
+        "docstring": false,
+        "overrides": false
+      },
+      "module": "model.predictors.semantic_mix_predictor",
+      "notes": [],
+      "params": [
+        {
+          "dataType": "str",
+          "default": "DCN",
+          "key": "base_predictor",
+          "label": "base_predictor",
+          "source": "config_signature",
+          "type": "text"
+        },
+        {
+          "dataType": "dict",
+          "default": null,
+          "key": "base_predictor_config",
+          "label": "base_predictor_config",
+          "source": "config_signature",
+          "type": "text"
         }
       ],
       "warnings": []
     }
   ],
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": "legommenders-algorithm"
 }

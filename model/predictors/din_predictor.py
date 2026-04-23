@@ -115,27 +115,29 @@ class DINAttention(nn.Module):
 
 
 class DINPredictor(BasePredictor):
+    """
+    Legommenders:
+    {
+      "summary": "Applies target-aware attention over the user's click embeddings before scoring.",
+      "contract": {
+        "inputs": [
+          {"name": "user", "kind": "embedding-mask", "shape": {"type": "dict", "fields": {
+            "embedding": {"type": "tensor", "axes": ["B", "L", "D"]},
+            "mask": {"type": "tensor", "axes": ["B", "L"]}
+          }}},
+          {"name": "item", "kind": "vector", "shape": {"type": "tensor", "axes": ["B", "D"]}}
+        ],
+        "outputs": [
+          {"name": "score", "shape": {"type": "tensor", "axes": ["B"]}}
+        ],
+        "requires": [{"left": "user.outputKind", "op": "eq", "right": "embedding-mask"}]
+      }
+    }
+    """
     allow_matching = False
 
     config_class = DINPredictorConfig
     config: DINPredictorConfig
-    metadata = {
-        "id": "DIN",
-        "displayName": "DIN Predictor",
-        "explain": "Applies target-aware attention over the user's click embeddings before scoring.",
-        "params": {
-            "dnn_hidden_units": {"type": "list", "description": "Hidden widths of the final scoring MLP."},
-            "dnn_activations": {"type": "text", "default": "ReLU"},
-            "attention_hidden_units": {"type": "list", "description": "Hidden widths of the DIN attention network."},
-            "din_use_softmax": {"type": "boolean", "default": False},
-        },
-        "contract": {
-            "inputShape": "user: dict{embedding: tensor[B, L, D], mask: tensor[B, L]}, item: tensor[B, D]",
-            "outputShape": "tensor[B]",
-            "objective": "ranking only",
-            "requires": ["user.outputKind == embedding-mask"],
-        },
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

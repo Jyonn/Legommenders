@@ -73,25 +73,22 @@ class CrossNet(nn.Module):
 
 
 class DCNPredictor(BasePredictor):
+    """
+    Legommenders:
+    {
+      "summary": "Combines explicit cross layers and a DNN over concatenated user-item embeddings.",
+      "contract": {
+        "inputs": [
+          {"name": "concat", "shape": {"type": "tensor", "axes": ["B", "2 * hidden_size"]}}
+        ],
+        "outputs": [
+          {"name": "score", "shape": {"type": "tensor", "axes": ["B"]}}
+        ]
+      }
+    }
+    """
     config_class = DCNPredictorConfig
     config: DCNPredictorConfig
-    metadata = {
-        "id": "DCN",
-        "displayName": "DCN Predictor",
-        "explain": "Combines explicit cross layers and a DNN over concatenated user-item embeddings.",
-        "params": {
-            "dnn_hidden_units": {"type": "list", "default": [1000, 1000, 1000]},
-            "dnn_activations": {"type": "text", "default": "ReLU"},
-            "dnn_dropout": {"type": "number", "default": 0.1, "min": 0, "max": 0.9, "step": 0.05},
-            "dnn_batch_norm": {"type": "boolean", "default": False},
-            "cross_num": {"type": "number", "default": 3, "min": 1, "step": 1},
-        },
-        "contract": {
-            "inputShape": "concat(user, item) -> tensor[B, 2 * hidden_size]",
-            "outputShape": "tensor[B]",
-            "objective": "ranking; matching after candidate flattening",
-        },
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

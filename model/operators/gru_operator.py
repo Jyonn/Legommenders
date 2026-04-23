@@ -16,29 +16,25 @@ class GRUOperatorConfig(BaseOperatorConfig):
 
 
 class GRUOperator(BaseOperator):
+    """
+    Legommenders:
+    {
+      "summary": "Encodes the click sequence with a GRU and projects the last hidden state back to input_dim.",
+      "roles": ["user"],
+      "contract": {
+        "outputs": [
+          {"name": "user", "kind": "vector", "shape": {"type": "tensor", "axes": ["B", "input_dim"]}, "dimPolicy": "forward returns config.input_dim"}
+        ]
+      },
+      "warnings": [
+        "Runtime output_dim currently inherits BaseOperator.output_dim (hidden_size), while forward returns input_dim."
+      ]
+    }
+    """
 
     config_class = GRUOperatorConfig
     inputer_class = ConcatInputer
     config: GRUOperatorConfig
-    metadata = {
-        "id": "GRU",
-        "displayName": "GRU User Encoder",
-        "roles": ["user"],
-        "explain": "Encodes the click sequence with a GRU and projects the last hidden state back to input_dim.",
-        "contract": {
-            "inputShape": "tensor[B, L, input_dim]",
-            "maskShape": "tensor[B, L]",
-            "outputShape": "tensor[B, input_dim]",
-            "outputKind": "vector",
-            "outputDimPolicy": "forward returns config.input_dim",
-        },
-        "params": {
-            "num_layers": {"min": 1, "step": 1, "description": "Number of stacked GRU layers."},
-        },
-        "warnings": [
-            "Runtime output_dim currently inherits BaseOperator.output_dim (hidden_size), while forward returns input_dim.",
-        ],
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

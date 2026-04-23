@@ -4,17 +4,28 @@ from model.predictors.base_predictor import BasePredictor
 
 
 class DotPredictor(BasePredictor):
-    metadata = {
-        "id": "Dot",
-        "displayName": "Dot Product Predictor",
-        "explain": "Scores user-item compatibility with an inner product.",
-        "contract": {
-            "inputShape": "user: tensor[B, D], item: tensor[B, K, D] or tensor[B, D]",
-            "outputShape": "tensor[B, K] or tensor[B]",
-            "objective": "matching or ranking",
-            "requires": ["user.outputDim == item.outputDim"],
-        },
+    """
+    Legommenders:
+    {
+      "summary": "Scores user-item compatibility with an inner product.",
+      "contract": {
+        "inputs": [
+          {"name": "user", "kind": "vector", "shape": {"type": "tensor", "axes": ["B", "D"]}},
+          {"name": "item", "kind": "vector", "shape": {"oneOf": [
+            {"type": "tensor", "axes": ["B", "K", "D"]},
+            {"type": "tensor", "axes": ["B", "D"]}
+          ]}}
+        ],
+        "outputs": [
+          {"name": "score", "shape": {"oneOf": [
+            {"type": "tensor", "axes": ["B", "K"]},
+            {"type": "tensor", "axes": ["B"]}
+          ]}}
+        ],
+        "requires": [{"left": "user.outputDim", "op": "eq", "right": "item.outputDim"}]
+      }
     }
+    """
 
     def predict(self, user_embeddings, item_embeddings):
         # user_embeddings: [B, D]

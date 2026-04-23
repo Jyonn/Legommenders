@@ -16,25 +16,21 @@ class AdaOperatorConfig(BaseOperatorConfig):
 
 
 class AdaOperator(BaseOperator):
+    """
+    Legommenders:
+    {
+      "summary": "Aggregates a click sequence into one user vector using additive attention.",
+      "roles": ["user"],
+      "contract": {
+        "outputs": [
+          {"name": "user", "kind": "vector", "shape": {"type": "tensor", "axes": ["B", "input_dim"]}, "dimPolicy": "config.input_dim"}
+        ]
+      }
+    }
+    """
     config_class = AdaOperatorConfig
     inputer_class = ConcatInputer
     config: AdaOperatorConfig
-    metadata = {
-        "id": "Ada",
-        "displayName": "Additive Attention User Encoder",
-        "roles": ["user"],
-        "explain": "Aggregates a click sequence into one user vector using additive attention.",
-        "contract": {
-            "inputShape": "tensor[B, L, input_dim]",
-            "maskShape": "tensor[B, L]",
-            "outputShape": "tensor[B, input_dim]",
-            "outputKind": "vector",
-            "outputDimPolicy": "config.input_dim",
-        },
-        "params": {
-            "additive_hidden_size": {"min": 16, "step": 8, "description": "Hidden size used inside additive attention."},
-        },
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

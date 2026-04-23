@@ -36,29 +36,26 @@ class TargetAwareAttention(nn.Module):
 
 
 class MINERPredictor(BasePredictor):
+    """
+    Legommenders:
+    {
+      "summary": "Target-aware matching over multiple user-interest vectors.",
+      "contract": {
+        "inputs": [
+          {"name": "user", "kind": "multi-interest", "shape": {"type": "tensor", "axes": ["B", "I", "D"]}},
+          {"name": "item", "kind": "vector", "shape": {"type": "tensor", "axes": ["B", "K", "D"]}}
+        ],
+        "outputs": [
+          {"name": "score", "shape": {"type": "tensor", "axes": ["B", "K"]}}
+        ],
+        "requires": [{"left": "user.outputKind", "op": "eq", "right": "multi-interest"}]
+      }
+    }
+    """
     config_class = MINERPredictorConfig
     config: MINERPredictorConfig
     allow_ranking = False
     keep_input_dim = True
-    metadata = {
-        "id": "MINER",
-        "displayName": "MINER Predictor",
-        "explain": "Target-aware matching over multiple user-interest vectors.",
-        "params": {
-            "score_type": {
-                "type": "select",
-                "default": "weighted",
-                "options": ["weighted", "max", "mean"],
-                "description": "Aggregation strategy over per-interest scores.",
-            },
-        },
-        "contract": {
-            "inputShape": "user: tensor[B, I, D], item: tensor[B, K, D]",
-            "outputShape": "tensor[B, K]",
-            "objective": "matching only",
-            "requires": ["user.outputKind == multi-interest"],
-        },
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

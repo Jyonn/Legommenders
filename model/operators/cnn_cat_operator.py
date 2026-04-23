@@ -10,25 +10,24 @@ class CNNCatOperatorConfig(CNNOperatorConfig):
 
 
 class CNNCatOperator(CNNOperator):
+    """
+    Legommenders:
+    {
+      "summary": "Runs CNN attention per field and concatenates field vectors.",
+      "roles": ["item", "user"],
+      "contract": {
+        "outputs": [
+          {"name": "embedding", "kind": "vector", "shape": {"type": "tensor", "axes": ["N", "hidden_size * num_fields"]}, "dimPolicy": "config.hidden_size * len(item_inputs)"}
+        ]
+      },
+      "warnings": [
+        "Output width depends on the number of configured item input fields."
+      ]
+    }
+    """
     config_class = CNNCatOperatorConfig
     config: CNNCatOperatorConfig
     inputer_class = SimpleInputer
-    metadata = {
-        "id": "CNNCat",
-        "displayName": "CNN Cat Encoder",
-        "roles": ["item", "user"],
-        "explain": "Runs CNN attention per field and concatenates field vectors.",
-        "contract": {
-            "inputShape": "dict[col -> tensor[N, Lc, input_dim]]",
-            "maskShape": "dict[col -> tensor[N, Lc]]",
-            "outputShape": "tensor[N, hidden_size * num_fields]",
-            "outputKind": "vector",
-            "outputDimPolicy": "config.hidden_size * len(item_inputs)",
-        },
-        "warnings": [
-            "Output width depends on the number of configured item input fields.",
-        ],
-    }
 
     num_columns: int
 

@@ -18,31 +18,26 @@ class PolyAttentionOperatorConfig(BaseOperatorConfig):
 
 
 class PolyAttentionOperator(BaseOperator):
+    """
+    Legommenders:
+    {
+      "summary": "Produces multiple user-interest vectors for target-aware matching.",
+      "roles": ["user"],
+      "contract": {
+        "outputs": [
+          {"name": "user", "kind": "multi-interest", "shape": {"type": "tensor", "axes": ["B", "num_context_codes", "input_dim"]}, "dimPolicy": "config.input_dim"}
+        ],
+        "compatiblePredictors": ["MINERPredictor"]
+      },
+      "notes": [
+        "This operator disables caching because the multi-interest representation is target-aware downstream."
+      ]
+    }
+    """
     config_class = PolyAttentionOperatorConfig
     inputer_class = ConcatInputer
     config: PolyAttentionOperatorConfig
     allow_caching = False
-    metadata = {
-        "id": "PolyAttention",
-        "displayName": "Poly Attention User Encoder",
-        "roles": ["user"],
-        "explain": "Produces multiple user-interest vectors for target-aware matching.",
-        "contract": {
-            "inputShape": "tensor[B, L, input_dim]",
-            "maskShape": "tensor[B, L]",
-            "outputShape": "tensor[B, num_context_codes, input_dim]",
-            "outputKind": "multi-interest",
-            "outputDimPolicy": "config.input_dim",
-            "compatiblePredictors": ["MINERPredictor"],
-        },
-        "params": {
-            "num_context_codes": {"min": 2, "step": 1, "description": "Number of interest vectors emitted for each user."},
-            "context_code_dim": {"min": 8, "step": 8, "description": "Internal projection width for context-code attention."},
-        },
-        "notes": [
-            "This operator disables caching because the multi-interest representation is target-aware downstream.",
-        ],
-    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
