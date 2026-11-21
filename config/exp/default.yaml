@@ -13,6 +13,7 @@ policy:
   pin_memory: false
   epoch_batch: ${epoch_batch:0}$
   batch_size: ${batch_size}$
+  accumulate_batch: ${accumulate_batch:1}$
   device: gpu
   n_warmup: ${warmup:0}$
   check_interval: ${interval:-2}$

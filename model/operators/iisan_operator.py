@@ -58,24 +58,27 @@ class IISANOperator(LMOperator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer = AutoModel.from_pretrained(self.transformer_key, trust_remote_code=True)
+        self.transformer = AutoModel.from_pretrained(
+            self.transformer_key, trust_remote_code=True, dtype=self.dtype,
+        )
         self.num_hidden_layers = self.get_layer_nums()
         self.selected_layers = self.get_selected_layers()
         self.num_selected_layers = len(self.selected_layers)
 
         os.makedirs(self._cache_base_dir, exist_ok=True)
 
-        self.san_block_input_dim = self.config.input_dim
+        state_width = self.cache_hidden_size
+        self.san_block_input_dim = state_width
 
         self.global_projection = None
         if self.config.global_proj_size is not None:
             self.san_block_input_dim = self.config.global_proj_size
-            self.global_projection = nn.Linear(self.config.input_dim, self.config.global_proj_size, bias=False)
+            self.global_projection = nn.Linear(state_width, self.config.global_proj_size, bias=False)
 
         self.local_projections = [None] * self.num_selected_layers
         if self.config.local_proj_size is not None:
             self.local_projections = nn.ModuleList([
-                nn.Linear(self.config.input_dim, self.config.local_proj_size, bias=False)
+                nn.Linear(state_width, self.config.local_proj_size, bias=False)
                 for _ in range(self.num_selected_layers)
             ])
             self.san_block_input_dim = self.config.local_proj_size
@@ -152,8 +155,9 @@ class IISANOperator(LMOperator):
             attention_mask,
     ):
         output: BaseModelOutputWithPast = self.transformer(
-            inputs_embeds=inputs_embeds,
+            inputs_embeds=inputs_embeds.to(self.dtype),
             attention_mask=attention_mask,
+            use_cache=False,
             output_hidden_states=True,
             return_dict=True,
         )
@@ -191,6 +195,7 @@ class IISANOperator(LMOperator):
     def cache_hidden_size(self):
         return self.config.input_dim
 
+    @torch.no_grad()
     def cache(self):
         dataset = DataSet(ut=self.lego_config.item_ut)
         contents = []

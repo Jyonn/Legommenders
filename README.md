@@ -24,7 +24,21 @@
     pip install -r requirements.txt
     ```
     
-    Ensure you have Python 3.10+ and a properly set up PyTorch environment: Nvidia GPU, Apple MPS, or even CPU device (`--cuda -1`).  
+    Use Python 3.11+ for Transformers 5. The library supports PyTorch 2.6+
+    and Transformers 4.57.6 or 5.x. Install the PyTorch build for your platform
+    using the [official selector](https://pytorch.org/get-started/locally/).
+    For CPU training, pass `--cuda -1`.
+
+    The default GLM-4 checkpoint uses the
+    [native Transformers model](https://huggingface.co/zai-org/glm-4-9b-hf).
+    When migrating an existing GLM setup, regenerate its tokenizer-derived data
+    and exported embeddings with the checkpoint configured in `.model`.
+    The first cached LM run regenerates intermediate layer outputs under
+    `cache/<dataset>/<operator>/layer-outputs/`.
+
+    The CPU compatibility tests run with `python -m unittest discover -s tests`.
+    They use small local checkpoints and cover PyTorch 2.15.0 with
+    Transformers 4.57.6 and 5.23.0.
 
 3. **Prepare the Configurations** _(Optional)_
 
@@ -174,6 +188,23 @@ You can add the evaluation metrics at `utils/metrics.py`.
 
 ⚠️ **NOTE**: following existing recommendation repositories, the implementation of `MRR` is not the same as the original one. To get the original MRR, use `MRR0` instead (HIGHLY RECOMMEND).
 
+Set `--accumulate_batch N` to update once per group of `N` batches.
+Each epoch also applies any final partial group. Updates use the mean gradient
+across all examples in the group, and `--warmup` counts optimizer updates.
+The `--epoch_batch` option caps batches per epoch. Use `0` for the full loader,
+a positive number for a fixed cap, or `-N` for one `N`th of the loader
+rounded down to at least one batch.
+The resolved training configuration now includes `accumulate_batch`, so new runs
+using the default experiment configuration receive a new experiment signature.
+
+Add `--fast true` to enable BF16 mixed precision for the training forward pass
+on a CUDA GPU with native BF16 support. This option is most useful when BERT
+executes all encoder layers. For example, append `--fast true --cuda 0` to
+the BERT training command below. The default uses standard training precision.
+Evaluation and cache generation use their usual precision. Fast runs record
+`exp.policy.fast: true` in the saved configuration and use a distinct experiment
+signature.
+
 ## 🧪 Example Command
 
 ### Train NAML model on MIND:
@@ -228,6 +259,7 @@ python trainer.py
 
 ## Updates
 
+- **2026-11-21 · v2.2**: Added support for PyTorch 2.6+ and Transformers 4.57.6/5.x, adopted native GLM-4, corrected gradient accumulation and learning-rate scheduling, and added opt-in BF16 training and Operator/Predictor metadata export.
 - **2025-07-14**: Code comments are available!
 - **2025-04-10**: New LLM Adaptor: IISAN is supported. 
 - **2025-02-18**: Legommenders v2.0, with multiple LLMs support, simplified configuration, more CTR predictors, and recbench-based datasets is released!

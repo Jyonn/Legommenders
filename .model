@@ -5,4 +5,4 @@ optlarge = facebook/opt-1.3b
 llama1 = huggyllama/llama-7b
 llama2 = meta-llama/Llama-2-7b-hf
 llama3 = meta-llama/Meta-Llama-3-8B
-glm4th9b = THUDM/glm-4-9b
+glm4th9b = zai-org/glm-4-9b-hf

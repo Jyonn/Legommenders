@@ -26,10 +26,7 @@ Key steps implemented here
    where `<id>` is produced by `BaseEmbedder.__str__`
    (e.g. "glm4th9b").
 
-2) Load the model via
-       AutoModelForCausalLM.from_pretrained(..., trust_remote_code=True)
-   The `trust_remote_code` flag is **required** because ChatGLM has its
-   own custom modelling code.
+2) Load the model via AutoModel. Legacy ChatGLM checkpoints use custom model code.
 
 3) Retrieve the `vocab_size` from the corresponding tokenizer to slice
    out the *usable* part of the embedding matrix.
@@ -43,7 +40,7 @@ from __future__ import annotations
 import abc
 
 from torch import nn
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, GlmModel
 
 from embedder.base_embedder import BaseEmbedder
 from model.common.glm_interface import ChatGLMModel
@@ -60,7 +57,7 @@ class GLMEmbedder(BaseEmbedder, abc.ABC):
     """
 
     # Annotate for IDEs / type checkers; actual assignment happens in __init__
-    transformer: ChatGLMModel
+    transformer: GlmModel | ChatGLMModel
 
     # ------------------------------------------------------------------ #
     # Construction                                                        #
@@ -71,16 +68,11 @@ class GLMEmbedder(BaseEmbedder, abc.ABC):
         # Resolve the model name / path from configuration
         model_name: str = ModelInit.get(str(self))
 
-        # 1) Load the full causal-LM wrapper ----------------------------
-        glm_lm = AutoModelForCausalLM.from_pretrained(
+        model = AutoModel.from_pretrained(
             model_name,
-            trust_remote_code=True  # mandatory for 3rd-party modelling code
+            trust_remote_code=True,  # used by legacy ChatGLM checkpoints
         )
-
-        # 2) Keep only the underlying transformer (saves memory) --------
-        #    transformers' ChatGLM architecture stores the main network
-        #    in the attribute `.transformer`.
-        self.transformer = glm_lm.transformer  # type: ignore[attr-defined]
+        self.transformer = model if isinstance(model, GlmModel) else model.transformer
 
         # 3) Tokenizer is needed to obtain *vocab_size* -----------------
         self.tokenizer = AutoTokenizer.from_pretrained(

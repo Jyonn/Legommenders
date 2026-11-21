@@ -24,6 +24,8 @@ class BertOperator(OnceOperator, abc.ABC):
         self.transformer.encoder.layer = self.transformer.encoder.layer[self.config.tune_from + 1:]
 
     def _lora_encoder(self, peft_config: PeftConfig):
+        if not self.use_lm_cache():
+            return super()._lora_encoder(peft_config)
         self.transformer.encoder = get_peft_model(self.transformer.encoder, peft_config)
         self.transformer.encoder.print_trainable_parameters()
 
@@ -31,14 +33,13 @@ class BertOperator(OnceOperator, abc.ABC):
         self,
         hidden_states: torch.FloatTensor,
         attention_mask: torch.Tensor,
-        output_hidden_states: bool = True,
     ):
-        input_shape = hidden_states.size()[:-1]
-        extended_attention_mask = self.transformer.get_extended_attention_mask(attention_mask, input_shape)
-
+        blocked = ~attention_mask[:, None, None, :].bool()
+        mask = torch.zeros_like(blocked, dtype=hidden_states.dtype)
+        mask = mask.masked_fill(blocked, torch.finfo(hidden_states.dtype).min)
         output = self.transformer.encoder(
             hidden_states=hidden_states,
-            attention_mask=extended_attention_mask,
+            attention_mask=mask,
             return_dict=True,
         )
         return output.last_hidden_state

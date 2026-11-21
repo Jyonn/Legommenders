@@ -27,27 +27,16 @@ class OPTOperator(OnceOperator, abc.ABC):
     ):
         opt = self.transformer
 
-        input_shape = hidden_states.size()[:-1]
-
-        causal_attention_mask, attention_mask = opt.decoder._update_causal_mask(
-            hidden_states, input_shape, 0, attention_mask, None, None
-        )
-
-        position_ids = torch.cumsum(attention_mask, dim=1)
-        position_ids = (position_ids * attention_mask - 1).long()
+        seq_len = hidden_states.size(1)
+        positions = torch.arange(seq_len, device=hidden_states.device)
+        future = positions[None, :] > positions[:, None]
+        blocked = future | ~attention_mask[:, None, None, :].bool()
+        causal_mask = torch.zeros_like(blocked, dtype=hidden_states.dtype)
+        causal_mask = causal_mask.masked_fill(blocked, torch.finfo(hidden_states.dtype).min)
 
         for decoder_layer in opt.decoder.layers:
-            layer_outputs = decoder_layer(
-                hidden_states,
-                attention_mask=causal_attention_mask,
-                position_ids=position_ids,
-                layer_head_mask=None,
-                past_key_value=None,
-                output_attentions=None,
-                use_cache=None,
-            )
-
-            hidden_states = layer_outputs[0]
+            output = decoder_layer(hidden_states, attention_mask=causal_mask, use_cache=False)
+            hidden_states = output[0] if isinstance(output, tuple) else output
 
         if opt.decoder.final_layer_norm is not None:
             hidden_states = opt.decoder.final_layer_norm(hidden_states)
@@ -60,6 +49,11 @@ class OPTOperator(OnceOperator, abc.ABC):
     @property
     def cache_hidden_size(self):
         return self.transformer.config.hidden_size
+
+    def get_cache_hidden_size(self, layer):
+        if layer == self.num_hidden_layers - 1:
+            return self.transformer.config.word_embed_proj_dim
+        return self.cache_hidden_size
 
 
 class OPTBaseOperator(OPTOperator):

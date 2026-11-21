@@ -14,6 +14,8 @@ class OPTIISANOperator(IISANOperator, abc.ABC):
         super().__init__(**kwargs)
 
         self.transformer.decoder.embed_tokens = None
+        # IISAN pools decoder-layer states in the decoder's hidden dimension.
+        self.transformer.decoder.project_out = None
 
         self._load_hidden_states()
 

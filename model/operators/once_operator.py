@@ -23,7 +23,7 @@ from utils.config_init import ModelInit
 class OnceOperatorConfig(AdaOperatorConfig):
     def __init__(
             self,
-            tune_from: int = 0,  # number of layer, such as 0, 30, 31, etc.
+            tune_from: int | None = 0,  # last frozen layer; 0 and None disable caching
             use_lora=True,
             lora_alpha=128,
             lora_r=32,
@@ -48,15 +48,19 @@ class OnceOperator(LMOperator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.transformer = AutoModel.from_pretrained(self.transformer_key, trust_remote_code=True)
+        self.transformer = AutoModel.from_pretrained(
+            self.transformer_key, trust_remote_code=True, dtype=self.dtype,
+        )
         self.num_hidden_layers = self.get_layer_nums()
         os.makedirs(self._cache_base_dir, exist_ok=True)
 
         if self.config.tune_from and self.config.tune_from < 0:
             self.config.tune_from = self.num_hidden_layers + self.config.tune_from
+        if self.config.tune_from is not None and not 0 <= self.config.tune_from < self.num_hidden_layers:
+            raise ValueError(f'tune_from must select a layer from 0 to {self.num_hidden_layers - 1}')
 
         self.hidden_weights = None  # [N, L, D]
-        self.attention_mask = None  # [N, L, L]
+        self.attention_mask = None  # [N, L]
 
         self.linear = nn.Linear(self.config.input_dim, self.config.hidden_size)
 
@@ -80,7 +84,7 @@ class OnceOperator(LMOperator):
 
     @property
     def _cache_base_dir(self):
-        return os.path.join('cache', Env.ph.data_name, self.operator_name)
+        return os.path.join('cache', Env.ph.data_name, self.operator_name, 'layer-outputs')
 
     def _cache_exists(self, layer):
         return os.path.exists(self._get_cache_path(layer))
@@ -102,8 +106,6 @@ class OnceOperator(LMOperator):
         if self._cache_exists(self.config.tune_from):
             pnt(f'loading cached hidden states from {self._get_cache_path(self.config.tune_from)}')
         else:
-            if self.config.tune_from > self.num_hidden_layers:
-                raise ValueError(f'tune_from should be less than {self.num_hidden_layers}')
             pnt(f'caching item hidden states from layer {self.config.tune_from} at runtime')
             pnt('to accelerate this process, please consider to use splitter.py to cache all required layers at once')
             self.cache([self.config.tune_from])
@@ -122,18 +124,15 @@ class OnceOperator(LMOperator):
         template_mask[0] = 1  # Set the first position to 1
         self.attention_mask[nan_mask_] = template_mask
 
-        self.transformer = self.transformer.to(self.dtype)
-        pnt(f'switched transformer dtype to {self.dtype}')
-
     def _prepare_network(self):
-        if self.config.tune_from is not None:
+        if self.use_lm_cache():
             self._load_hidden_states()
             self._slice_transformer_layers()
             torch.cuda.empty_cache()
             pnt(f'sliced transformer layers, '
                 f'{self.num_hidden_layers} -> {self.num_hidden_layers - self.config.tune_from - 1}')
 
-        if ((self.config.tune_from is None
+        if ((not self.use_lm_cache()
                 or self.config.tune_from < self.num_hidden_layers - 1)
                 and self.config.use_lora):
             if not isinstance(self.config.lora_r, int):
@@ -160,32 +159,33 @@ class OnceOperator(LMOperator):
             output_hidden_states: bool = True,  # must be True, for caching hidden states
     ):
         output: BaseModelOutputWithPast = self.transformer(
-            inputs_embeds=inputs_embeds,
+            inputs_embeds=inputs_embeds.to(self.dtype),
             attention_mask=attention_mask,
+            use_cache=False,
             output_hidden_states=output_hidden_states,
             return_dict=True,
         )
         if output_hidden_states:
-            return output.hidden_states
+            # Use the final output for the last layer, including norm/projection.
+            return (*output.hidden_states[1:-1], output.last_hidden_state)
         return output.last_hidden_state
 
     def forward(self, embeddings, mask=None, **kwargs):
-        if not self.config.tune_from:
-            inputs_embeds = embeddings.to(self.dtype)
-            mask = mask.to(Env.device).to(self.dtype)
+        if not self.use_lm_cache():
+            mask = mask.to(Env.device)
             outputs = self._forward(
-                inputs_embeds=inputs_embeds,
+                inputs_embeds=embeddings,
                 attention_mask=mask,
                 output_hidden_states=False,
             )
         else:
             indices = embeddings.cpu()  # [B]
             hidden_states = self.hidden_weights[indices].to(self.dtype).to(Env.device)  # [B, L, D]
-            mask = self.attention_mask[indices].to(self.dtype).to(Env.device)  # [B, L, L]
-            outputs = self._loop_forward(
-                hidden_states=hidden_states,
-                attention_mask=mask,
-            )  # [B, L, D]
+            mask = self.attention_mask[indices].to(Env.device)  # [B, L]
+            if self.config.tune_from == self.num_hidden_layers - 1:
+                outputs = hidden_states
+            else:
+                outputs = self._loop_forward(hidden_states=hidden_states, attention_mask=mask)
 
         outputs = outputs.to(torch.float32)
 
@@ -208,7 +208,14 @@ class OnceOperator(LMOperator):
     def cache_hidden_size(self):
         return self.config.input_dim
 
+    def get_cache_hidden_size(self, layer):
+        return self.cache_hidden_size
+
+    @torch.no_grad()
     def cache(self, layers):
+        if any(not 0 <= layer < self.num_hidden_layers for layer in layers):
+            raise ValueError(f'Cache layers must be between 0 and {self.num_hidden_layers - 1}')
+
         dataset = DataSet(ut=self.lego_config.item_ut)
         contents = []
         for sample in bars.DescBar(desc='Caching Item Content')(dataset):
@@ -219,13 +226,18 @@ class OnceOperator(LMOperator):
         pager = LMLayerPager(
             inputer=self.inputer,
             layers=layers,
-            hidden_size=self.cache_hidden_size,
+            hidden_sizes=[self.get_cache_hidden_size(layer) for layer in layers],
             contents=contents,
             model=self._forward,
             page_size=self.lego_config.item_page_size,
         )
 
-        pager.run()
+        was_training = self.transformer.training
+        self.transformer.eval()
+        try:
+            pager.run()
+        finally:
+            self.transformer.train(was_training)
 
         for index, layer in enumerate(layers):
             np.save(self._get_cache_path(layer), pager.final_features[index].float().numpy())

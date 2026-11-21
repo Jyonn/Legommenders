@@ -29,35 +29,8 @@ class LlamaOperator(OnceOperator, abc.ABC):
             hidden_states: torch.FloatTensor,
             attention_mask: torch.Tensor,
     ):
-        llama = self.transformer
-
-        cache_position = torch.arange(0, hidden_states.shape[1], device=hidden_states.device)
-        position_ids = cache_position.unsqueeze(0)
-
-        causal_mask = llama._update_causal_mask(
-            attention_mask, hidden_states, cache_position, None, False
-        )
-
-        # create position embeddings to be shared across the decoder layers
-        position_embeddings = llama.rotary_emb(hidden_states, position_ids)
-
-        for decoder_layer in llama.layers:
-            layer_outputs = decoder_layer(
-                hidden_states=hidden_states,
-                attention_mask=causal_mask,
-                position_ids=position_ids,
-                past_key_value=None,
-                output_attentions=None,
-                use_cache=None,
-                cache_position=cache_position,
-                position_embeddings=position_embeddings,
-            )
-
-            hidden_states = layer_outputs[0]
-
-        hidden_states = llama.norm(hidden_states)
-
-        return hidden_states
+        # The retained Llama layers accept cached states through inputs_embeds.
+        return self._forward(hidden_states, attention_mask, output_hidden_states=False)
 
 
 class Llama1Operator(LlamaOperator):

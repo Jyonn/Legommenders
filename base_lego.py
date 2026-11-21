@@ -50,7 +50,6 @@ import numpy as np
 import pigmento
 import torch
 from pigmento import pnt                        # colourful logging
-from transformers import get_linear_schedule_with_warmup
 
 from loader.cacher.item_cacher import ItemCacher
 # Local project imports
@@ -208,20 +207,6 @@ class BaseLego:
                 if p.requires_grad:
                     pnt(name, p.data.shape)
 
-    def init_scheduler(self) -> None:
-        """
-        Linear warm-up learning rate schedule.
-        """
-        self.scheduler = get_linear_schedule_with_warmup(
-            self.optimizer,
-            num_warmup_steps=self.exp.policy.n_warmup,
-            num_training_steps=(
-                len(self.manager.train_set)
-                // self.exp.policy.batch_size
-                * self.exp.policy.epoch
-            ),
-        )
-
     # ------------------------------------------------------------------ #
     # Check-pointing                                                     #
     # ------------------------------------------------------------------ #
@@ -241,7 +226,7 @@ class BaseLego:
 
         sign = sign.replace('@', '')
         path = os.path.join(Env.ph.checkpoint_base_dir, f'{sign}.pt')
-        state_dict = torch.load(path, map_location=Env.device)
+        state_dict = torch.load(path, map_location=Env.device, weights_only=True)
 
         # Older versions wrapped each operator in an extra encoder layer –
         # therefore we keep `strict` configurable.

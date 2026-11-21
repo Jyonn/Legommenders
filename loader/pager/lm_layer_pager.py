@@ -23,8 +23,7 @@ Typical workflow
        • forwards the batch through the supplied language model  
          (the model itself is passed in the `BasePager` kwargs)
        • extracts the hidden states of the layers listed in `self.layers`
-       • stores them in the pre-allocated tensor `self.final_features`
-         with shape (num_layers, num_items, seq_len, hidden_size)
+       • stores each layer in a buffer of shape (num_items, seq_len, hidden_size)
        • caches the attention masks in `self.final_masks`
 
 The pager keeps *all* cached tensors on CPU to avoid GPU memory
@@ -57,8 +56,8 @@ class LMLayerPager(BasePager):
             attention_mask : Tensor(seq_len)
     layers : list[int]
         Indices of the LM layers whose hidden states should be cached.
-    hidden_size : int
-        Dimensionality of the LM hidden states.
+    hidden_sizes : list[int]
+        One output width per requested layer.
     **kwargs
         Forwarded verbatim to `BasePager`, must include at least
             contents  : list
@@ -73,7 +72,7 @@ class LMLayerPager(BasePager):
         self,
         inputer: ConcatInputer,
         layers: list[int],
-        hidden_size: int,
+        hidden_sizes: list[int],
         **kwargs,
     ):
         # Let BasePager set up slicing / progress bar
@@ -87,13 +86,10 @@ class LMLayerPager(BasePager):
         # usage low (the `.run()` loop or downstream code can move them
         # back to GPU if required).
         # ------------------------------------------------------------------
-        self.final_features = torch.zeros(
-            len(layers),                  # layer dimension
-            len(self.contents),           # item dimension
-            self.inputer.max_sequence_len,
-            hidden_size,
-            dtype=torch.float,
-        )
+        self.final_features = [
+            torch.zeros(len(self.contents), self.inputer.max_sequence_len, width)
+            for width in hidden_sizes
+        ]
         self.final_masks = torch.zeros(
             len(self.contents),
             self.inputer.max_sequence_len,

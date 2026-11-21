@@ -53,11 +53,15 @@ python trainer.py \
 
 from __future__ import annotations
 
+from contextlib import nullcontext
+from itertools import islice
+
 import psutil
 import torch
 from typing import Dict, Any, Optional
 
 from pigmento import pnt
+from transformers import get_linear_schedule_with_warmup
 
 # Project modules
 from loader.env import Env
@@ -79,6 +83,29 @@ class Trainer(Tester):
 
     # Will be populated in `prepare_live_experiment` if `--session` is set.
     server: Optional[Server] = None
+
+    def __init__(self, config):
+        policy = config.exp.policy
+        fast = config().get('fast')
+        if fast is None:
+            fast = policy().get('fast')
+        if fast is not None and not isinstance(fast, bool):
+            raise ValueError('fast must be true or false')
+        # Record opt-in precision before BaseLego computes the run signature.
+        if fast or 'fast' in policy:
+            policy.fast = bool(fast)
+        super().__init__(config)
+
+    def get_device(self) -> torch.device:
+        device = super().get_device()
+        if not getattr(self.exp.policy, 'fast', False):
+            return device
+        device = torch.device(device)
+        if device.type == 'cuda' and torch.cuda.is_available():
+            with torch.cuda.device(device):
+                if torch.cuda.is_bf16_supported(including_emulation=False):
+                    return device
+        raise ValueError('--fast true requires a CUDA GPU with native BF16 support')
 
     # ------------------------------------------------------------------ #
     # Live experiment integration                                        #
@@ -155,6 +182,31 @@ class Trainer(Tester):
     # ------------------------------------------------------------------ #
     # Training loop                                                      #
     # ------------------------------------------------------------------ #
+    def _batches_per_epoch(self, loader) -> int:
+        count = len(loader)
+        limit = getattr(self.exp.policy, 'epoch_batch', None) or 0
+        if limit < 0:
+            return max(1, count // abs(limit)) if count else 0
+        return min(count, limit) if limit else count
+
+    def _accumulation_batches(self) -> int:
+        count = getattr(self.exp.policy, 'accumulate_batch', None) or 1
+        if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+            raise ValueError('accumulate_batch must be a positive integer')
+        return count
+
+    def init_scheduler(self) -> None:
+        batches = self._batches_per_epoch(self.manager.get_train_loader())
+        if not batches:
+            raise ValueError('Training requires at least one batch per epoch')
+        accumulate = self._accumulation_batches()
+        updates_per_epoch = (batches + accumulate - 1) // accumulate
+        self.scheduler = get_linear_schedule_with_warmup(
+            self.optimizer,
+            num_warmup_steps=self.exp.policy.n_warmup,
+            num_training_steps=updates_per_epoch * self.exp.policy.epoch,
+        )
+
     def train(self) -> None:
         """
         Outer epoch loop + gradient accumulation + early stopping.
@@ -166,9 +218,15 @@ class Trainer(Tester):
 
         dev_func = self.simple_evaluate if Env.simple_dev else self.dev
 
-        train_steps = len(self.manager.train_set) // self.exp.policy.batch_size
-        accumulate_step = 0
-        accumulate_batch = self.exp.policy.accumulate_batch or 1
+        loader = self.manager.get_train_loader()
+        train_steps = self._batches_per_epoch(loader)
+        if not train_steps:
+            raise ValueError('Training requires at least one batch per epoch')
+        accumulate_batch = self._accumulation_batches()
+        label_col = self.manager.cm.label_col
+        fast = getattr(self.exp.policy, 'fast', False)
+        if fast:
+            pnt('Fast mode: BF16 mixed precision for training')
 
         # Interval at which we log `loss=` lines to the .log file
         check_interval = self.exp.policy.check_interval
@@ -177,44 +235,44 @@ class Trainer(Tester):
             check_interval = max(train_steps // (-check_interval), 1)
 
         meaner = Meaner()
-        loader = self.manager.get_train_loader()
 
         # ------------------------------------------------------------------ #
         # Epoch loop                                                         #
         # ------------------------------------------------------------------ #
         self.optimizer.zero_grad()
         for epoch in range(self.exp.policy.epoch):
-            self.legommender.train()
             self.manager.setup(Symbols.train)
-
-            for step, batch in enumerate(bar := bars.TrainBar(epoch=epoch)(loader,
-                                                                           disable=self.disable_tqdm)):
-                # Forward + backward
-                loss = self.legommender(batch=batch)
-                loss.backward()
-
+            samples_in_update = 0
+            bar = bars.TrainBar(epoch=epoch)(
+                islice(loader, train_steps), total=train_steps, disable=self.disable_tqdm,
+            )
+            for step, batch in enumerate(bar):
+                with torch.autocast('cuda', dtype=torch.bfloat16) if fast else nullcontext():
+                    loss = self.legommender(batch=batch)
+                if accumulate_batch == 1:
+                    loss.backward()
+                else:
+                    # The model returns the mean loss of each microbatch.
+                    batch_samples = batch[label_col].size(0)
+                    (loss * batch_samples).backward()
+                    samples_in_update += batch_samples
                 bar.set_postfix_str(f'loss: {meaner(loss.item()):.4f}')
 
-                # ----------- gradient accumulation --------------------------- #
-                accumulate_step += 1
-                if accumulate_step == accumulate_batch:
+                batch_number = step + 1
+                if batch_number % accumulate_batch == 0 or batch_number == train_steps:
+                    if accumulate_batch > 1:
+                        for group in self.optimizer.param_groups:
+                            for param in group['params']:
+                                if param.grad is not None:
+                                    param.grad.div_(samples_in_update)
                     self.optimizer.step()
                     self.scheduler.step()
                     self.optimizer.zero_grad()
-                    accumulate_step = 0
+                    samples_in_update = 0
 
                 # ----------- optional interval logging ---------------------- #
                 if check_interval and (step + 1) % check_interval == 0:
                     self.log_interval(epoch, step, meaner.mean)
-
-                # ----------- limit epoch length if requested ---------------- #
-                if self.exp.policy.epoch_batch:
-                    if self.exp.policy.epoch_batch < 0:  # relative
-                        if step > max(train_steps // (-self.exp.policy.epoch_batch), 1):
-                            break
-                    else:  # absolute
-                        if step > self.exp.policy.epoch_batch:
-                            break
 
             # ---------------------------------------------------------------- #
             # End of epoch → dev evaluation + early stopping decision          #
